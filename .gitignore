@@ -72,3 +72,13 @@ Plugins/*/Intermediate/*
 
 # Cache files for the editor to use
 DerivedDataCache/*
+
+# Rider
+.idea/
+
+# Developer plugins
+Plugins/Developer
+.vsconfig
+
+# Hololens
+Platforms/HoloLens/Config/HoloLensEngine.ini
