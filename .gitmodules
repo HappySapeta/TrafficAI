@@ -1,0 +1,3 @@
+[submodule "Plugins/AStarPathFinder"]
+	path = Plugins/AStarPathFinder
+	url = https://github.com/AnupamSahu/AStarPathFinder

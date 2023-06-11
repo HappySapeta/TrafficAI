@@ -8,7 +8,7 @@ public class TrafficAI : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 	
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore" });
+		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "AStarPathFinder" });
 
 		PrivateDependencyModuleNames.AddRange(new string[] {  });
 
