@@ -19,8 +19,8 @@
 			]
 		},
 		{
-			"Name" : "AStarPathFinder",
-			"Enabled":  true
+			"Name": "AStarPathFinder",
+			"Enabled": true
 		}
 	]
 }
