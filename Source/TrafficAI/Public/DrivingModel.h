@@ -28,10 +28,7 @@ struct FModelData
 	float AccelerationExponent = 4.0f;
 
 	UPROPERTY(EditAnywhere)
-	float CarLength = 500;
-	
-	UPROPERTY(EditAnywhere)
-	float LeaderSpeed = 3000.0f;
+	float SimulationSpeed = 1.0f;
 };
 
 
@@ -52,21 +49,18 @@ protected:
 	virtual void BeginPlay() override;
 
 private:
-	float CalculateAcceleration(
+	float IDM_Acceleration(
 		const float CurrentSpeed, const float RelativeSpeed, const float CurrentGap) const;
 	
 private:
 
 	UPROPERTY(EditAnywhere, Category = "Simulation Setup")
 	FModelData ModelData;
-
-	UPROPERTY(EditAnywhere, Category = "Simulation Setup")
-	TArray<class ASmartCar*> SmartCars;
-
-	UPROPERTY(EditAnywhere)
-	float Radius = 2000.0f;
-
+	
 	UPROPERTY()
 	TObjectPtr<USceneComponent> SceneComponent;
+
+	UPROPERTY()
+	TArray<AActor*> SmartCars;
 	
 };

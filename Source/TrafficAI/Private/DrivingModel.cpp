@@ -1,7 +1,9 @@
 ﻿#include "DrivingModel.h"
-
 #include "SmartCar.h"
+#include "Components/BoxComponent.h"
+#include "Kismet/GameplayStatics.h"
 
+#define TRAFFIC_CHANNEL ECC_GameTraceChannel1
 
 // Sets default values
 ADrivingModel::ADrivingModel()
@@ -14,25 +16,12 @@ ADrivingModel::ADrivingModel()
 }
 
 // Called when the game starts or when spawned
+
 void ADrivingModel::BeginPlay()
 {
 	Super::BeginPlay();
-}
 
-float ADrivingModel::CalculateAcceleration(const float CurrentSpeed, const float RelativeSpeed, const float CurrentGap) const
-{
-	const float FreeRoadTerm = FMath::Pow(CurrentSpeed / ModelData.DesiredSpeed, ModelData.AccelerationExponent);
-
-	const float T1 = ModelData.MinimumGap;
-	const float T2 = CurrentSpeed * ModelData.DesiredTimeHeadWay;
-	const float T3 = (CurrentSpeed * RelativeSpeed) / (2 * FMath::Sqrt(ModelData.MaximumAcceleration * ModelData.ComfortableBrakingDeceleration));
-	
-	const float DesiredGap = T1 + T2 + T3;
-	const float InteractionTerm = FMath::Square(DesiredGap / CurrentGap);
-
-	const float Acceleration = ModelData.MaximumAcceleration * (1 - FreeRoadTerm - InteractionTerm);
-
-	return Acceleration;
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ASmartCar::StaticClass(), SmartCars);
 }
 
 // Called every frame
@@ -40,24 +29,58 @@ void ADrivingModel::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	for(int Current = 0; Current < SmartCars.Num(); ++Current)
+	for(AActor* Element : SmartCars)
 	{
-		const FVector& CurrentVelocity = SmartCars[Current]->GetVelocity();
-		//UE_LOG(LogTemp, Warning, TEXT("%d Speed : %f km/h"), Current, CurrentVelocity.Size() * 0.036f);
-
-		FVector RelativeVelocity = -CurrentVelocity;
-		float CurrentGap = BIG_NUMBER;
-		if(Current != SmartCars.Num() - 1)
+		if(!IsValid(Element))
 		{
-			RelativeVelocity += SmartCars[Current + 1]->GetVelocity();
-			CurrentGap = (SmartCars[Current + 1]->GetActorLocation() - SmartCars[Current]->GetActorLocation()).Size() - ModelData.CarLength;
+			continue;
 		}
 		
-		const float DesiredAcceleration = CalculateAcceleration(CurrentVelocity.Size(), RelativeVelocity.Size(), CurrentGap);
-		const FVector& DesiredVelocity = (CurrentVelocity.Size() + DesiredAcceleration * DeltaTime) * SmartCars[Current]->GetActorForwardVector();
-		const FVector& DesiredLocation = SmartCars[Current]->GetActorLocation() + DesiredVelocity * DeltaTime * 1.0f;
+		ASmartCar* SmartCar = static_cast<ASmartCar*>(Element);  
+		const FVector& CurrentVelocity = SmartCar->GetVelocity();
 		
-		SmartCars[Current]->SetActorLocation(DesiredLocation);
+		FHitResult HitResult;
+		const FVector& RayStart = SmartCar->GetSensorLocation();
+		const FVector& RayEnd = RayStart + SmartCar->GetActorForwardVector() * ModelData.MinimumGap;
+		
+		float CurrentGap = BIG_NUMBER;
+		FVector RelativeVelocity = -CurrentVelocity;
+		
+		FCollisionQueryParams CollisionQueryParams;
+		CollisionQueryParams.AddIgnoredActor(SmartCar);
+		if(GetWorld()->LineTraceSingleByChannel(HitResult, RayStart, RayEnd, TRAFFIC_CHANNEL, CollisionQueryParams))
+		{
+			CurrentGap = FVector::Distance(HitResult.GetActor()->GetActorLocation(), SmartCar->GetActorLocation());
+			RelativeVelocity += HitResult.GetActor()->GetVelocity();
+			DrawDebugLine(GetWorld(), RayStart, RayEnd, FColor::Green);
+		}
+		else
+		{
+			DrawDebugLine(GetWorld(), RayStart, RayEnd, FColor::Red);
+		}
+
+
+		const float DesiredAcceleration = FMath::Clamp(IDM_Acceleration(CurrentVelocity.Size(), RelativeVelocity.Size(), CurrentGap), -ModelData.ComfortableBrakingDeceleration, ModelData.MaximumAcceleration);
+		//const FVector& DesiredVelocity = FVector(CurrentVelocity.X, CurrentVelocity.Y, 0.0f) + SmartCar->GetActorForwardVector() * DesiredAcceleration * DeltaTime;
+		//const FVector& DesiredLocation = SmartCar->GetActorLocation() + DesiredVelocity * DeltaTime * ModelData.SimulationSpeed;
+
+		Cast<UBoxComponent>(SmartCar->GetComponentByClass(UBoxComponent::StaticClass()))->AddForce(DesiredAcceleration * SmartCar->GetActorForwardVector(), NAME_None, true);
+		
+		//UE_LOG(LogTemp, Warning, TEXT("Velocity = %s"), *CurrentVelocity.ToString());
+
+		//SmartCar->SetActorLocation(DesiredLocation);
 	}
+}
+
+float ADrivingModel::IDM_Acceleration(const float CurrentSpeed, const float RelativeSpeed, const float CurrentGap) const
+{
+	const float FreeRoadTerm = ModelData.MaximumAcceleration * (1 - FMath::Pow(CurrentSpeed / ModelData.DesiredSpeed, ModelData.AccelerationExponent));
+
+	const float DecelerationTerm = (CurrentSpeed * RelativeSpeed) / (2 * FMath::Sqrt(ModelData.MaximumAcceleration * ModelData.ComfortableBrakingDeceleration));
+	const float GapTerm = (ModelData.MinimumGap + ModelData.DesiredTimeHeadWay * CurrentSpeed + DecelerationTerm) / CurrentGap;
+	
+	const float InteractionTerm = -ModelData.MaximumAcceleration * FMath::Square(GapTerm);
+
+	return FreeRoadTerm + InteractionTerm; 
 }
 

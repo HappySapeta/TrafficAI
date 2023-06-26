@@ -1,43 +1,42 @@
 ﻿#include "SmartCar.h"
 
-#include "Kismet/KismetMathLibrary.h"
+#include "Components/BoxComponent.h"
 
 // Sets default values
 ASmartCar::ASmartCar()
 {
 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bCanEverTick = false;
 
+	BoxComponent = CreateDefaultSubobject<UBoxComponent>(TEXT("BoxComponent"));
+	SetRootComponent(BoxComponent);
+	BoxComponent->SetCollisionProfileName(FName("BlockAllDynamic"));
+	
 	StaticMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("StaticMeshComponent"));
-	SetRootComponent(StaticMesh);
+	StaticMesh->SetupAttachment(BoxComponent);
 	StaticMesh->SetCollisionProfileName(UCollisionProfile::NoCollision_ProfileName);
 }
 
 void ASmartCar::BeginPlay()
 {
 	Super::BeginPlay();
-	PreviousLocation = GetActorLocation();
 }
 
 void ASmartCar::Tick(float DeltaSeconds)
- {
+{
 	Super::Tick(DeltaSeconds);
-	
+
 	const FVector& CurrentLocation = GetActorLocation();
-	
 	Velocity = (CurrentLocation - PreviousLocation) / DeltaSeconds;
 	PreviousLocation = CurrentLocation;
+}
 
-	AlignWithVelocity();
- }
+FVector ASmartCar::GetSensorLocation() const
+{
+	return BoxComponent->Bounds.Origin + GetActorForwardVector() * BoxComponent->Bounds.BoxExtent.X;
+}
 
 FVector ASmartCar::GetVelocity() const
 {
 	return Velocity;
-}
-
-void ASmartCar::AlignWithVelocity()
-{
-	const FRotator& Rotator = UKismetMathLibrary::MakeRotFromX(Velocity.GetSafeNormal());
-	SetActorRotation(Rotator);
 }

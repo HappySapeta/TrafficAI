@@ -14,26 +14,31 @@ public:
 	// Sets default values for this actor's properties
 	ASmartCar();
 
-	virtual FVector GetVelocity() const override;
+	FVector GetSensorLocation() const;
 
-	virtual void Tick(float DeltaSeconds) override;
+	virtual FVector GetVelocity() const override;
 
 protected:
 
 	virtual void BeginPlay() override;
-
-private:
 	
-	void AlignWithVelocity();
+	virtual void Tick(float DeltaSeconds) override;
 
 private:
 
 	UPROPERTY(EditAnywhere)
 	TObjectPtr<UStaticMeshComponent> StaticMesh;
 
+	UPROPERTY(EditAnywhere)
+	TObjectPtr<class UBoxComponent> BoxComponent;
+
 private:
 
 	FVector Velocity;
 	
 	FVector PreviousLocation;
+
+	FVector PreviousVelocity;
+
+	FVector Acceleration;
 };
