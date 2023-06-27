@@ -1,6 +1,5 @@
 ﻿#include "DrivingModel.h"
 #include "SmartCar.h"
-#include "Components/BoxComponent.h"
 #include "Kismet/GameplayStatics.h"
 
 #define TRAFFIC_CHANNEL ECC_GameTraceChannel1
@@ -58,17 +57,9 @@ void ADrivingModel::Tick(float DeltaTime)
 		{
 			DrawDebugLine(GetWorld(), RayStart, RayEnd, FColor::Red);
 		}
-
-
-		const float DesiredAcceleration = FMath::Clamp(IDM_Acceleration(CurrentVelocity.Size(), RelativeVelocity.Size(), CurrentGap), -ModelData.ComfortableBrakingDeceleration, ModelData.MaximumAcceleration);
-		//const FVector& DesiredVelocity = FVector(CurrentVelocity.X, CurrentVelocity.Y, 0.0f) + SmartCar->GetActorForwardVector() * DesiredAcceleration * DeltaTime;
-		//const FVector& DesiredLocation = SmartCar->GetActorLocation() + DesiredVelocity * DeltaTime * ModelData.SimulationSpeed;
-
-		Cast<UBoxComponent>(SmartCar->GetComponentByClass(UBoxComponent::StaticClass()))->AddForce(DesiredAcceleration * SmartCar->GetActorForwardVector(), NAME_None, true);
 		
-		//UE_LOG(LogTemp, Warning, TEXT("Velocity = %s"), *CurrentVelocity.ToString());
-
-		//SmartCar->SetActorLocation(DesiredLocation);
+		const float DesiredAcceleration = FMath::Clamp(IDM_Acceleration(CurrentVelocity.Size(), RelativeVelocity.Size(), CurrentGap), -ModelData.ComfortableBrakingDeceleration, ModelData.MaximumAcceleration);
+		SmartCar->AddForce(DesiredAcceleration * SmartCar->GetActorForwardVector());
 	}
 }
 

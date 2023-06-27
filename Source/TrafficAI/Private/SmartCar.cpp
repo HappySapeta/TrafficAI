@@ -40,3 +40,8 @@ FVector ASmartCar::GetVelocity() const
 {
 	return Velocity;
 }
+
+void ASmartCar::AddForce(const FVector& Force) const
+{
+	BoxComponent->AddForce(Force, NAME_None, true);
+}

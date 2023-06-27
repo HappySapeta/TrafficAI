@@ -18,6 +18,8 @@ public:
 
 	virtual FVector GetVelocity() const override;
 
+	void AddForce(const FVector& Force) const;
+
 protected:
 
 	virtual void BeginPlay() override;
