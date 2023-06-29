@@ -1,5 +1,6 @@
 ﻿#include "DrivingModel.h"
 #include "SmartCar.h"
+#include "Components/SplineComponent.h"
 #include "Kismet/GameplayStatics.h"
 
 #define TRAFFIC_CHANNEL ECC_GameTraceChannel1
@@ -15,7 +16,6 @@ ADrivingModel::ADrivingModel()
 }
 
 // Called when the game starts or when spawned
-
 void ADrivingModel::BeginPlay()
 {
 	Super::BeginPlay();
@@ -28,14 +28,16 @@ void ADrivingModel::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	for(AActor* Element : SmartCars)
+	UpdateCars();
+	TeleportCars();
+}
+
+void ADrivingModel::UpdateCars()
+{
+	for(int32 Index = 0; Index < SmartCars.Num(); ++Index)
 	{
-		if(!IsValid(Element))
-		{
-			continue;
-		}
-		
-		ASmartCar* SmartCar = static_cast<ASmartCar*>(Element);  
+		ASmartCar* SmartCar = static_cast<ASmartCar*>(SmartCars[Index]);  
+
 		const FVector& CurrentVelocity = SmartCar->GetVelocity();
 		
 		FHitResult HitResult;
@@ -59,7 +61,7 @@ void ADrivingModel::Tick(float DeltaTime)
 		}
 		
 		const float DesiredAcceleration = FMath::Clamp(IDM_Acceleration(CurrentVelocity.Size(), RelativeVelocity.Size(), CurrentGap), -ModelData.ComfortableBrakingDeceleration, ModelData.MaximumAcceleration);
-		SmartCar->AddForce(DesiredAcceleration * SmartCar->GetActorForwardVector());
+		SmartCar->SetAcceleration(DesiredAcceleration);
 	}
 }
 

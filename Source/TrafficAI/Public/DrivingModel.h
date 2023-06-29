@@ -38,6 +38,7 @@ class TRAFFICAI_API ADrivingModel : public AActor
 	GENERATED_BODY()
 
 public:
+	
 	// Sets default values for this actor's properties
 	ADrivingModel();
 
@@ -45,13 +46,16 @@ public:
 	virtual void Tick(float DeltaTime) override;
 
 protected:
+	
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
 private:
-	float IDM_Acceleration(
-		const float CurrentSpeed, const float RelativeSpeed, const float CurrentGap) const;
 	
+	void UpdateCars();
+
+	float IDM_Acceleration(const float CurrentSpeed, const float RelativeSpeed, const float CurrentGap) const;
+
 private:
 
 	UPROPERTY(EditAnywhere, Category = "Simulation Setup")
@@ -62,5 +66,10 @@ private:
 
 	UPROPERTY()
 	TArray<AActor*> SmartCars;
-	
+
+	UPROPERTY(EditAnywhere, meta = (MakeEditWidget))
+	FVector StartLocation;
+
+	UPROPERTY(EditAnywhere, meta = (MakeEditWidget))
+	FVector EndLocation;
 };

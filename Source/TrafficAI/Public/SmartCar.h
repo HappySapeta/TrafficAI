@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "Components/BoxComponent.h"
 #include "SmartCar.generated.h"
 
 UCLASS()
@@ -14,17 +15,23 @@ public:
 	// Sets default values for this actor's properties
 	ASmartCar();
 
-	FVector GetSensorLocation() const;
+	FVector GetSensorLocation() const { return BoxComponent->Bounds.Origin + GetActorForwardVector() * BoxComponent->Bounds.BoxExtent.X; }
 
-	virtual FVector GetVelocity() const override;
+	virtual FVector GetVelocity() const override { return Velocity; }
 
-	void AddForce(const FVector& Force) const;
+	void SetAcceleration(const float NewAcceleration) { Acceleration = NewAcceleration; }
+
+	void SetHeading(const FVector& NextWaypoint, const FVector& PreviousWaypoint);
 
 protected:
-
-	virtual void BeginPlay() override;
 	
 	virtual void Tick(float DeltaSeconds) override;
+
+private:
+
+	void Move();
+
+	void UpdateVelocity(float DeltaSeconds);
 
 private:
 
@@ -42,5 +49,5 @@ private:
 
 	FVector PreviousVelocity;
 
-	FVector Acceleration;
+	float Acceleration;
 };

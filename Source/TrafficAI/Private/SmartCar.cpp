@@ -1,6 +1,7 @@
 ﻿#include "SmartCar.h"
 
-#include "Components/BoxComponent.h"
+#include "Kismet/KismetMathLibrary.h"
+#include "Kismet/KismetSystemLibrary.h"
 
 // Sets default values
 ASmartCar::ASmartCar()
@@ -17,31 +18,39 @@ ASmartCar::ASmartCar()
 	StaticMesh->SetCollisionProfileName(UCollisionProfile::NoCollision_ProfileName);
 }
 
-void ASmartCar::BeginPlay()
-{
-	Super::BeginPlay();
-}
-
 void ASmartCar::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
+	UpdateVelocity(DeltaSeconds);
+	Move();
+}
+
+void ASmartCar::SetHeading(const FVector& NextWaypoint, const FVector& PreviousWaypoint)
+{
+	FVector FlatHeading = (NextWaypoint - GetActorLocation()).GetSafeNormal();
+	FlatHeading.Z = 0;
+
+	float Speed = Velocity.Size();
+	SetActorRotation(UKismetMathLibrary::MakeRotFromX(FlatHeading), ETeleportType::ResetPhysics);
+	SetActorLocation(FVector(PreviousWaypoint.X, PreviousWaypoint.Y, GetActorLocation().Z), false, NULL, ETeleportType::ResetPhysics);
+
+	BoxComponent->SetPhysicsLinearVelocity(Speed * FlatHeading);
+}
+
+void ASmartCar::UpdateVelocity(float DeltaSeconds)
+{
 	const FVector& CurrentLocation = GetActorLocation();
 	Velocity = (CurrentLocation - PreviousLocation) / DeltaSeconds;
 	PreviousLocation = CurrentLocation;
 }
 
-FVector ASmartCar::GetSensorLocation() const
+void ASmartCar::Move()
 {
-	return BoxComponent->Bounds.Origin + GetActorForwardVector() * BoxComponent->Bounds.BoxExtent.X;
-}
+	if(Velocity.GetSafeNormal().Dot(GetActorForwardVector()) < 0.0f && Acceleration < 0.0f)
+	{
+		return;
+	}
 
-FVector ASmartCar::GetVelocity() const
-{
-	return Velocity;
-}
-
-void ASmartCar::AddForce(const FVector& Force) const
-{
-	BoxComponent->AddForce(Force, NAME_None, true);
+	BoxComponent->AddForce(Acceleration * GetActorForwardVector(), NAME_None, true);
 }
