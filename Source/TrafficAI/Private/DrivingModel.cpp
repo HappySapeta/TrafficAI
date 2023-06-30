@@ -13,6 +13,9 @@ ADrivingModel::ADrivingModel()
 
 	SceneComponent = CreateDefaultSubobject<USceneComponent>(TEXT("SceneComponent"));
 	SetRootComponent(SceneComponent);
+
+	SplineComponent = CreateDefaultSubobject<USplineComponent>(TEXT("SplineComponent"));
+	SplineComponent->SetupAttachment(GetRootComponent());
 }
 
 // Called when the game starts or when spawned
@@ -21,6 +24,15 @@ void ADrivingModel::BeginPlay()
 	Super::BeginPlay();
 
 	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ASmartCar::StaticClass(), SmartCars);
+
+	const int32 NumSplinePoints = SplineComponent->GetNumberOfSplinePoints();
+	for(int32 Index = 0; Index < NumSplinePoints; ++Index)
+	{
+		Waypoints.Add(SplineComponent->GetLocationAtSplinePoint(Index, ESplineCoordinateSpace::World));
+		DrawDebugSphere(GetWorld(), Waypoints.Last(), 150.0f, 12, FColor::Orange, true, -1, 0, 5.0f);
+	}
+
+	static_cast<ASmartCar*>(SmartCars[0])->SetHeading(Waypoints[CurrentIndex]);
 }
 
 // Called every frame
@@ -29,7 +41,7 @@ void ADrivingModel::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 	UpdateCars();
-	TeleportCars();
+	UpdateHeadings();
 }
 
 void ADrivingModel::UpdateCars()
@@ -62,6 +74,16 @@ void ADrivingModel::UpdateCars()
 		
 		const float DesiredAcceleration = FMath::Clamp(IDM_Acceleration(CurrentVelocity.Size(), RelativeVelocity.Size(), CurrentGap), -ModelData.ComfortableBrakingDeceleration, ModelData.MaximumAcceleration);
 		SmartCar->SetAcceleration(DesiredAcceleration);
+	}
+}
+
+void ADrivingModel::UpdateHeadings()
+{
+	constexpr float Threshold = 100.0f;
+	if(FVector::Dist2D(SmartCars[0]->GetActorLocation(), Waypoints[CurrentIndex]) <= Threshold)
+	{
+		CurrentIndex = (CurrentIndex + 1) % Waypoints.Num();
+		static_cast<ASmartCar*>(SmartCars[0])->SetHeading(Waypoints[CurrentIndex]);
 	}
 }
 

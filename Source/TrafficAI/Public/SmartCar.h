@@ -16,12 +16,10 @@ public:
 	ASmartCar();
 
 	FVector GetSensorLocation() const { return BoxComponent->Bounds.Origin + GetActorForwardVector() * BoxComponent->Bounds.BoxExtent.X; }
-
-	virtual FVector GetVelocity() const override { return Velocity; }
-
+	
 	void SetAcceleration(const float NewAcceleration) { Acceleration = NewAcceleration; }
 
-	void SetHeading(const FVector& NextWaypoint, const FVector& PreviousWaypoint);
+	void SetHeading(const FVector& NewHeading);
 
 protected:
 	
@@ -29,9 +27,11 @@ protected:
 
 private:
 
-	void Move();
+	void Move(const float DeltaTime);
 
-	void UpdateVelocity(float DeltaSeconds);
+	void Steer(const float DeltaTime);
+	
+	void ApplyGrip(float DeltaTime);
 
 private:
 
@@ -41,13 +41,22 @@ private:
 	UPROPERTY(EditAnywhere)
 	TObjectPtr<class UBoxComponent> BoxComponent;
 
+	UPROPERTY(EditAnywhere, Category = "Movement Settings", meta = (UIMin = 0, ClampMin = 0))
+	float SteeringProportionalCoefficient = 1.0f;
+	
+	UPROPERTY(EditAnywhere, Category = "Movement Settings", meta = (UIMin = 0, ClampMin = 0))
+	float SteeringDerivativeCoefficient = 1.0f;
+
+	UPROPERTY(EditAnywhere, Category = "Movement Settings", meta = (UIMin = 0, ClampMin = 0))
+	float GripStrength = 1.0f;
+
+	UPROPERTY(EditAnywhere, Category = "Movement Settings", meta = (UIMin = 0, ClampMin = 0))
+	float MaxAngularSpeed = 1.0f;
+
 private:
 
-	FVector Velocity;
-	
-	FVector PreviousLocation;
-
-	FVector PreviousVelocity;
+	FVector Heading;
 
 	float Acceleration;
+	float PreviousTheta;
 };

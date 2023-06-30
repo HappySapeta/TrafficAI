@@ -53,6 +53,7 @@ protected:
 private:
 	
 	void UpdateCars();
+	void UpdateHeadings();
 
 	float IDM_Acceleration(const float CurrentSpeed, const float RelativeSpeed, const float CurrentGap) const;
 
@@ -61,15 +62,17 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Simulation Setup")
 	FModelData ModelData;
 	
+	UPROPERTY(EditAnywhere, Category = "Track Setup")
+	TObjectPtr<class USplineComponent> SplineComponent;
+
+	UPROPERTY()
+	TArray<FVector> Waypoints;
+
 	UPROPERTY()
 	TObjectPtr<USceneComponent> SceneComponent;
 
 	UPROPERTY()
 	TArray<AActor*> SmartCars;
 
-	UPROPERTY(EditAnywhere, meta = (MakeEditWidget))
-	FVector StartLocation;
-
-	UPROPERTY(EditAnywhere, meta = (MakeEditWidget))
-	FVector EndLocation;
+	int32 CurrentIndex = 0;
 };
