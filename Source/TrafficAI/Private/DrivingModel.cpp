@@ -32,7 +32,12 @@ void ADrivingModel::BeginPlay()
 		DrawDebugSphere(GetWorld(), Waypoints.Last(), 150.0f, 12, FColor::Orange, true, -1, 0, 5.0f);
 	}
 
-	static_cast<ASmartCar*>(SmartCars[0])->SetHeading(Waypoints[CurrentIndex]);
+	WaypointTargets.Init(0, SmartCars.Num());
+
+	for(AActor* SmartCar : SmartCars)
+	{
+		static_cast<ASmartCar*>(SmartCar)->SetHeading(Waypoints[0]);
+	}
 }
 
 // Called every frame
@@ -80,10 +85,13 @@ void ADrivingModel::UpdateCars()
 void ADrivingModel::UpdateHeadings()
 {
 	constexpr float Threshold = 100.0f;
-	if(FVector::Dist2D(SmartCars[0]->GetActorLocation(), Waypoints[CurrentIndex]) <= Threshold)
+	for(int Index = 0; Index < SmartCars.Num(); ++Index)
 	{
-		CurrentIndex = (CurrentIndex + 1) % Waypoints.Num();
-		static_cast<ASmartCar*>(SmartCars[0])->SetHeading(Waypoints[CurrentIndex]);
+		if(FVector::Dist2D(SmartCars[Index]->GetActorLocation(), Waypoints[WaypointTargets[Index]]) <= Threshold)
+		{
+			WaypointTargets[Index] = (WaypointTargets[Index] + 1) % Waypoints.Num();
+			static_cast<ASmartCar*>(SmartCars[Index])->SetHeading(Waypoints[WaypointTargets[Index]]);
+		}
 	}
 }
 

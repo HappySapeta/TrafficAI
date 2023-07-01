@@ -16,20 +16,20 @@ ASmartCar::ASmartCar()
 	StaticMesh->SetCollisionProfileName(UCollisionProfile::NoCollision_ProfileName);
 }
 
-void ASmartCar::SetHeading(const FVector& NewHeading)
-{
-	Heading = NewHeading;
-}
-
 void ASmartCar::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
 	Move(DeltaSeconds);
-	ApplyGrip(DeltaSeconds);
 	Steer(DeltaSeconds);
+	ApplyTraction(DeltaSeconds);
 
-	GEngine->AddOnScreenDebugMessage(-1, DeltaSeconds, FColor::Emerald, FString::Printf(TEXT("Speed = %f km/h"), GetVelocity().Size() * 0.01f));
+#if WITH_EDITORONLY_DATA
+	if(bDebugSpeed)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, DeltaSeconds, FColor::Emerald, FString::Printf(TEXT("Speed = %f km/h"), GetVelocity().Size() * 0.01f));
+	}
+#endif
 }
 
 void ASmartCar::Move(const float DeltaTime)
@@ -50,22 +50,18 @@ void ASmartCar::Steer(const float DeltaTime)
 	FVector Forward = GetActorForwardVector();
 	Forward.Z = 0.0f;
 	
-	float Theta = FMath::Atan2(Forward.X * HeadingDirection.Y - Forward.Y * HeadingDirection.X, Forward.X * HeadingDirection.X + Forward.Y * HeadingDirection.Y); //FMath::Atan2(Forward.X, Forward.Y) - FMath::Atan2(HeadingDirection.X, HeadingDirection.Y);
+	float Theta = FMath::Atan2(Forward.X * HeadingDirection.Y - Forward.Y * HeadingDirection.X, Forward.X * HeadingDirection.X + Forward.Y * HeadingDirection.Y);
 	
 	float P = SteeringProportionalCoefficient * Theta;
 	float D = SteeringDerivativeCoefficient * (Theta - PreviousTheta) / DeltaTime;
-
 	float Torque = P + D;
+	PreviousTheta = Theta;
 
 	BoxComponent->AddTorqueInRadians(Torque * GetActorUpVector(), NAME_None, true);
-	GEngine->AddOnScreenDebugMessage(-1, 0.0f, FColor::Black, FString::Printf(TEXT("Torque = %f"), Torque));
-	GEngine->AddOnScreenDebugMessage(-1, 0.0f, FColor::Green, FString::Printf(TEXT("Theta = %f"), Theta));
-
-	PreviousTheta = Theta;
 }
 
-void ASmartCar::ApplyGrip(const float DeltaTime)
+void ASmartCar::ApplyTraction(const float DeltaTime)
 {
 	const FVector& LocalVelocity = GetActorTransform().InverseTransformVector(GetVelocity());
-	BoxComponent->AddForce( -1 * GetActorRightVector() * LocalVelocity.Y * GripStrength, NAME_None, true);
+	BoxComponent->AddForce( -1 * GetActorRightVector() * LocalVelocity.Y * Traction, NAME_None, true);
 }

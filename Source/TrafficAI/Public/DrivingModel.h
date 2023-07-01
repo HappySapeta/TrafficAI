@@ -74,5 +74,5 @@ private:
 	UPROPERTY()
 	TArray<AActor*> SmartCars;
 
-	int32 CurrentIndex = 0;
+	TArray<int8> WaypointTargets; 
 };

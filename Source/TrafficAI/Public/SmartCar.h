@@ -19,7 +19,7 @@ public:
 	
 	void SetAcceleration(const float NewAcceleration) { Acceleration = NewAcceleration; }
 
-	void SetHeading(const FVector& NewHeading);
+	void SetHeading(const FVector& NewHeading) { Heading = NewHeading; }
 
 protected:
 	
@@ -31,7 +31,7 @@ private:
 
 	void Steer(const float DeltaTime);
 	
-	void ApplyGrip(float DeltaTime);
+	void ApplyTraction(float DeltaTime);
 
 private:
 
@@ -48,11 +48,13 @@ private:
 	float SteeringDerivativeCoefficient = 1.0f;
 
 	UPROPERTY(EditAnywhere, Category = "Movement Settings", meta = (UIMin = 0, ClampMin = 0))
-	float GripStrength = 1.0f;
+	float Traction = 1.0f;
 
-	UPROPERTY(EditAnywhere, Category = "Movement Settings", meta = (UIMin = 0, ClampMin = 0))
-	float MaxAngularSpeed = 1.0f;
-
+#if WITH_EDITORONLY_DATA
+	UPROPERTY(EditAnywhere, Category = "Debug Settings")
+	bool bDebugSpeed = false;
+#endif
+	
 private:
 
 	FVector Heading;
