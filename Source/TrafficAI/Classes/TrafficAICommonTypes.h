@@ -2,5 +2,4 @@
 
 #pragma once
 
-#define DISABLE_ACTOR(Actor) Actor->SetActorEnableCollision(false); Actor->SetActorHiddenInGame(true); Actor->SetActorTickEnabled(false);
-#define ENABLE_ACTOR(Actor) Actor->SetActorEnableCollision(true); Actor->SetActorHiddenInGame(false); Actor->SetActorTickEnabled(true);
+#define SET_ACTOR_ENABLED(Actor, Value) Actor->SetActorEnableCollision(Value); Actor->SetActorHiddenInGame(!Value); Actor->SetActorTickEnabled(Value);

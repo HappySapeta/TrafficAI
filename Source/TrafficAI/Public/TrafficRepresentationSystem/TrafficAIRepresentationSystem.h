@@ -40,9 +40,16 @@ public:
 	void DebugClearInstances();
 	
 	void GenerateInstances(FTrafficRepresentation Distribution, const TArray<FTransform>& Transforms, int MaxCount);
- 
-protected:
 
+protected:
+	
+	virtual void BeginPlay() override;
+
+public:
+	
+	virtual void Tick(float DeltaSeconds) override;
+
+private:
 	UPROPERTY()
 	TArray<AActor*> Dummies;
 
@@ -51,11 +58,27 @@ protected:
 
 	UPROPERTY(EditAnywhere)
 	FTrafficRepresentation SampleDistribution;
-
-private:
-
+	
 	UPROPERTY(Transient)
 	TArray<AActor*> ActorInstances;
+
+	TArray<FTransform> InstanceTransforms;
+
+	UPROPERTY()
+	AActor* LocalPlayer;
+
+	UPROPERTY(EditAnywhere)
+	TObjectPtr<UMaterialInstance> ISMC_Material;
+
+	// Actor Range
+	UPROPERTY(EditAnywhere)
+	FFloatRange L1_Range;
+
+	// ISMC Range
+	UPROPERTY(EditAnywhere)
+	FFloatRange L0_Range;
+
+	UPROPERTY(EditAnywhere)
+	int NumberOfInstances;
 	
-	int InstanceCount = 0;
 };
