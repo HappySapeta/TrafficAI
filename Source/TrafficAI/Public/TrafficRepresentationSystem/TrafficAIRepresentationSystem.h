@@ -5,80 +5,34 @@
 #include "CoreMinimal.h"
 #include "TrafficAIRepresentationSystem.generated.h"
 
-USTRUCT(BlueprintType)
-struct FTrafficRepresentation
-{
-	GENERATED_BODY()
-	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	TObjectPtr<UStaticMesh> StaticMesh;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	TSubclassOf<AActor> Dummy;
-
-	// Final proportion values are normalized.
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (UIMin = 0.0, UIMax = 1.0, ClampMin = 0.0, ClampMax = 0.0))
-	float Proportion;
-};
-
 /**
- * 
+ * Actor responsible the visual representation of vehicles and will handle spawning of actors as well as static mesh instances.
  */
-UCLASS()
-class TRAFFICAI_API ATrafficAIRepresentationSystem : public AActor
+UCLASS(config = Game, DefaultConfig)
+class TRAFFICAI_API UTrafficAIRepresentationSystem : public UWorldSubsystem
 {
 	GENERATED_BODY()
 
 public:
 	
-	ATrafficAIRepresentationSystem();
+	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 
-	UFUNCTION(BlueprintCallable, CallInEditor)
-	void DebugGenerateRandomInstances();
-
-	UFUNCTION(BlueprintCallable, CallInEditor)
-	void DebugClearInstances();
-	
-	void GenerateInstances(FTrafficRepresentation Distribution, const TArray<FTransform>& Transforms, int MaxCount);
+	void AddInstance(const UStaticMesh* Mesh, const TSubclassOf<AActor> Dummy, const FTransform& Transform);
 
 protected:
-	
-	virtual void BeginPlay() override;
 
-public:
+	// Time interval before spawning the next batch of actors.
+	UPROPERTY(Config, EditAnywhere, Category = "Representation System", meta = (TitleProperty = "Spawn Delay"))
+	float SpawnDelay = 1.0f;
 	
-	virtual void Tick(float DeltaSeconds) override;
-
-private:
 	UPROPERTY()
 	TArray<AActor*> Dummies;
 
 	UPROPERTY()
-	UInstancedStaticMeshComponent* ISMC;
+	TObjectPtr<class ATrafficAIVisualizer> Visualizer;
 
-	UPROPERTY(EditAnywhere)
-	FTrafficRepresentation SampleDistribution;
-	
-	UPROPERTY(Transient)
-	TArray<AActor*> ActorInstances;
+private:
 
-	TArray<FTransform> InstanceTransforms;
-
-	UPROPERTY()
-	AActor* LocalPlayer;
-
-	UPROPERTY(EditAnywhere)
-	TObjectPtr<UMaterialInstance> ISMC_Material;
-
-	// Actor Range
-	UPROPERTY(EditAnywhere)
-	FFloatRange L1_Range;
-
-	// ISMC Range
-	UPROPERTY(EditAnywhere)
-	FFloatRange L0_Range;
-
-	UPROPERTY(EditAnywhere)
-	int NumberOfInstances;
+	FTimerHandle SpawnTimer;
 	
 };
