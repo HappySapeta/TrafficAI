@@ -4,7 +4,6 @@
 
 #include "TrafficAICommon.h"
 #include "Components/InstancedStaticMeshComponent.h"
-#include "Kismet/GameplayStatics.h"
 #include "TrafficRepresentationSystem/TrafficAIVisualizer.h"
 
 void UTrafficAIRepresentationSystem::Initialize(FSubsystemCollectionBase& Collection)
@@ -16,13 +15,8 @@ void UTrafficAIRepresentationSystem::Initialize(FSubsystemCollectionBase& Collec
 #endif
 	ISMCVisualizer = World->SpawnActor<ATrafficAIVisualizer>(SpawnParameters);
 
-	FTimerDelegate ProcessSpawnRequestsDelegate;
-	ProcessSpawnRequestsDelegate.BindUObject(this, &UTrafficAIRepresentationSystem::ProcessSpawnRequests);
-	World->GetTimerManager().SetTimer(SpawnTimer, ProcessSpawnRequestsDelegate, SpawnInterval, true, 1.0f);
-
-	FTimerDelegate UpdateLODDelegate;
-	UpdateLODDelegate.BindUObject(this, &UTrafficAIRepresentationSystem::UpdateLODs);
-	World->GetTimerManager().SetTimer(LODUpdateTimer, UpdateLODDelegate, UpdateInterval, true, 1.0f);
+	World->GetTimerManager().SetTimer(SpawnTimer, FTimerDelegate::CreateUObject(this, &UTrafficAIRepresentationSystem::ProcessSpawnRequests), SpawnInterval, true, 1.0f);
+	World->GetTimerManager().SetTimer(LODUpdateTimer, FTimerDelegate::CreateUObject(this, &UTrafficAIRepresentationSystem::UpdateLODs), UpdateInterval, true, 1.0f);
 }
 
 void UTrafficAIRepresentationSystem::SpawnDeferred(const FTrafficAISpawnRequest& SpawnRequest)
