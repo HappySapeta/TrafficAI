@@ -8,12 +8,16 @@ ATrafficAIVisualizer::ATrafficAIVisualizer()
 	PrimaryActorTick.bCanEverTick = false;
 }
 
-int32 ATrafficAIVisualizer::AddInstance(UStaticMesh* Mesh, const FTransform& Transform)
+int32 ATrafficAIVisualizer::AddInstance(UStaticMesh* Mesh, UMaterialInstance* Material, const FTransform& Transform)
 {
 	if(!ISMCMap.Contains(Mesh))
 	{
 		UInstancedStaticMeshComponent* NewISMC = Cast<UInstancedStaticMeshComponent>(AddComponentByClass(UInstancedStaticMeshComponent::StaticClass(), false, FTransform::Identity, false));
 		NewISMC->SetStaticMesh(Mesh);
+		if(IsValid(Material))
+		{
+			NewISMC->SetMaterial(0, Material);
+		}
 		ISMCMap.Add(Mesh, NewISMC);
 	}
 	
@@ -28,7 +32,7 @@ void ATrafficAIVisualizer::RemoveInstance(UStaticMesh* Mesh, const int32 Instanc
 	}
 }
 
-const UInstancedStaticMeshComponent* ATrafficAIVisualizer::GetISMC(const UStaticMesh* Mesh) const
+UInstancedStaticMeshComponent* ATrafficAIVisualizer::GetISMC(const UStaticMesh* Mesh) const
 {
 	if(ISMCMap.Contains(Mesh))
 	{

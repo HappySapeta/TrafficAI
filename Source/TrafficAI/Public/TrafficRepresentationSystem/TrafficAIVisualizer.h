@@ -11,21 +11,25 @@ class TRAFFICAI_API ATrafficAIVisualizer : public AActor
 {
 	GENERATED_BODY()
 
+	friend class UTrafficAIRepresentationSystem;
+
 public:
 	
 	// Sets default values for this actor's properties
 	ATrafficAIVisualizer();
-
+	
+private:
+	
 	/**
 	 * Add an instance of Mesh to an Instanced Static Mesh Renderer.
 	 * @return Index of the new Instance.
 	 */
-	int32 AddInstance(UStaticMesh* Mesh, const FTransform& Transform = FTransform::Identity);
+	int32 AddInstance(UStaticMesh* Mesh, UMaterialInstance* Material = nullptr, const FTransform& Transform = FTransform::Identity);
 
 	void RemoveInstance(UStaticMesh* Mesh, const int32 InstanceIndex);
 
 	// Get an InstancedStaticMeshComponent that renders a specific Mesh. 
-	const UInstancedStaticMeshComponent* GetISMC(const UStaticMesh* Mesh) const;
+	UInstancedStaticMeshComponent* GetISMC(const UStaticMesh* Mesh) const;
 
 private:
 

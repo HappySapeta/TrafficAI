@@ -5,13 +5,22 @@
 #include "CoreMinimal.h"
 #include "TrafficAIRepresentationSystem.generated.h"
 
+USTRUCT(BlueprintType)
 struct TRAFFICAI_API FTrafficAISpawnRequest
 {
-	UStaticMesh* Mesh = nullptr;
+	GENERATED_BODY()
 	
-	TSubclassOf<AActor> Dummy = nullptr;
-	
-	FTransform Transform = FTransform::Identity;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UStaticMesh* Mesh;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UMaterialInstance* Material;	
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TSubclassOf<AActor> Dummy;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FTransform Transform;
 };
 
 struct TRAFFICAI_API FTrafficAIEntity
@@ -34,7 +43,10 @@ class TRAFFICAI_API UTrafficAIRepresentationSystem : public UGameInstanceSubsyst
 public:
 
 	UFUNCTION(BlueprintCallable)
-	virtual void SpawnDeferred(UStaticMesh* Mesh, TSubclassOf<AActor> Dummy, const FTransform& Transform);
+	void SpawnDeferred(const FTrafficAISpawnRequest& SpawnRequest);
+
+	UFUNCTION(BlueprintCallable)
+	void SetFocus(const AActor* Actor) { FocusActor = Actor; }
 
 protected:
 
@@ -43,6 +55,8 @@ protected:
 	virtual void Deinitialize() override;
 
 	virtual void ProcessSpawnRequests();
+
+	void UpdateLODs();
 	
 protected:
 	
@@ -53,21 +67,38 @@ protected:
 
 private:
 
-	// Amount of Entities spawned in a single batch.
-	UPROPERTY(Config, EditAnywhere, Category = "Representation System", meta = (TitleProperty = "Spawn Batch Size"))
+	// Amount of Entities updated in a single batch.
+	UPROPERTY(Config, EditAnywhere, Category = "Representation System", meta = (TitleProperty = "Entity Update Batch Size"))
 	uint8 BatchSize = 100;
 
 	// Time interval before spawning the next batch of Entities.
 	UPROPERTY(Config, EditAnywhere, Category = "Representation System", meta = (TitleProperty = "Spawn Interval"))
 	float SpawnInterval = 0.1f;
 
+	// Time interval before the LODs of Entities are updated.
+	UPROPERTY(Config, EditAnywhere, Category = "Representation System", meta = (TitleProperty = "LOD Update Interval"))
+	float UpdateInterval = 0.1f;
+
 	// Maximum number of Entities that can be spawned.
 	UPROPERTY(Config, EditAnywhere, Category = "Representation System", meta = (TitleProperty = "Max Instances"))
 	int MaxInstances = 500;
+
+	// Range in which Dummies become relevant.
+	UPROPERTY(Config, EditAnywhere, Category = "Representation System", meta = (TitleProperty = "Dummy LOD Range"))
+	FFloatRange DummyRange;
+
+	// Range in which Static Mesh Instances become relevant.
+	UPROPERTY(Config, EditAnywhere, Category = "Representation System", meta = (TitleProperty = "Static Mesh LOD Range"))
+	FFloatRange StaticMeshRange;
+	
+	UPROPERTY(Transient)
+	const AActor* FocusActor;
 	
 private:
 
 	FTimerHandle SpawnTimer;
+
+	FTimerHandle LODUpdateTimer;
 
 	TArray<FTrafficAISpawnRequest> SpawnRequests;
 };
