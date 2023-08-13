@@ -12,7 +12,9 @@ int32 ATrafficAIVisualizer::AddInstance(UStaticMesh* Mesh, const FTransform& Tra
 {
 	if(!ISMCMap.Contains(Mesh))
 	{
-		ISMCMap.Add(Mesh, NewObject<UInstancedStaticMeshComponent>(this));
+		UInstancedStaticMeshComponent* NewISMC = Cast<UInstancedStaticMeshComponent>(AddComponentByClass(UInstancedStaticMeshComponent::StaticClass(), false, FTransform::Identity, false));
+		NewISMC->SetStaticMesh(Mesh);
+		ISMCMap.Add(Mesh, NewISMC);
 	}
 	
 	return ISMCMap[Mesh]->AddInstance(Transform, true);
