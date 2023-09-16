@@ -81,4 +81,4 @@ void FTrafficAIModule::UnregisterSettings()
 	}
 }
 
-IMPLEMENT_MODULE(FTrafficAIModule, TrafficAI);
+IMPLEMENT_PRIMARY_GAME_MODULE(FTrafficAIModule, TrafficAI, "TrafficAI");

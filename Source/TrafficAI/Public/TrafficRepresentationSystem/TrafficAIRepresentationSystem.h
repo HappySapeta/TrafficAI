@@ -2,6 +2,7 @@
 
 #pragma once
 #include "CoreMinimal.h"
+#include "UObject/WeakFieldPtr.h"
 #include "TrafficAIRepresentationSystem.generated.h"
 
 // Information required to spawn an Entity.
@@ -31,12 +32,14 @@ struct TRAFFICAI_API FTrafficAISpawnRequest
 // Simulated Entity
 struct TRAFFICAI_API FTrafficAIEntity
 {
+	// Mesh used for the lowest LOD.
 	UStaticMesh* Mesh = nullptr;
 	
-	// Index of the Instanced Static Mesh associated with the Entity.
-	// This, combined with the Mesh reference, is required to uniquely identify the Entity.
+	// Index of the Instanced Static Mesh associated with this Entity.
+	// The InstanceIndex combined with the Mesh reference can be used to uniquely identify this Entity.
 	int32 InstanceIndex = -1;
-	
+
+	// Actor used for highest the highest LOD.
 	AActor* Dummy = nullptr;
 };
 
@@ -44,21 +47,31 @@ struct TRAFFICAI_API FTrafficAIEntity
  * Subsystem responsible for spawning Entities and handling the seamless transition of LODs.
  */
 UCLASS(config = Game, DefaultConfig)
-class TRAFFICAI_API UTrafficAIRepresentationSystem : public UGameInstanceSubsystem
+class TRAFFICAI_API UTrafficAIRepresentationSystem : public UWorldSubsystem
 {
 	GENERATED_BODY()
 
 public:
 
+	UTrafficAIRepresentationSystem();
+	
 	// Push a request to spawn an Entity. The request is not guaranteed to be processed immediately.
 	UFUNCTION(BlueprintCallable)
 	void SpawnDeferred(const FTrafficAISpawnRequest& SpawnRequest);
 
 	// Assign an actor whose distance is used for determining the appropriate Level of Detail to be used.
-	// Ideally, this would be the local player pawn.
 	UFUNCTION(BlueprintCallable)
-	void SetFocus(const AActor* Actor) { FocusActor = Actor; }
+	void SetFocus(const AActor* Actor) { FocussedActor = Actor; }
 
+	// Get a weak pointer to an array of all entities.
+	TWeakPtr<TArray<FTrafficAIEntity>, ESPMode::ThreadSafe> GetEntities() { return Entities; }
+
+	// Reset SharedPtr to Entities.
+	virtual void BeginDestroy() override;
+
+	// Create this Subsystem only if playing in PIE or in game.
+	virtual bool ShouldCreateSubsystem(UObject* Outer) const override;
+	
 protected:
 
 	// Spawn an ISMCVisualizer and set timers.
@@ -70,12 +83,12 @@ protected:
 	// Process the Spawn queue in batches.
 	virtual void ProcessSpawnRequests();
 
-	// Perform LOD swaps based on the distance from the FocusActor.
+	// Perform LOD swaps based on the distance from the FocussedActor.
 	void UpdateLODs();
-	
+
 protected:
 
-	TArray<FTrafficAIEntity> Entities;
+	TSharedPtr<TArray<FTrafficAIEntity>, ESPMode::ThreadSafe> Entities;
 
 	UPROPERTY()
 	TObjectPtr<class ATrafficAIVisualizer> ISMCVisualizer;
@@ -105,14 +118,14 @@ private:
 	// Range in which Static Mesh Instances become relevant.
 	UPROPERTY(Config, EditAnywhere, Category = "Representation System", meta = (TitleProperty = "Static Mesh LOD Range"))
 	FFloatRange StaticMeshRange;
-	
+
+	// This actor's distance is used to determine the transition between LODs.
 	UPROPERTY(Transient)
-	const AActor* FocusActor;
+	const AActor* FocussedActor;
 	
 private:
 
 	FTimerHandle SpawnTimer;
-
 	FTimerHandle LODUpdateTimer;
 
 	TArray<FTrafficAISpawnRequest> SpawnRequests;
