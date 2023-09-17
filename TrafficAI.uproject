@@ -21,6 +21,10 @@
 		{
 			"Name": "AStarPathFinder",
 			"Enabled": true
+		},
+		{
+			"Name": "ChaosVehiclesPlugin",
+			"Enabled": true
 		}
 	]
 }
