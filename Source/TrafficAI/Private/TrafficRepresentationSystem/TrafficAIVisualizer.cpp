@@ -2,6 +2,7 @@
 
 #include "TrafficRepresentationSystem/TrafficAIVisualizer.h"
 #include "Components/InstancedStaticMeshComponent.h"
+#include "Materials/MaterialInstance.h"
 
 ATrafficAIVisualizer::ATrafficAIVisualizer()
 {

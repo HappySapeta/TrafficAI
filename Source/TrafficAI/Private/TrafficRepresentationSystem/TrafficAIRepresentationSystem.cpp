@@ -2,9 +2,19 @@
 
 #include "TrafficRepresentationSystem/TrafficAIRepresentationSystem.h"
 
+#if UE_EDITOR
+#include "Editor.h"
+#endif
+
 #include "TrafficAICommon.h"
+#include "GameFramework/PlayerController.h"
 #include "Components/InstancedStaticMeshComponent.h"
 #include "TrafficRepresentationSystem/TrafficAIVisualizer.h"
+
+UTrafficAIRepresentationSystem::UTrafficAIRepresentationSystem()
+{
+	Entities = MakeShared<TArray<FTrafficAIEntity>>();
+}
 
 void UTrafficAIRepresentationSystem::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -21,7 +31,7 @@ void UTrafficAIRepresentationSystem::Initialize(FSubsystemCollectionBase& Collec
 
 void UTrafficAIRepresentationSystem::SpawnDeferred(const FTrafficAISpawnRequest& SpawnRequest)
 {
-	if(ensureMsgf(Entities.Num() < MaxInstances, TEXT("[UTrafficAIRepresentationSystem::AddInstance] Spawn request was declined. Maximum capacity has been reached.")))
+	if(ensureMsgf(Entities->Num() < MaxInstances, TEXT("[UTrafficAIRepresentationSystem::AddInstance] Spawn request was declined. Maximum capacity has been reached.")))
 	{
 		SpawnRequests.Push(SpawnRequest);
 	}
@@ -39,15 +49,16 @@ void UTrafficAIRepresentationSystem::ProcessSpawnRequests()
 	while(SpawnRequests.Num() > 0 && NumRequestsProcessed < BatchSize)
 	{
 		const FTrafficAISpawnRequest& Request = SpawnRequests[0];
-		if(Entities.Num() >= MaxInstances)
+		if(Entities->Num() >= MaxInstances)
 		{
 			break;
 		}
 		
 		if(AActor* NewActor = GetWorld()->SpawnActor(Request.Dummy, &Request.Transform, SpawnParameters))
 		{
+			checkf(ISMCVisualizer, TEXT("[UTrafficAIRepresentationSystem][ProcessSpawnRequests] Reference to the ISMCVisualizer is null."))
 			const int32 ISMIndex = ISMCVisualizer->AddInstance(Request.Mesh, Request.Material, Request.Transform); 
-			Entities.Add({Request.Mesh, ISMIndex, NewActor});
+			Entities->Add({Request.Mesh, ISMIndex, NewActor});
 			SET_ACTOR_ENABLED(NewActor, false);
 		}
 
@@ -59,36 +70,54 @@ void UTrafficAIRepresentationSystem::ProcessSpawnRequests()
 void UTrafficAIRepresentationSystem::UpdateLODs()
 {
 	static int EntityIndex = 0;
-	if(EntityIndex >= Entities.Num())
+	if(EntityIndex >= Entities->Num())
 	{
 		EntityIndex = 0;
 	}
-	
-	if(ensureMsgf(IsValid(FocusActor), TEXT("Focus Actor is not valid. LODs will not update.")))
+
+	if(!IsValid(FocussedActor))
 	{
-		const FVector& FocusLocation = FocusActor->GetActorLocation();
-		int CurrentBatchSize = 0;
-		while(EntityIndex < Entities.Num() && CurrentBatchSize < BatchSize)
+		FocussedActor = GetWorld()->GetFirstPlayerController()->GetPawn();
+		if(!ensureMsgf(IsValid(FocussedActor), TEXT("[UTrafficAIRepresentationSystem::UpdateLODs] No focussed actor has been set.")))
 		{
-			const FTrafficAIEntity& Entity = Entities[EntityIndex];
-			
-			const float Distance = FVector::Distance(FocusLocation, Entity.Dummy->GetActorLocation());
-
-			const bool bIsDummyRelevant = DummyRange.Contains(Distance);
-			const bool bIsMeshRelevant = StaticMeshRange.Contains(Distance);
-
-			SET_ACTOR_ENABLED(Entity.Dummy, bIsDummyRelevant);
-
-			const FVector& NewScale = bIsMeshRelevant ? FVector::OneVector : FVector::ZeroVector;
-			FTransform MeshTransform = Entity.Dummy->GetActorTransform();
-			MeshTransform.SetScale3D(NewScale);
-			
-			ISMCVisualizer->GetISMC(Entity.Mesh)->UpdateInstanceTransform(Entity.InstanceIndex, MeshTransform, true, true, false);
-			
-			++EntityIndex;
-			++CurrentBatchSize;
+			return;
 		}
 	}
+	
+	const FVector& FocusLocation = FocussedActor->GetActorLocation();
+	int CurrentBatchSize = 0;
+	while(EntityIndex < Entities->Num() && CurrentBatchSize < BatchSize)
+	{
+		const FTrafficAIEntity& Entity = Entities->operator[](EntityIndex);
+		const float Distance = FVector::Distance(FocusLocation, Entity.Dummy->GetActorLocation());
+		const bool bIsDummyRelevant = DummyRange.Contains(Distance);
+		const bool bIsMeshRelevant = StaticMeshRange.Contains(Distance);
+
+		SET_ACTOR_ENABLED(Entity.Dummy, bIsDummyRelevant);
+
+		const FVector& NewScale = bIsMeshRelevant ? FVector::OneVector : FVector::ZeroVector;
+		FTransform MeshTransform = Entity.Dummy->GetActorTransform();
+		MeshTransform.SetScale3D(NewScale);
+			
+		ISMCVisualizer->GetISMC(Entity.Mesh)->UpdateInstanceTransform(Entity.InstanceIndex, MeshTransform, true, true, false);
+			
+		++EntityIndex;
+		++CurrentBatchSize;
+	}
+}
+
+void UTrafficAIRepresentationSystem::BeginDestroy()
+{
+	Entities.Reset();
+	Super::BeginDestroy();
+}
+
+bool UTrafficAIRepresentationSystem::ShouldCreateSubsystem(UObject* Outer) const
+{
+#if WITH_EDITOR
+	return (GEditor && GEditor->IsPlaySessionInProgress());
+#endif
+	return true;
 }
 
 void UTrafficAIRepresentationSystem::Deinitialize()
