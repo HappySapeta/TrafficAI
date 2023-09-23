@@ -10,17 +10,18 @@ class FTrafficAIModule : public FDefaultGameModuleImpl
 {
 public:
 	
+	virtual bool SupportsDynamicReloading() override;
+
+#if UE_EDITOR
 	virtual void StartupModule() override;
 
 	virtual void ShutdownModule() override;
 
-	virtual bool SupportsDynamicReloading() override;
-
 private:
-	
 	bool HandleSettingsSaved();
 
 	void RegisterSettings();
 
 	void UnregisterSettings();
+#endif
 };

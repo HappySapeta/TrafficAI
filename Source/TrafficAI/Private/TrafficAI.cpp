@@ -2,11 +2,21 @@
 
 #include "TrafficAI.h"
 
+#if UE_EDITOR
 #include "ISettingsContainer.h"
 #include "ISettingsModule.h"
 #include "ISettingsSection.h"
+#endif
+
 #include "Modules/ModuleManager.h"
 #include "TrafficRepresentationSystem/TrafficAIRepresentationSystem.h"
+
+bool FTrafficAIModule::SupportsDynamicReloading()
+{
+	return true;
+}
+
+#if UE_EDITOR
 
 void FTrafficAIModule::StartupModule()
 {
@@ -19,11 +29,6 @@ void FTrafficAIModule::ShutdownModule()
 	{
 		UnregisterSettings();
 	}
-}
-
-bool FTrafficAIModule::SupportsDynamicReloading()
-{
-	return true;
 }
 
 bool FTrafficAIModule::HandleSettingsSaved()
@@ -81,4 +86,6 @@ void FTrafficAIModule::UnregisterSettings()
 	}
 }
 
-IMPLEMENT_PRIMARY_GAME_MODULE(FTrafficAIModule, TrafficAI, "TrafficAI");
+#endif
+
+IMPLEMENT_PRIMARY_GAME_MODULE(FTrafficAIModule, TrafficAI, "TrafficAI")
