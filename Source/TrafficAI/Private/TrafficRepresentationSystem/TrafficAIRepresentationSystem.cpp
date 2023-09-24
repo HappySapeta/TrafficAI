@@ -7,6 +7,7 @@
 #endif
 
 #include "TrafficAICommon.h"
+#include "Components/HierarchicalInstancedStaticMeshComponent.h"
 #include "GameFramework/PlayerController.h"
 #include "Components/InstancedStaticMeshComponent.h"
 #include "TrafficRepresentationSystem/TrafficAIVisualizer.h"
