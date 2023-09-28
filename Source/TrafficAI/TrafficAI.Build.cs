@@ -10,9 +10,12 @@ public class TrafficAI : ModuleRules
 	
         PublicIncludePaths.AddRange(new string[] { "TrafficAI/Classes" });
         
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "AStarPathFinder" });
+		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "AStarPathFinder", "ChaosVehicles" });
 
-		PrivateDependencyModuleNames.AddRange(new string[] { "UnrealEd" });
+		if (Target.bBuildEditor)
+		{
+			PrivateDependencyModuleNames.Add("UnrealEd");
+		}
 
 		// Uncomment if you are using Slate UI
 		// PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });

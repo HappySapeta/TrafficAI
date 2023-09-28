@@ -1,3 +1,6 @@
 [submodule "Plugins/AStarPathFinder"]
 	path = Plugins/AStarPathFinder
 	url = https://github.com/AnupamSahu/AStarPathFinder
+[submodule "Plugins/Ripple"]
+	path = Plugins/Ripple
+	url = https://github.com/AnupamSahu/Ripple

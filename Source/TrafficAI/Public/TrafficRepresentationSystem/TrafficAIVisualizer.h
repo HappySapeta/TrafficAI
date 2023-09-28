@@ -29,10 +29,10 @@ private:
 	void RemoveInstance(UStaticMesh* Mesh, const int32 InstanceIndex);
 
 	// Get an InstancedStaticMeshComponent that renders a specific Mesh. 
-	UInstancedStaticMeshComponent* GetISMC(const UStaticMesh* Mesh) const;
+	UHierarchicalInstancedStaticMeshComponent* GetISMC(const UStaticMesh* Mesh) const;
 
 private:
 
 	UPROPERTY()
-	TMap<UStaticMesh*, UInstancedStaticMeshComponent*> ISMCMap;
+	TMap<UStaticMesh*, UHierarchicalInstancedStaticMeshComponent*> ISMCMap;
 };

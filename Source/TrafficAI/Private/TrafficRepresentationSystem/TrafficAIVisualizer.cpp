@@ -1,7 +1,7 @@
 ﻿// Copyright Anupam Sahu. All Rights Reserved.
 
 #include "TrafficRepresentationSystem/TrafficAIVisualizer.h"
-#include "Components/InstancedStaticMeshComponent.h"
+#include "Components/HierarchicalInstancedStaticMeshComponent.h"
 #include "Materials/MaterialInstance.h"
 
 ATrafficAIVisualizer::ATrafficAIVisualizer()
@@ -13,7 +13,7 @@ int32 ATrafficAIVisualizer::AddInstance(UStaticMesh* Mesh, UMaterialInstance* Ma
 {
 	if(!ISMCMap.Contains(Mesh))
 	{
-		UInstancedStaticMeshComponent* NewISMC = Cast<UInstancedStaticMeshComponent>(AddComponentByClass(UInstancedStaticMeshComponent::StaticClass(), false, FTransform::Identity, false));
+		UHierarchicalInstancedStaticMeshComponent* NewISMC = Cast<UHierarchicalInstancedStaticMeshComponent>(AddComponentByClass(UHierarchicalInstancedStaticMeshComponent::StaticClass(), false, FTransform::Identity, false));
 		NewISMC->SetStaticMesh(Mesh);
 		if(IsValid(Material))
 		{
@@ -33,7 +33,7 @@ void ATrafficAIVisualizer::RemoveInstance(UStaticMesh* Mesh, const int32 Instanc
 	}
 }
 
-UInstancedStaticMeshComponent* ATrafficAIVisualizer::GetISMC(const UStaticMesh* Mesh) const
+UHierarchicalInstancedStaticMeshComponent* ATrafficAIVisualizer::GetISMC(const UStaticMesh* Mesh) const
 {
 	if(ISMCMap.Contains(Mesh))
 	{

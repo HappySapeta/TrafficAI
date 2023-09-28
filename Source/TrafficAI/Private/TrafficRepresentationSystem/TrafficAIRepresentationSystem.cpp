@@ -7,8 +7,8 @@
 #endif
 
 #include "TrafficAICommon.h"
+#include "Components/HierarchicalInstancedStaticMeshComponent.h"
 #include "GameFramework/PlayerController.h"
-#include "Components/InstancedStaticMeshComponent.h"
 #include "TrafficRepresentationSystem/TrafficAIVisualizer.h"
 
 UTrafficAIRepresentationSystem::UTrafficAIRepresentationSystem()
@@ -25,8 +25,8 @@ void UTrafficAIRepresentationSystem::Initialize(FSubsystemCollectionBase& Collec
 #endif
 	ISMCVisualizer = World->SpawnActor<ATrafficAIVisualizer>(SpawnParameters);
 
-	World->GetTimerManager().SetTimer(SpawnTimer, FTimerDelegate::CreateUObject(this, &UTrafficAIRepresentationSystem::ProcessSpawnRequests), SpawnInterval, true, 1.0f);
-	World->GetTimerManager().SetTimer(LODUpdateTimer, FTimerDelegate::CreateUObject(this, &UTrafficAIRepresentationSystem::UpdateLODs), UpdateInterval, true, 1.0f);
+	World->GetTimerManager().SetTimer(SpawnTimer, FTimerDelegate::CreateUObject(this, &UTrafficAIRepresentationSystem::ProcessSpawnRequests), 0.1f, true, 1.0f);
+	World->GetTimerManager().SetTimer(LODUpdateTimer, FTimerDelegate::CreateUObject(this, &UTrafficAIRepresentationSystem::UpdateLODs), LODUpdateInterval, true, 1.0f);
 }
 
 void UTrafficAIRepresentationSystem::SpawnDeferred(const FTrafficAISpawnRequest& SpawnRequest)
@@ -46,7 +46,7 @@ void UTrafficAIRepresentationSystem::ProcessSpawnRequests()
 #endif
 
 	int NumRequestsProcessed = 0;
-	while(SpawnRequests.Num() > 0 && NumRequestsProcessed < BatchSize)
+	while(SpawnRequests.Num() > 0 && NumRequestsProcessed < SpawnBatchSize)
 	{
 		const FTrafficAISpawnRequest& Request = SpawnRequests[0];
 		if(Entities->Num() >= MaxInstances)
@@ -86,7 +86,7 @@ void UTrafficAIRepresentationSystem::UpdateLODs()
 	
 	const FVector& FocusLocation = FocussedActor->GetActorLocation();
 	int CurrentBatchSize = 0;
-	while(EntityIndex < Entities->Num() && CurrentBatchSize < BatchSize)
+	while(EntityIndex < Entities->Num() && CurrentBatchSize < SpawnBatchSize)
 	{
 		const FTrafficAIEntity& Entity = Entities->operator[](EntityIndex);
 		const float Distance = FVector::Distance(FocusLocation, Entity.Dummy->GetActorLocation());
