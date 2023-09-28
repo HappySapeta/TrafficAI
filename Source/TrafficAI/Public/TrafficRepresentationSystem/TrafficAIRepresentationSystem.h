@@ -95,28 +95,32 @@ protected:
 
 private:
 
-	// Amount of Entities updated in a single batch.
-	UPROPERTY(Config, EditAnywhere, Category = "Representation System", meta = (TitleProperty = "Entity Update Batch Size"))
-	uint8 BatchSize = 100;
+	// Maximum number of Entities that can be spawned.
+	UPROPERTY(Config, EditAnywhere, Category = "Representation System | Spawn Settings", meta = (TitleProperty = "Max Instances", ClampMin = 0, UIMin = 0))
+	int MaxInstances = 1000;
+	
+	// Amount of Entities spawned in a single batch.
+	UPROPERTY(Config, EditAnywhere, Category = "Representation System | Spawn Settings", meta = (TitleProperty = "Entity Spawn Batch Size", ClampMin = 1, UIMin = 1))
+	uint8 SpawnBatchSize = 100;
 
-	// Time interval before spawning the next batch of Entities.
-	UPROPERTY(Config, EditAnywhere, Category = "Representation System", meta = (TitleProperty = "Spawn Interval"))
+	// Time interval before a batch of entities is spawned.
+	UPROPERTY(Config, EditAnywhere, Category = "Representation System | Spawn Settings", meta = (TitleProperty = "LOD Update Interval", ClampMin = 0, UIMin = 0))
 	float SpawnInterval = 0.1f;
 
-	// Time interval before the LODs of Entities are updated.
-	UPROPERTY(Config, EditAnywhere, Category = "Representation System", meta = (TitleProperty = "LOD Update Interval"))
-	float UpdateInterval = 0.1f;
+	// Amount of Entities updated in a single batch.
+	UPROPERTY(Config, EditAnywhere, Category = "Representation System | Update Settings", meta = (TitleProperty = "Entity Update Batch Size", ClampMin = 1, UIMin = 1))
+	uint8 LODUpdateBatchSize = 100;
 
-	// Maximum number of Entities that can be spawned.
-	UPROPERTY(Config, EditAnywhere, Category = "Representation System", meta = (TitleProperty = "Max Instances"))
-	int MaxInstances = 500;
+	// Time interval before the LODs of Entities are updated.
+	UPROPERTY(Config, EditAnywhere, Category = "Representation System | Update Settings", meta = (TitleProperty = "LOD Update Interval", ClampMin = 0, UIMin = 0))
+	float LODUpdateInterval = 0.03333f;
 
 	// Range in which Dummies become relevant.
-	UPROPERTY(Config, EditAnywhere, Category = "Representation System", meta = (TitleProperty = "Dummy LOD Range"))
+	UPROPERTY(Config, EditAnywhere, Category = "Representation System | Update Settings", meta = (TitleProperty = "Dummy LOD Range"))
 	FFloatRange DummyRange;
 
 	// Range in which Static Mesh Instances become relevant.
-	UPROPERTY(Config, EditAnywhere, Category = "Representation System", meta = (TitleProperty = "Static Mesh LOD Range"))
+	UPROPERTY(Config, EditAnywhere, Category = "Representation System | Update Settings", meta = (TitleProperty = "Static Mesh LOD Range"))
 	FFloatRange StaticMeshRange;
 
 	// This actor's distance is used to determine the transition between LODs.
