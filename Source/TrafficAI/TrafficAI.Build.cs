@@ -10,7 +10,7 @@ public class TrafficAI : ModuleRules
 	
         PublicIncludePaths.AddRange(new string[] { "TrafficAI/Classes" });
         
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "AStarPathFinder" });
+		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "AStarPathFinder", "ChaosVehicles" });
 
 		if (Target.bBuildEditor)
 		{
