@@ -3,26 +3,40 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "WheeledVehiclePawn.h"
 #include "TrafficAIVehicle.generated.h"
 
+USTRUCT(Blueprintable, BlueprintType)
+struct TRAFFICAI_API FComponentWrapper
+{
+	GENERATED_BODY()
+
+	UPROPERTY(VisibleAnywhere)
+	class USphereComponent* SphereComponent;
+};
+
 UCLASS()
-class TRAFFICAI_API ATrafficAIVehicle : public AWheeledVehiclePawn
+class TRAFFICAI_API ATrafficAIVehicle : public APawn
 {
 	GENERATED_BODY()
 
 public:
+	
 	// Sets default values for this pawn's properties
 	ATrafficAIVehicle();
+	
+	void SetupWheel(const char* Suffix);
 
 protected:
-	// Called when the game starts or when spawned
-	virtual void BeginPlay() override;
 
-public:
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
+	UPROPERTY(VisibleAnywhere, Category = "Vehicle")
+	TObjectPtr<USkeletalMeshComponent> VehicleMesh;
+	
+	UPROPERTY(VisibleAnywhere)
+	TArray<class USphereComponent*> SphereColliders;
 
-	// Called to bind functionality to input
-	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+	UPROPERTY(EditAnywhere)
+	TArray<class UPhysicsConstraintComponent*> SuspensionConstraints;
+	
+	UPROPERTY(EditAnywhere)
+	TArray<class UPhysicsConstraintComponent*> AxisConstraints;	
 };

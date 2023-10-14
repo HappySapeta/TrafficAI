@@ -1,32 +1,56 @@
 ﻿// Copyright Anupam Sahu. All Rights Reserved.
 
-
 #include "Vehicles/TrafficAIVehicle.h"
-
+#include "Components/SphereComponent.h"
+#include "PhysicsEngine/PhysicsConstraintComponent.h"
 
 // Sets default values
 ATrafficAIVehicle::ATrafficAIVehicle()
 {
-	// Set this pawn to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
+
+	VehicleMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("VehicleMesh"));
+	SetRootComponent(VehicleMesh);
+
+	SetupWheel("WheelFL");
+	SetupWheel("WheelFR");
+	SetupWheel("WheelRL");
+	SetupWheel("WheelRR");
 }
 
-// Called when the game starts or when spawned
-void ATrafficAIVehicle::BeginPlay()
+
+void ATrafficAIVehicle::SetupWheel(const char* Suffix)
 {
-	Super::BeginPlay();
+	USphereComponent* NewSphereCollider = CreateDefaultSubobject<USphereComponent>(*FString::Printf(TEXT("Collider_%hs"), Suffix));
+	NewSphereCollider->SetupAttachment(VehicleMesh);
+		
+	const FString AxisConstraintName = FString::Printf(TEXT("AxisConstraint_%hs"), Suffix);
+	UPhysicsConstraintComponent* NewAxisConstraint = CreateDefaultSubobject<UPhysicsConstraintComponent>(*AxisConstraintName);
+	NewAxisConstraint->SetupAttachment(VehicleMesh);
+	NewAxisConstraint->ComponentName1.ComponentName = *NewSphereCollider->GetName();
+	NewAxisConstraint->ComponentName2.ComponentName = *VehicleMesh->GetName();
+	NewAxisConstraint->SetLinearXLimit(LCM_Free, 0.0f);
+	NewAxisConstraint->SetLinearYLimit(LCM_Free, 0.0f);
+	NewAxisConstraint->SetLinearZLimit(LCM_Free, 0.0f);
+	NewAxisConstraint->SetAngularSwing1Limit(ACM_Locked, 0.0);
+	NewAxisConstraint->SetAngularSwing2Limit(ACM_Free, 0.0);
+	NewAxisConstraint->SetAngularTwistLimit(ACM_Locked, 0.0);
+	NewAxisConstraint->SetupAttachment(NewSphereCollider);
 	
-}
+	const FString SuspensionConstraintName = FString::Printf(TEXT("SuspensionConstraint_%hs"), Suffix);
+	UPhysicsConstraintComponent* NewSuspensionConstraint = CreateDefaultSubobject<UPhysicsConstraintComponent>(*SuspensionConstraintName);
+	NewSuspensionConstraint->SetupAttachment(VehicleMesh);
+	NewSuspensionConstraint->ComponentName1.ComponentName = *NewSphereCollider->GetName();
+	NewSuspensionConstraint->ComponentName2.ComponentName = *VehicleMesh->GetName();
+	NewSuspensionConstraint->SetLinearXLimit(LCM_Locked, 0.0f);
+	NewSuspensionConstraint->SetLinearYLimit(LCM_Locked, 0.0f);
+	NewSuspensionConstraint->SetLinearZLimit(LCM_Limited, 5.0f);
+	NewSuspensionConstraint->SetAngularSwing1Limit(ACM_Free, 0.0);
+	NewSuspensionConstraint->SetAngularSwing2Limit(ACM_Free, 0.0);
+	NewSuspensionConstraint->SetAngularTwistLimit(ACM_Free, 0.0);
+	NewSuspensionConstraint->SetupAttachment(NewSphereCollider);
 
-// Called every frame
-void ATrafficAIVehicle::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
+	SphereColliders.Add(NewSphereCollider);
+	SuspensionConstraints.Add(NewSuspensionConstraint);
+	AxisConstraints.Add(NewAxisConstraint);
 }
-
-// Called to bind functionality to input
-void ATrafficAIVehicle::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
-{
-	Super::SetupPlayerInputComponent(PlayerInputComponent);
-}
-
