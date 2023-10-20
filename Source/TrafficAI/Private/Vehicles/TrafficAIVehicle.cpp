@@ -24,7 +24,6 @@ void ATrafficAIVehicle::SetupWheel(const char* Suffix)
 	USphereComponent* WheelCollider = CreateDefaultSubobject<USphereComponent>(*FString::Printf(TEXT("Collider_%hs"), Suffix));
 	WheelCollider->SetupAttachment(VehicleMesh);
 	WheelCollider->SetSimulatePhysics(true);
-	WheelCollider->SetMassOverrideInKg(NAME_None, 25.0f);
 	WheelCollider->SetEnableGravity(true);
 	WheelCollider->SetCollisionObjectType(ECC_Vehicle);
 	WheelCollider->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);

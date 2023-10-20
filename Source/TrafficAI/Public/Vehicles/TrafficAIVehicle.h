@@ -32,7 +32,7 @@ public:
 protected:
 
 	// The skeletal mesh component representing the vehicle.
-	UPROPERTY(VisibleAnywhere, Category = "Vehicle")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Vehicle")
 	TObjectPtr<USkeletalMeshComponent> VehicleMesh;
 	
 	// An array of sphere components representing colliders for wheels.
