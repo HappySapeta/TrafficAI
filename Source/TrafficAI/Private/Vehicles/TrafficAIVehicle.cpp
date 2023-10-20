@@ -42,6 +42,9 @@ void ATrafficAIVehicle::SetupWheel(const char* Suffix)
 	AxisConstraint->SetAngularSwing1Limit(ACM_Locked, 0.0);
 	AxisConstraint->SetAngularSwing2Limit(ACM_Free, 0.0);
 	AxisConstraint->SetAngularTwistLimit(ACM_Locked, 0.0);
+	AxisConstraint->SetAngularDriveMode(EAngularDriveMode::TwistAndSwing);
+	AxisConstraint->SetAngularVelocityTarget({0.0f, 0.0f, 0.0f});
+	AxisConstraint->SetAngularVelocityDriveTwistAndSwing(false, true);
 	AxisConstraint->SetupAttachment(WheelCollider);
 
 	const FString SuspensionConstraintName = FString::Printf(TEXT("SuspensionConstraint_%hs"), Suffix);
@@ -51,12 +54,12 @@ void ATrafficAIVehicle::SetupWheel(const char* Suffix)
 	SuspensionConstraint->ComponentName2.ComponentName = *VehicleMesh->GetName();
 	SuspensionConstraint->SetLinearXLimit(LCM_Locked, 0.0f);
 	SuspensionConstraint->SetLinearYLimit(LCM_Locked, 0.0f);
-	SuspensionConstraint->SetLinearZLimit(LCM_Limited, 5.0f);
+	SuspensionConstraint->SetLinearZLimit(LCM_Limited, 10.0f);
 	SuspensionConstraint->SetAngularSwing1Limit(ACM_Free, 0.0);
 	SuspensionConstraint->SetAngularSwing2Limit(ACM_Free, 0.0);
 	SuspensionConstraint->SetAngularTwistLimit(ACM_Free, 0.0);
 	SuspensionConstraint->SetupAttachment(WheelCollider);
-	SuspensionConstraint->SetLinearDriveParams(2000.0f, 200.0f, 0.0f);
+	SuspensionConstraint->SetLinearDriveParams(1000.0f, 50.0f, 0.0f);
 
 	WheelColliders.Add(WheelCollider);
 	SuspensionConstraints.Add(SuspensionConstraint);
