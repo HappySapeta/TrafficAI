@@ -27,7 +27,6 @@ public:
 
 	void SetDesiredAcceleration(const FVector& Value);
 
-	UFUNCTION(BlueprintCallable)
 	virtual FVector GetVelocity() const override;
 
 	UFUNCTION(BlueprintCallable)
