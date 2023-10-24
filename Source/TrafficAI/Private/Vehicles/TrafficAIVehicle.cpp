@@ -18,7 +18,6 @@ ATrafficAIVehicle::ATrafficAIVehicle()
 	SetupWheel("WheelRR");
 }
 
-
 void ATrafficAIVehicle::SetupWheel(const char* Suffix)
 {
 	USphereComponent* WheelCollider = CreateDefaultSubobject<USphereComponent>(*FString::Printf(TEXT("Collider_%hs"), Suffix));
@@ -63,4 +62,35 @@ void ATrafficAIVehicle::SetupWheel(const char* Suffix)
 	WheelColliders.Add(WheelCollider);
 	SuspensionConstraints.Add(SuspensionConstraint);
 	AxisConstraints.Add(AxisConstraint);
+}
+
+void ATrafficAIVehicle::SetDesiredAcceleration(const FVector& Value)
+{
+	DesiredAcceleration = Value;
+}
+
+FVector ATrafficAIVehicle::GetVelocity() const
+{
+	return CurrentVelocity;
+}
+
+FVector ATrafficAIVehicle::GetAcceleration() const
+{
+	return CurrentAcceleration;
+}
+
+void ATrafficAIVehicle::Tick(float DeltaSeconds)
+{
+	UpdateVelocityData(DeltaSeconds);
+	Super::Tick(DeltaSeconds);
+}
+
+void ATrafficAIVehicle::UpdateVelocityData(float DeltaSeconds)
+{
+	const FVector& CurrentLocation = GetActorLocation();
+	CurrentVelocity = (CurrentLocation - PreviousLocation) / DeltaSeconds;
+	PreviousLocation = CurrentLocation;
+
+	CurrentAcceleration = (CurrentVelocity - PreviousVelocity) / DeltaSeconds;
+	PreviousVelocity = CurrentVelocity;
 }

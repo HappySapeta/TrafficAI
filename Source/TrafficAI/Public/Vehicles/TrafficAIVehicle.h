@@ -5,6 +5,9 @@
 #include "CoreMinimal.h"
 #include "TrafficAIVehicle.generated.h"
 
+class USphereComponent;
+class UPhysicsConstraintComponent;
+
 /**
  * ATrafficAIVehicle class is the base class for all vehicles in the game.
  * It is responsible for creating a vehicle setup that includes four wheels attached to a skeletal mesh,
@@ -22,11 +25,24 @@ public:
 	// Sets default values for this pawn's properties
 	ATrafficAIVehicle();
 
+	void SetDesiredAcceleration(const FVector& Value);
+
+	UFUNCTION(BlueprintCallable)
+	virtual FVector GetVelocity() const override;
+
+	UFUNCTION(BlueprintCallable)
+	FVector GetAcceleration() const;
 	
+	virtual void Tick(float DeltaSeconds) override;
+
+private:
+	
+	void UpdateVelocityData(float DeltaSeconds);
+
 	/**
-	 * Sets up a wheel with the specified suffix.
-	 * @param Suffix A character string to identify the wheel.
-	 */
+	* Sets up a wheel with the specified suffix.
+	* @param Suffix A character string to identify the wheel.
+	*/
 	void SetupWheel(const char* Suffix);
 
 protected:
@@ -37,13 +53,22 @@ protected:
 	
 	// An array of sphere components representing colliders for wheels.
 	UPROPERTY(VisibleAnywhere, Category = "Wheels")
-	TArray<class USphereComponent*> WheelColliders;
+	TArray<USphereComponent*> WheelColliders;
 	
 	// An array of physics constraint components used for suspension in the wheels.
 	UPROPERTY(VisibleAnywhere, Category = "Wheels")
-	TArray<class UPhysicsConstraintComponent*> SuspensionConstraints;
+	TArray<UPhysicsConstraintComponent*> SuspensionConstraints;
 
 	// An array of physics constraint components used for restricting the rotation of wheels around the axle.
 	UPROPERTY(VisibleAnywhere, Category = "Wheels")
-	TArray<class UPhysicsConstraintComponent*> AxisConstraints;	
+	TArray<UPhysicsConstraintComponent*> AxisConstraints;
+	
+private:
+	
+	FVector PreviousLocation;
+	FVector CurrentVelocity;
+	FVector PreviousVelocity;
+	FVector DesiredAcceleration;
+	FVector CurrentAcceleration;
+	
 };
