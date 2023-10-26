@@ -63,34 +63,3 @@ void ATrafficAIVehicle::SetupWheel(const char* Suffix)
 	SuspensionConstraints.Add(SuspensionConstraint);
 	AxisConstraints.Add(AxisConstraint);
 }
-
-void ATrafficAIVehicle::SetDesiredAcceleration(const FVector& Value)
-{
-	DesiredAcceleration = Value;
-}
-
-FVector ATrafficAIVehicle::GetVelocity() const
-{
-	return CurrentVelocity;
-}
-
-FVector ATrafficAIVehicle::GetAcceleration() const
-{
-	return CurrentAcceleration;
-}
-
-void ATrafficAIVehicle::Tick(float DeltaSeconds)
-{
-	UpdateVelocityData(DeltaSeconds);
-	Super::Tick(DeltaSeconds);
-}
-
-void ATrafficAIVehicle::UpdateVelocityData(float DeltaSeconds)
-{
-	const FVector& CurrentLocation = GetActorLocation();
-	CurrentVelocity = (CurrentLocation - PreviousLocation) / DeltaSeconds;
-	PreviousLocation = CurrentLocation;
-
-	CurrentAcceleration = (CurrentVelocity - PreviousVelocity) / DeltaSeconds;
-	PreviousVelocity = CurrentVelocity;
-}

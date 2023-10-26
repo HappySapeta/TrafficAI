@@ -25,19 +25,8 @@ public:
 	// Sets default values for this pawn's properties
 	ATrafficAIVehicle();
 
-	void SetDesiredAcceleration(const FVector& Value);
-
-	virtual FVector GetVelocity() const override;
-
-	UFUNCTION(BlueprintCallable)
-	FVector GetAcceleration() const;
-	
-	virtual void Tick(float DeltaSeconds) override;
-
 private:
 	
-	void UpdateVelocityData(float DeltaSeconds);
-
 	/**
 	* Sets up a wheel with the specified suffix.
 	* @param Suffix A character string to identify the wheel.
@@ -61,13 +50,5 @@ protected:
 	// An array of physics constraint components used for restricting the rotation of wheels around the axle.
 	UPROPERTY(VisibleAnywhere, Category = "Wheels")
 	TArray<UPhysicsConstraintComponent*> AxisConstraints;
-	
-private:
-	
-	FVector PreviousLocation;
-	FVector CurrentVelocity;
-	FVector PreviousVelocity;
-	FVector DesiredAcceleration;
-	FVector CurrentAcceleration;
 	
 };
