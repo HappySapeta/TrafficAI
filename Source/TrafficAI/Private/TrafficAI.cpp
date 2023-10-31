@@ -9,6 +9,7 @@
 #endif
 
 #include "Modules/ModuleManager.h"
+#include "Simulation/TrafficAISimulationSystem.h"
 #include "TrafficRepresentationSystem/TrafficAIRepresentationSystem.h"
 
 bool FTrafficAIModule::SupportsDynamicReloading()
@@ -20,7 +21,23 @@ bool FTrafficAIModule::SupportsDynamicReloading()
 
 void FTrafficAIModule::StartupModule()
 {
-	RegisterSettings();
+	RegisterSettings
+	(
+		GetMutableDefault<UTrafficAIRepresentationSystem>(),
+		LOCTEXT("RuntimeWDCategoryDescription", "Configure Vehicle Representation Settings"), 
+		"Representation",
+		LOCTEXT("RuntimeGeneralSettingsName", "Representation Settings"),
+		LOCTEXT("RuntimeGeneralSettingsDescription", "Configure settings such as LOD ranges, LOD update rate, Spawn Capacity and Delay")
+	);
+
+	RegisterSettings
+	(
+		GetMutableDefault<UTrafficAISimulationSystem>(),
+		LOCTEXT("RuntimeWDCategoryDescription", "Configure Traffic Simulation Settings "), 
+		"Simulation",
+		LOCTEXT("RuntimeGeneralSettingsName", "Simulation Settings"),
+		LOCTEXT("RuntimeGeneralSettingsDescription", "Configure settings such as Simulation Tick Rate and more.")
+	);
 }
 
 void FTrafficAIModule::ShutdownModule()
@@ -33,21 +50,20 @@ void FTrafficAIModule::ShutdownModule()
 
 bool FTrafficAIModule::HandleSettingsSaved()
 {
-	UTrafficAIRepresentationSystem* Settings = GetMutableDefault<UTrafficAIRepresentationSystem>();
-	bool ResaveSettings = false;
-
-	// You can put any validation code in here and resave the settings in case an invalid
-	// value has been entered
-
-	if (ResaveSettings)
-	{
-		Settings->SaveConfig();
-	}
-
+	GetMutableDefault<UTrafficAIRepresentationSystem>()->SaveConfig();
+	GetMutableDefault<UTrafficAISimulationSystem>()->SaveConfig();
+	
 	return true;
 }
 
-void FTrafficAIModule::RegisterSettings()
+void FTrafficAIModule::RegisterSettings
+(
+	const TWeakObjectPtr<>& SettingsObject,
+	const FText& CategoryDescription,
+	const FName& SectionName,
+	const FText& DisplayName,
+	const FText& Description
+)
 {
 	// Registering some settings is just a matter of exposing the default UObject of
 	// your desired class, feel free to add here all those settings you want to expose
@@ -56,21 +72,28 @@ void FTrafficAIModule::RegisterSettings()
 	if (ISettingsModule* SettingsModule = FModuleManager::GetModulePtr<ISettingsModule>("Settings"))
 	{
 		// Create the new category
-		ISettingsContainerPtr SettingsContainer = SettingsModule->GetContainer("Project");
+		const ISettingsContainerPtr SettingsContainer = SettingsModule->GetContainer("Project");
 
-		SettingsContainer->DescribeCategory("TrafficAI",
-		                                    LOCTEXT("RuntimeWDCategoryName", "TrafficAI"),
-		                                    LOCTEXT("RuntimeWDCategoryDescription", "Global settings for Traffic AI"));
+		SettingsContainer->DescribeCategory
+		(
+			"TrafficAI",
+			LOCTEXT("RuntimeWDCategoryName", "TrafficAI"),
+			CategoryDescription
+		);
 
-		ISettingsSectionPtr SettingsSection = SettingsModule->RegisterSettings("Project", "TrafficAI", "General",
-		                                                                       LOCTEXT("RuntimeGeneralSettingsName", "General"),
-		                                                                       LOCTEXT("RuntimeGeneralSettingsDescription", "Base configuration for Traffic AI"),
-		                                                                       GetMutableDefault<UTrafficAIRepresentationSystem>()
+		const ISettingsSectionPtr SettingsSection = SettingsModule->RegisterSettings
+		(
+			"Project",
+			"TrafficAI",
+			SectionName,
+			DisplayName,
+			Description,
+			SettingsObject
 		);
 
 		if (SettingsSection.IsValid())
 		{
-			SettingsSection->OnModified().BindRaw(this, &FTrafficAIModule::HandleSettingsSaved);
+			SettingsSection->OnModified().BindStatic(&FTrafficAIModule::HandleSettingsSaved);
 		}
 	}
 }
@@ -82,10 +105,11 @@ void FTrafficAIModule::UnregisterSettings()
 
 	if (ISettingsModule* SettingsModule = FModuleManager::GetModulePtr<ISettingsModule>("Settings"))
 	{
-		SettingsModule->UnregisterSettings("Project", "TrafficAISettings", "General");
+		SettingsModule->UnregisterSettings("Project", "TrafficAISettings", "Representation");
+		SettingsModule->UnregisterSettings("Project", "TrafficAISettings", "Simulation");
 	}
 }
 
 #endif
 
-IMPLEMENT_PRIMARY_GAME_MODULE(FTrafficAIModule, TrafficAI, "TrafficAI")
+IMPLEMENT_PRIMARY_GAME_MODULE(FTrafficAIModule, TrafficAI, ProjectName)

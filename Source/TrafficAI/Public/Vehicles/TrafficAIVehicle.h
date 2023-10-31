@@ -25,6 +25,8 @@ public:
 	// Sets default values for this pawn's properties
 	ATrafficAIVehicle();
 
+	UPrimitiveComponent* GetRoot() const { return VehicleMesh; }
+
 private:
 	
 	/**
@@ -36,7 +38,7 @@ private:
 protected:
 
 	// The skeletal mesh component representing the vehicle.
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Vehicle")
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Vehicle")
 	TObjectPtr<USkeletalMeshComponent> VehicleMesh;
 	
 	// An array of sphere components representing colliders for wheels.

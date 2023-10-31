@@ -16,7 +16,7 @@ struct TRAFFICAI_API FTrafficAISpawnRequest
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	UStaticMesh* Mesh;
 
-	// Material to be applied on the Instanced Static Meshes.
+	// Material applied to the Instanced Static Meshes.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	UMaterialInstance* Material;	
 

@@ -18,10 +18,11 @@ public:
 	virtual void ShutdownModule() override;
 
 private:
-	bool HandleSettingsSaved();
+	static bool HandleSettingsSaved();
 
-	void RegisterSettings();
+	static void RegisterSettings(const TWeakObjectPtr<>& SettingsObject, const FText& CategoryDescription, const FName& SectionName, const FText&
+	                             DisplayName, const FText& Description);
 
-	void UnregisterSettings();
+	static void UnregisterSettings();
 #endif
 };
