@@ -9,7 +9,6 @@
 #endif
 
 #include "Modules/ModuleManager.h"
-#include "Simulation/TrafficAISimulationSystem.h"
 #include "TrafficRepresentationSystem/TrafficAIRepresentationSystem.h"
 
 bool FTrafficAIModule::SupportsDynamicReloading()
@@ -29,15 +28,6 @@ void FTrafficAIModule::StartupModule()
 		LOCTEXT("RuntimeGeneralSettingsName", "Representation Settings"),
 		LOCTEXT("RuntimeGeneralSettingsDescription", "Configure settings such as LOD ranges, LOD update rate, Spawn Capacity and Delay")
 	);
-
-	RegisterSettings
-	(
-		GetMutableDefault<UTrafficAISimulationSystem>(),
-		LOCTEXT("RuntimeWDCategoryDescription", "Configure Traffic Simulation Settings "), 
-		"Simulation",
-		LOCTEXT("RuntimeGeneralSettingsName", "Simulation Settings"),
-		LOCTEXT("RuntimeGeneralSettingsDescription", "Configure settings such as Simulation Tick Rate and more.")
-	);
 }
 
 void FTrafficAIModule::ShutdownModule()
@@ -51,7 +41,6 @@ void FTrafficAIModule::ShutdownModule()
 bool FTrafficAIModule::HandleSettingsSaved()
 {
 	GetMutableDefault<UTrafficAIRepresentationSystem>()->SaveConfig();
-	GetMutableDefault<UTrafficAISimulationSystem>()->SaveConfig();
 	
 	return true;
 }
