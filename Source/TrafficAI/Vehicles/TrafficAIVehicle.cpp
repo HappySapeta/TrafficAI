@@ -1,6 +1,6 @@
 ﻿// Copyright Anupam Sahu. All Rights Reserved.
 
-#include "Vehicles/TrafficAIVehicle.h"
+#include "TrafficAIVehicle.h"
 #include "Components/SphereComponent.h"
 #include "PhysicsEngine/PhysicsConstraintComponent.h"
 

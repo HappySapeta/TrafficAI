@@ -1,6 +1,6 @@
 ﻿// Copyright Anupam Sahu. All Rights Reserved.
 
-#include "TrafficRepresentationSystem/TrafficAIVisualizer.h"
+#include "TrafficAIVisualizer.h"
 #include "Components/HierarchicalInstancedStaticMeshComponent.h"
 #include "Materials/MaterialInstance.h"
 

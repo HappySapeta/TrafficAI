@@ -1,19 +1,19 @@
 ﻿// Copyright Anupam Sahu. All Rights Reserved.
 
-#include "TrafficRepresentationSystem/TrafficAIRepresentationSystem.h"
+#include "TrafficAIRepresentationSystem.h"
 
 #if UE_EDITOR
 #include "Editor.h"
 #endif
 
-#include "TrafficAICommon.h"
 #include "Components/HierarchicalInstancedStaticMeshComponent.h"
 #include "GameFramework/PlayerController.h"
-#include "TrafficRepresentationSystem/TrafficAIVisualizer.h"
+#include "TrafficAIVisualizer.h"
 
 UTrafficAIRepresentationSystem::UTrafficAIRepresentationSystem()
 {
 	Entities = MakeShared<TArray<FTrafficAIEntity>>();
+	FocussedActor = nullptr;
 }
 
 void UTrafficAIRepresentationSystem::Initialize(FSubsystemCollectionBase& Collection)
@@ -89,17 +89,20 @@ void UTrafficAIRepresentationSystem::UpdateLODs()
 	while(EntityIndex < Entities->Num() && CurrentBatchSize < SpawnBatchSize)
 	{
 		const FTrafficAIEntity& Entity = Entities->operator[](EntityIndex);
+		
 		const float Distance = FVector::Distance(FocusLocation, Entity.Dummy->GetActorLocation());
 		const bool bIsDummyRelevant = DummyRange.Contains(Distance);
 		const bool bIsMeshRelevant = StaticMeshRange.Contains(Distance);
 
 		SET_ACTOR_ENABLED(Entity.Dummy, bIsDummyRelevant);
 
-		const FVector& NewScale = bIsMeshRelevant ? FVector::OneVector : FVector::ZeroVector;
+		const FVector& NewScale = bIsMeshRelevant * FVector::OneVector;
 		FTransform MeshTransform = Entity.Dummy->GetActorTransform();
 		MeshTransform.SetScale3D(NewScale);
 			
 		ISMCVisualizer->GetISMC(Entity.Mesh)->UpdateInstanceTransform(Entity.InstanceIndex, MeshTransform, true, true, false);
+
+		Entities->operator[](EntityIndex).LODLevel = static_cast<ELODLevel>(!bIsDummyRelevant);
 			
 		++EntityIndex;
 		++CurrentBatchSize;
@@ -122,7 +125,7 @@ bool UTrafficAIRepresentationSystem::ShouldCreateSubsystem(UObject* Outer) const
 
 void UTrafficAIRepresentationSystem::Deinitialize()
 {
-	UWorld* World = GetWorld();
+	const UWorld* World = GetWorld();
 	World->GetTimerManager().ClearTimer(SpawnTimer);
 	World->GetTimerManager().ClearTimer(LODUpdateTimer);
 }

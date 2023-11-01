@@ -9,7 +9,7 @@
 #endif
 
 #include "Modules/ModuleManager.h"
-#include "TrafficRepresentationSystem/TrafficAIRepresentationSystem.h"
+#include "Representation/TrafficAIRepresentationSystem.h"
 
 bool FTrafficAIModule::SupportsDynamicReloading()
 {
