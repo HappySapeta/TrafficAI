@@ -2,6 +2,7 @@
 
 #pragma once
 #include "CoreMinimal.h"
+#include "TrafficAICommon.h"
 #include "UObject/WeakFieldPtr.h"
 #include "TrafficAIRepresentationSystem.generated.h"
 
@@ -29,20 +30,6 @@ struct TRAFFICAI_API FTrafficAISpawnRequest
 	FTransform Transform;
 };
 
-// Simulated Entity
-struct TRAFFICAI_API FTrafficAIEntity
-{
-	// Mesh used for the lowest LOD.
-	UStaticMesh* Mesh = nullptr;
-	
-	// Index of the Instanced Static Mesh associated with this Entity.
-	// The InstanceIndex combined with the Mesh reference can be used to uniquely identify this Entity.
-	int32 InstanceIndex = -1;
-
-	// Actor used for highest the highest LOD.
-	AActor* Dummy = nullptr;
-};
-
 /**
  * Subsystem responsible for spawning Entities and handling the seamless transition of LODs.
  */
@@ -64,7 +51,7 @@ public:
 	void SetFocus(const AActor* Actor) { FocussedActor = Actor; }
 
 	// Get a weak pointer to an array of all entities.
-	TWeakPtr<TArray<FTrafficAIEntity>, ESPMode::ThreadSafe> GetEntities() { return Entities; }
+	TWeakPtr<TArray<FTrafficAIEntity>> GetEntities() { return Entities; }
 
 	// Reset SharedPtr to Entities.
 	virtual void BeginDestroy() override;
@@ -88,7 +75,7 @@ protected:
 
 protected:
 
-	TSharedPtr<TArray<FTrafficAIEntity>, ESPMode::ThreadSafe> Entities;
+	TSharedPtr<TArray<FTrafficAIEntity>> Entities;
 
 	UPROPERTY()
 	TObjectPtr<class ATrafficAIVisualizer> ISMCVisualizer;
