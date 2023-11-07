@@ -2,7 +2,6 @@
 
 #include "TrafficAISimulatorSystem.h"
 
-#include "Components/HierarchicalInstancedStaticMeshComponent.h"
 #include "TrafficAI/Representation/TrafficAIRepresentationSystem.h"
 #include "TrafficAI/Representation/TrafficAIMeshManager.h"
 #include "TrafficAI/Vehicles/TrafficAIVehicle.h"
@@ -41,7 +40,7 @@ void UTrafficAISimulatorSystem::DoSimulation()
 			if(Entity.PreviousLODLevel == ELODLevel::LOD1)
 			{
 				FTransform VehicleTransform;
-				Visualizer->GetISMC(Entity.Mesh)->GetInstanceTransform(Entity.InstanceIndex, VehicleTransform, true);
+				Visualizer->GetInstanceTransform(Entity.Mesh, Entity.InstanceIndex, VehicleTransform);
 				
 				VehicleRoot->SetWorldLocation(VehicleTransform.GetLocation(), false, nullptr, ETeleportType::TeleportPhysics);
 				Entity.PreviousLODLevel = ELODLevel::LOD0;
@@ -69,16 +68,16 @@ void UTrafficAISimulatorSystem::DoSimulation()
 			if(Entity.PreviousLODLevel == ELODLevel::LOD0)
 			{
 				FTransform VehicleTransform;
-				Visualizer->GetISMC(Entity.Mesh)->GetInstanceTransform(Entity.InstanceIndex, VehicleTransform, true);
+				Visualizer->GetInstanceTransform(Entity.Mesh, Entity.InstanceIndex, VehicleTransform);
 
 				VehicleTransform.SetLocation(Entity.Dummy->GetActorLocation());
 				
-				Visualizer->GetISMC(Entity.Mesh)->UpdateInstanceTransform(Entity.InstanceIndex, VehicleTransform, true, true);
+				Visualizer->SetInstanceTransform(Entity.Mesh, Entity.InstanceIndex, VehicleTransform);
 				Entity.PreviousLODLevel = ELODLevel::LOD1;
 			}
 		
 			FTransform VehicleTransform;
-			Visualizer->GetISMC(Entity.Mesh)->GetInstanceTransform(Entity.InstanceIndex, VehicleTransform, true);
+			Visualizer->GetInstanceTransform(Entity.Mesh, Entity.InstanceIndex, VehicleTransform);
 
 			FVector NewVelocity = PreviousVelocity + DesiredAcceleration * PreviousVelocity.GetSafeNormal() * DeltaTime;
 			if(NewVelocity.Dot(PreviousVelocity.GetSafeNormal()) >= DesiredMaxSpeed)
@@ -96,7 +95,7 @@ void UTrafficAISimulatorSystem::DoSimulation()
 				VehicleTransform.SetLocation(StartingLocation);
 			}
 
-			Visualizer->GetISMC(Entity.Mesh)->UpdateInstanceTransform(Entity.InstanceIndex, VehicleTransform, true, true);
+			Visualizer->SetInstanceTransform(Entity.Mesh, Entity.InstanceIndex, VehicleTransform);
 			
 			break;
 		}

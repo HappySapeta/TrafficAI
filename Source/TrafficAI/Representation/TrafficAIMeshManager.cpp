@@ -42,3 +42,19 @@ UHierarchicalInstancedStaticMeshComponent* ATrafficAIMeshManager::GetISMC(const 
 
 	return nullptr;
 }
+
+void ATrafficAIMeshManager::SetInstanceTransform(const UStaticMesh* Mesh, const int32 InstanceIndex, const FTransform& InTransform) const
+{
+	if(ISMCMap.Contains(Mesh))
+	{
+		ISMCMap[Mesh]->UpdateInstanceTransform(InstanceIndex, InTransform, true, true, false);
+	}
+}
+
+void ATrafficAIMeshManager::GetInstanceTransform(const UStaticMesh* Mesh, const int32 InstanceIndex, FTransform& OutTransform) const
+{
+	if(ISMCMap.Contains(Mesh))
+	{
+		ISMCMap[Mesh]->GetInstanceTransform(InstanceIndex, OutTransform, true);
+	}
+}

@@ -18,11 +18,15 @@ public:
 	// Sets default values for this actor's properties
 	ATrafficAIMeshManager();
 
+	void SetInstanceTransform(const UStaticMesh* Mesh, const int32 InstanceIndex, const FTransform& InTransform) const;
+
+	void GetInstanceTransform(const UStaticMesh* Mesh, const int32 InstanceIndex, FTransform& OutTransform) const;
+
+private:
+
 	// Get an InstancedStaticMeshComponent that renders a specific Mesh. 
 	UHierarchicalInstancedStaticMeshComponent* GetISMC(const UStaticMesh* Mesh) const;
-	
-private:
-	
+
 	/**
 	 * Add an instance of Mesh to an Instanced Static Mesh Renderer.
 	 * @return Index of the new Instance.
