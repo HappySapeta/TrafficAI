@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "..\Shared\TrCommon.h"
+#include "TrafficAICommon.h"
 #include "Subsystems/WorldSubsystem.h"
 #include "TrTrafficSimulator.generated.h"
 
@@ -27,10 +27,10 @@ private:
 
 private:
 
-	TWeakPtr<TArray<FTrEntity>> Entities;
+	TWeakPtr<TArray<FTrafficAIEntity>> Entities;
 
 	UPROPERTY()
-	class ATrISMCManager* Visualizer;
+	class ATrafficAIVisualizer* Visualizer;
 	
 	FTimerHandle SimTimerHandle;
 

@@ -3,16 +3,16 @@
 #include "TrTrafficSimulator.h"
 
 #include "Components/HierarchicalInstancedStaticMeshComponent.h"
-#include "TrafficAI/Representation/TrRepresentationSystem.h"
-#include "TrafficAI/Representation/TrISMCManager.h"
-#include "TrafficAI/Vehicles/TrVehicle.h"
+#include "TrafficAI/Representation/TrafficAIRepresentationSystem.h"
+#include "TrafficAI/Representation/TrafficAIVisualizer.h"
+#include "TrafficAI/Vehicles/TrafficAIVehicle.h"
 
 void UTrTrafficSimulator::StartSimulation(const float TickRate, const float Acceleration, const float MaxSpeed, const FVector Location, const float MaxLoopDistance)
 {
 	FTimerDelegate SimTimerDelegate;
 	SimTimerDelegate.BindUObject(this, &UTrTrafficSimulator::DoSimulation);
 
-	const UTrRepresentationSystem* RepresentationSystem = GetWorld()->GetSubsystem<UTrRepresentationSystem>();
+	const UTrafficAIRepresentationSystem* RepresentationSystem = GetWorld()->GetSubsystem<UTrafficAIRepresentationSystem>();
 	Entities = RepresentationSystem->GetEntities();
 	Visualizer = RepresentationSystem->GetTrafficVisualizer();
 
@@ -27,13 +27,13 @@ void UTrTrafficSimulator::StartSimulation(const float TickRate, const float Acce
 
 void UTrTrafficSimulator::DoSimulation()
 {
-	FTrEntity& Entity = *Entities.Pin()->begin();
+	FTrafficAIEntity& Entity = *Entities.Pin()->begin();
 
 	switch(Entity.LODLevel)
 	{
 	case ELODLevel::LOD0:
 		{
-			ATrVehicle* Vehicle = Cast<ATrVehicle>(Entity.Dummy);
+			ATrafficAIVehicle* Vehicle = Cast<ATrafficAIVehicle>(Entity.Dummy);
 			UPrimitiveComponent* VehicleRoot = Vehicle->GetRoot();
 			
 			Vehicle->SetComplexSimulationEnabled(false);

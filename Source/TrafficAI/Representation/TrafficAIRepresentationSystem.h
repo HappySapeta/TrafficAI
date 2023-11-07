@@ -2,13 +2,13 @@
 
 #pragma once
 #include "CoreMinimal.h"
-#include "..\Shared\TrCommon.h"
+#include "TrafficAICommon.h"
 #include "UObject/WeakFieldPtr.h"
-#include "TrRepresentationSystem.generated.h"
+#include "TrafficAIRepresentationSystem.generated.h"
 
 // Information required to spawn an Entity.
 USTRUCT(BlueprintType)
-struct TRAFFICAI_API FTrSpawnRequest
+struct TRAFFICAI_API FTrafficAISpawnRequest
 {
 	GENERATED_BODY()
 
@@ -34,26 +34,26 @@ struct TRAFFICAI_API FTrSpawnRequest
  * Subsystem responsible for spawning Entities and handling the seamless transition of LODs.
  */
 UCLASS(config = Game, DefaultConfig)
-class TRAFFICAI_API UTrRepresentationSystem : public UWorldSubsystem
+class TRAFFICAI_API UTrafficAIRepresentationSystem : public UWorldSubsystem
 {
 	GENERATED_BODY()
 
 public:
 
-	UTrRepresentationSystem();
+	UTrafficAIRepresentationSystem();
 	
 	// Push a request to spawn an Entity. The request is not guaranteed to be processed immediately.
 	UFUNCTION(BlueprintCallable)
-	void SpawnDeferred(const FTrSpawnRequest& SpawnRequest);
+	void SpawnDeferred(const FTrafficAISpawnRequest& SpawnRequest);
 
 	// Assign an actor whose distance is used for determining the appropriate Level of Detail to be used.
 	UFUNCTION(BlueprintCallable)
 	void SetFocus(const AActor* Actor) { FocussedActor = Actor; }
 
 	// Get a weak pointer to an array of all entities.
-	TWeakPtr<TArray<FTrEntity>> GetEntities() const { return Entities; }
+	TWeakPtr<TArray<FTrafficAIEntity>> GetEntities() const { return Entities; }
 
-	class ATrISMCManager* GetTrafficVisualizer() const { return ISMCVisualizer; }
+	class ATrafficAIVisualizer* GetTrafficVisualizer() const { return ISMCVisualizer; }
 
 	// Reset SharedPtr to Entities.
 	virtual void BeginDestroy() override;
@@ -77,10 +77,10 @@ protected:
 
 protected:
 
-	TSharedPtr<TArray<FTrEntity>> Entities;
+	TSharedPtr<TArray<FTrafficAIEntity>> Entities;
 
 	UPROPERTY()
-	TObjectPtr<class ATrISMCManager> ISMCVisualizer;
+	TObjectPtr<class ATrafficAIVisualizer> ISMCVisualizer;
 
 private:
 
@@ -121,5 +121,5 @@ private:
 	FTimerHandle SpawnTimer;
 	FTimerHandle LODUpdateTimer;
 
-	TArray<FTrSpawnRequest> SpawnRequests;
+	TArray<FTrafficAISpawnRequest> SpawnRequests;
 };

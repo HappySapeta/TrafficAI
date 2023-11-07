@@ -12,7 +12,7 @@ enum class ELODLevel : int8
 };
 
 // Simulated Entity
-struct FTrEntity
+struct FTrafficAIEntity
 {
 	// Mesh used for the lowest LOD.
 	UStaticMesh* Mesh = nullptr;

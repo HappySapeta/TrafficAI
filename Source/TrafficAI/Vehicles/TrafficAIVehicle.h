@@ -3,20 +3,20 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "TrVehicle.generated.h"
+#include "TrafficAIVehicle.generated.h"
 
 /**
  *
  */
 UCLASS()
-class TRAFFICAI_API ATrVehicle : public APawn
+class TRAFFICAI_API ATrafficAIVehicle : public APawn
 {
 	GENERATED_BODY()
 
 public:
 	
 	// Sets default values for this pawn's properties
-	ATrVehicle();
+	ATrafficAIVehicle();
 
 	UFUNCTION(BlueprintCallable)
 	UPrimitiveComponent* GetRoot() const { return VehicleRoot; }
