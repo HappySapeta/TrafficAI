@@ -1,10 +1,10 @@
 ﻿// Copyright Anupam Sahu. All Rights Reserved.
 
-#include "TrafficAIVehicle.h"
+#include "TrVehicle.h"
 #include "TrVehicleMovementComponent.h"
 
 // Sets default values
-ATrafficAIVehicle::ATrafficAIVehicle()
+ATrVehicle::ATrVehicle()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
@@ -15,7 +15,7 @@ ATrafficAIVehicle::ATrafficAIVehicle()
 	bIsComplexSimulationEnabled = true;
 }
 
-void ATrafficAIVehicle::SetComplexSimulationEnabled(const bool bInEnable)
+void ATrVehicle::SetComplexSimulationEnabled(const bool bInEnable)
 {
 	if(bIsComplexSimulationEnabled && !bInEnable)
 	{

@@ -9,7 +9,7 @@
 #endif
 
 #include "Modules/ModuleManager.h"
-#include "Representation/TrafficAIRepresentationSystem.h"
+#include "Representation/TrRepresentationSystem.h"
 
 bool FTrafficAIModule::SupportsDynamicReloading()
 {
@@ -22,7 +22,7 @@ void FTrafficAIModule::StartupModule()
 {
 	RegisterSettings
 	(
-		GetMutableDefault<UTrafficAIRepresentationSystem>(),
+		GetMutableDefault<UTrRepresentationSystem>(),
 		LOCTEXT("RuntimeWDCategoryDescription", "Configure Vehicle Representation Settings"), 
 		"Representation",
 		LOCTEXT("RuntimeGeneralSettingsName", "Representation Settings"),
@@ -40,7 +40,7 @@ void FTrafficAIModule::ShutdownModule()
 
 bool FTrafficAIModule::HandleSettingsSaved()
 {
-	GetMutableDefault<UTrafficAIRepresentationSystem>()->SaveConfig();
+	GetMutableDefault<UTrRepresentationSystem>()->SaveConfig();
 	
 	return true;
 }

@@ -1,6 +1,6 @@
 ﻿// Copyright Anupam Sahu. All Rights Reserved.
 
-#include "TrafficAIRepresentationSystem.h"
+#include "TrRepresentationSystem.h"
 
 #if UE_EDITOR
 #include "Editor.h"
@@ -8,36 +8,36 @@
 
 #include "Components/HierarchicalInstancedStaticMeshComponent.h"
 #include "GameFramework/PlayerController.h"
-#include "TrafficAIVisualizer.h"
+#include "TrISMCManager.h"
 
-UTrafficAIRepresentationSystem::UTrafficAIRepresentationSystem()
+UTrRepresentationSystem::UTrRepresentationSystem()
 {
-	Entities = MakeShared<TArray<FTrafficAIEntity>>();
+	Entities = MakeShared<TArray<FTrEntity>>();
 	FocussedActor = nullptr;
 }
 
-void UTrafficAIRepresentationSystem::Initialize(FSubsystemCollectionBase& Collection)
+void UTrRepresentationSystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	UWorld* World = GetWorld();
 	FActorSpawnParameters SpawnParameters;
 #if UE_EDITOR
 	SpawnParameters.bHideFromSceneOutliner = false;
 #endif
-	ISMCVisualizer = World->SpawnActor<ATrafficAIVisualizer>(SpawnParameters);
+	ISMCVisualizer = World->SpawnActor<ATrISMCManager>(SpawnParameters);
 
-	World->GetTimerManager().SetTimer(SpawnTimer, FTimerDelegate::CreateUObject(this, &UTrafficAIRepresentationSystem::ProcessSpawnRequests), 0.1f, true, 1.0f);
-	World->GetTimerManager().SetTimer(LODUpdateTimer, FTimerDelegate::CreateUObject(this, &UTrafficAIRepresentationSystem::UpdateLODs), LODUpdateInterval, true, 1.0f);
+	World->GetTimerManager().SetTimer(SpawnTimer, FTimerDelegate::CreateUObject(this, &UTrRepresentationSystem::ProcessSpawnRequests), 0.1f, true, 1.0f);
+	World->GetTimerManager().SetTimer(LODUpdateTimer, FTimerDelegate::CreateUObject(this, &UTrRepresentationSystem::UpdateLODs), LODUpdateInterval, true, 1.0f);
 }
 
-void UTrafficAIRepresentationSystem::SpawnDeferred(const FTrafficAISpawnRequest& SpawnRequest)
+void UTrRepresentationSystem::SpawnDeferred(const FTrSpawnRequest& SpawnRequest)
 {
-	if(ensureMsgf(Entities->Num() < MaxInstances, TEXT("[UTrafficAIRepresentationSystem::AddInstance] Spawn request was declined. Maximum capacity has been reached.")))
+	if(ensureMsgf(Entities->Num() < MaxInstances, TEXT("[UTrRepresentationSystem::AddInstance] Spawn request was declined. Maximum capacity has been reached.")))
 	{
 		SpawnRequests.Push(SpawnRequest);
 	}
 }
 
-void UTrafficAIRepresentationSystem::ProcessSpawnRequests()
+void UTrRepresentationSystem::ProcessSpawnRequests()
 {
 	static FActorSpawnParameters SpawnParameters;
 	
@@ -48,7 +48,7 @@ void UTrafficAIRepresentationSystem::ProcessSpawnRequests()
 	int NumRequestsProcessed = 0;
 	while(SpawnRequests.Num() > 0 && NumRequestsProcessed < SpawnBatchSize)
 	{
-		const FTrafficAISpawnRequest& Request = SpawnRequests[0];
+		const FTrSpawnRequest& Request = SpawnRequests[0];
 		if(Entities->Num() >= MaxInstances)
 		{
 			break;
@@ -56,7 +56,7 @@ void UTrafficAIRepresentationSystem::ProcessSpawnRequests()
 		
 		if(AActor* NewActor = GetWorld()->SpawnActor(Request.Dummy, &Request.Transform, SpawnParameters))
 		{
-			checkf(ISMCVisualizer, TEXT("[UTrafficAIRepresentationSystem][ProcessSpawnRequests] Reference to the ISMCVisualizer is null."))
+			checkf(ISMCVisualizer, TEXT("[UTrRepresentationSystem][ProcessSpawnRequests] Reference to the ISMCVisualizer is null."))
 			const int32 ISMIndex = ISMCVisualizer->AddInstance(Request.Mesh, Request.Material, Request.Transform); 
 			Entities->Add({Request.Mesh, ISMIndex, NewActor});
 			SET_ACTOR_ENABLED(NewActor, false);
@@ -67,7 +67,7 @@ void UTrafficAIRepresentationSystem::ProcessSpawnRequests()
 	}
 }
 
-void UTrafficAIRepresentationSystem::UpdateLODs()
+void UTrRepresentationSystem::UpdateLODs()
 {
 	static int EntityIndex = 0;
 	if(EntityIndex >= Entities->Num())
@@ -78,7 +78,7 @@ void UTrafficAIRepresentationSystem::UpdateLODs()
 	if(!IsValid(FocussedActor))
 	{
 		FocussedActor = GetWorld()->GetFirstPlayerController()->GetPawn();
-		if(!ensureMsgf(IsValid(FocussedActor), TEXT("[UTrafficAIRepresentationSystem::UpdateLODs] No focussed actor has been set.")))
+		if(!ensureMsgf(IsValid(FocussedActor), TEXT("[UTrRepresentationSystem::UpdateLODs] No focussed actor has been set.")))
 		{
 			return;
 		}
@@ -88,7 +88,7 @@ void UTrafficAIRepresentationSystem::UpdateLODs()
 	int CurrentBatchSize = 0;
 	while(EntityIndex < Entities->Num() && CurrentBatchSize < SpawnBatchSize)
 	{
-		const FTrafficAIEntity& Entity = Entities->operator[](EntityIndex);
+		const FTrEntity& Entity = Entities->operator[](EntityIndex);
 		
 		const float Distance = FVector::Distance(FocusLocation, Entity.Dummy->GetActorLocation());
 		const bool bIsDummyRelevant = DummyRange.Contains(Distance);
@@ -109,13 +109,13 @@ void UTrafficAIRepresentationSystem::UpdateLODs()
 	}
 }
 
-void UTrafficAIRepresentationSystem::BeginDestroy()
+void UTrRepresentationSystem::BeginDestroy()
 {
 	Entities.Reset();
 	Super::BeginDestroy();
 }
 
-bool UTrafficAIRepresentationSystem::ShouldCreateSubsystem(UObject* Outer) const
+bool UTrRepresentationSystem::ShouldCreateSubsystem(UObject* Outer) const
 {
 #if WITH_EDITOR
 	return (GEditor && GEditor->IsPlaySessionInProgress());
@@ -123,7 +123,7 @@ bool UTrafficAIRepresentationSystem::ShouldCreateSubsystem(UObject* Outer) const
 	return true;
 }
 
-void UTrafficAIRepresentationSystem::Deinitialize()
+void UTrRepresentationSystem::Deinitialize()
 {
 	const UWorld* World = GetWorld();
 	World->GetTimerManager().ClearTimer(SpawnTimer);
