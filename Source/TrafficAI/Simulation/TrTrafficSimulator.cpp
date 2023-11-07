@@ -36,10 +36,7 @@ void UTrTrafficSimulator::DoSimulation()
 			ATrafficAIVehicle* Vehicle = Cast<ATrafficAIVehicle>(Entity.Dummy);
 			UPrimitiveComponent* VehicleRoot = Vehicle->GetRoot();
 			
-			if(Vehicle->GetIsChaosEnabled())
-			{
-				Vehicle->SetChaosEnabled(false);
-			}
+			Vehicle->SetComplexSimulationEnabled(false);
 
 			if(Entity.PreviousLODLevel == ELODLevel::LOD1)
 			{

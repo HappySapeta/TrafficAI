@@ -5,9 +5,6 @@
 #include "CoreMinimal.h"
 #include "TrafficAIVehicle.generated.h"
 
-class USphereComponent;
-class UPhysicsConstraintComponent;
-
 /**
  *
  */
@@ -25,9 +22,7 @@ public:
 	UPrimitiveComponent* GetRoot() const { return VehicleRoot; }
 
 	UFUNCTION(BlueprintCallable)
-	void SetChaosEnabled(const bool bInEnable);
-
-	bool GetIsChaosEnabled() const { return bIsMovementComponentEnabled; }
+	void SetComplexSimulationEnabled(const bool bInEnable);
 
 protected:
 
@@ -36,10 +31,10 @@ protected:
 	TObjectPtr<USkeletalMeshComponent> VehicleRoot;
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Vehicle")
-	TObjectPtr<class UChaosWheeledVehicleMovementComponent> ChaosMovement;
+	TObjectPtr<class UTrVehicleMovementComponent> VehicleMovementComponent;
 
 private:
 
-	bool bIsMovementComponentEnabled;
+	bool bIsComplexSimulationEnabled;
 	
 };

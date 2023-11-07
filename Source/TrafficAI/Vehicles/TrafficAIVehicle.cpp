@@ -1,9 +1,7 @@
 ﻿// Copyright Anupam Sahu. All Rights Reserved.
 
 #include "TrafficAIVehicle.h"
-
-#include "ChaosVehicleManager.h"
-#include "ChaosWheeledVehicleMovementComponent.h"
+#include "TrVehicleMovementComponent.h"
 
 // Sets default values
 ATrafficAIVehicle::ATrafficAIVehicle()
@@ -13,23 +11,20 @@ ATrafficAIVehicle::ATrafficAIVehicle()
 	VehicleRoot = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("VehicleRoot"));
 	SetRootComponent(VehicleRoot);
 
-	ChaosMovement = CreateDefaultSubobject<UChaosWheeledVehicleMovementComponent>(TEXT("ChaosWheelVehicleMovement"));
-	bIsMovementComponentEnabled = true;
+	VehicleMovementComponent = CreateDefaultSubobject<UTrVehicleMovementComponent>(TEXT("ChaosWheelVehicleMovement"));
+	bIsComplexSimulationEnabled = true;
 }
 
-void ATrafficAIVehicle::SetChaosEnabled(const bool bInEnable)
+void ATrafficAIVehicle::SetComplexSimulationEnabled(const bool bInEnable)
 {
-	if(!bIsMovementComponentEnabled && bInEnable)
+	if(bIsComplexSimulationEnabled && !bInEnable)
 	{
-		ChaosMovement->CreatePhysicsState();
-		ChaosMovement->ResetVehicleState();
-		VehicleRoot->SetEnableGravity(true);
-		bIsMovementComponentEnabled = true;
+		VehicleMovementComponent->SetSimulationEnabled(false);
+		bIsComplexSimulationEnabled = false;
 	}
-	else if(bIsMovementComponentEnabled && !bInEnable)
+	else if(!bIsComplexSimulationEnabled && bInEnable)
 	{
-		ChaosMovement->DestroyPhysicsState();
-		VehicleRoot->SetEnableGravity(false);
-		bIsMovementComponentEnabled = false;
+		VehicleMovementComponent->SetSimulationEnabled(true);
+		bIsComplexSimulationEnabled = true;
 	}
 }
