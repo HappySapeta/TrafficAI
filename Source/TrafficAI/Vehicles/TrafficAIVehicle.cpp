@@ -1,7 +1,7 @@
 ﻿// Copyright Anupam Sahu. All Rights Reserved.
 
 #include "TrafficAIVehicle.h"
-#include "TrVehicleMovementComponent.h"
+#include "TrafficAIVehicleMovementComponent.h"
 
 // Sets default values
 ATrafficAIVehicle::ATrafficAIVehicle()
@@ -11,7 +11,7 @@ ATrafficAIVehicle::ATrafficAIVehicle()
 	VehicleRoot = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("VehicleRoot"));
 	SetRootComponent(VehicleRoot);
 
-	VehicleMovementComponent = CreateDefaultSubobject<UTrVehicleMovementComponent>(TEXT("ChaosWheelVehicleMovement"));
+	VehicleMovementComponent = CreateDefaultSubobject<UTrafficAIVehicleMovementComponent>(TEXT("ChaosWheelVehicleMovement"));
 	bIsComplexSimulationEnabled = true;
 }
 

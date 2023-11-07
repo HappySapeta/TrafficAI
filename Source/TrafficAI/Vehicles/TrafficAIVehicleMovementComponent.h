@@ -4,10 +4,10 @@
 
 #include "CoreMinimal.h"
 #include "ChaosWheeledVehicleMovementComponent.h"
-#include "TrVehicleMovementComponent.generated.h"
+#include "TrafficAIVehicleMovementComponent.generated.h"
 
 
-class TRAFFICAI_API UTrVehicleSimulation : public UChaosWheeledVehicleSimulation
+class TRAFFICAI_API UTrafficAIVehicleSimulation : public UChaosWheeledVehicleSimulation
 {
 public:
 	
@@ -24,7 +24,7 @@ private:
 };
 
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
-class TRAFFICAI_API UTrVehicleMovementComponent : public UChaosWheeledVehicleMovementComponent
+class TRAFFICAI_API UTrafficAIVehicleMovementComponent : public UChaosWheeledVehicleMovementComponent
 {
 	GENERATED_BODY()
 

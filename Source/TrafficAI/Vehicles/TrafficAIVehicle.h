@@ -31,7 +31,7 @@ protected:
 	TObjectPtr<USkeletalMeshComponent> VehicleRoot;
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Vehicle")
-	TObjectPtr<class UTrVehicleMovementComponent> VehicleMovementComponent;
+	TObjectPtr<class UTrafficAIVehicleMovementComponent> VehicleMovementComponent;
 
 private:
 

@@ -1,16 +1,16 @@
 ﻿// Copyright Anupam Sahu. All Rights Reserved.
 
-#include "TrTrafficSimulator.h"
+#include "TrafficAISimulator.h"
 
 #include "Components/HierarchicalInstancedStaticMeshComponent.h"
 #include "TrafficAI/Representation/TrafficAIRepresentationSystem.h"
 #include "TrafficAI/Representation/TrafficAIVisualizer.h"
 #include "TrafficAI/Vehicles/TrafficAIVehicle.h"
 
-void UTrTrafficSimulator::StartSimulation(const float TickRate, const float Acceleration, const float MaxSpeed, const FVector Location, const float MaxLoopDistance)
+void UTrafficAISimulator::StartSimulation(const float TickRate, const float Acceleration, const float MaxSpeed, const FVector Location, const float MaxLoopDistance)
 {
 	FTimerDelegate SimTimerDelegate;
-	SimTimerDelegate.BindUObject(this, &UTrTrafficSimulator::DoSimulation);
+	SimTimerDelegate.BindUObject(this, &UTrafficAISimulator::DoSimulation);
 
 	const UTrafficAIRepresentationSystem* RepresentationSystem = GetWorld()->GetSubsystem<UTrafficAIRepresentationSystem>();
 	Entities = RepresentationSystem->GetEntities();
@@ -25,7 +25,7 @@ void UTrTrafficSimulator::StartSimulation(const float TickRate, const float Acce
 	GetWorld()->GetTimerManager().SetTimer(SimTimerHandle, SimTimerDelegate, TickRate, true);
 }
 
-void UTrTrafficSimulator::DoSimulation()
+void UTrafficAISimulator::DoSimulation()
 {
 	FTrafficAIEntity& Entity = *Entities.Pin()->begin();
 
@@ -43,7 +43,7 @@ void UTrTrafficSimulator::DoSimulation()
 				FTransform VehicleTransform;
 				Visualizer->GetISMC(Entity.Mesh)->GetInstanceTransform(Entity.InstanceIndex, VehicleTransform, true);
 				
-				VehicleRoot->SetWorldLocation(VehicleTransform.GetLocation(), false, nullptr, ETeleportType::ResetPhysics);
+				VehicleRoot->SetWorldLocation(VehicleTransform.GetLocation(), false, nullptr, ETeleportType::TeleportPhysics);
 				Entity.PreviousLODLevel = ELODLevel::LOD0;
 			}
 			

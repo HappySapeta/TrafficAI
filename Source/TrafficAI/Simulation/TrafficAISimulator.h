@@ -5,13 +5,13 @@
 #include "CoreMinimal.h"
 #include "TrafficAICommon.h"
 #include "Subsystems/WorldSubsystem.h"
-#include "TrTrafficSimulator.generated.h"
+#include "TrafficAISimulator.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class TRAFFICAI_API UTrTrafficSimulator : public UWorldSubsystem
+class TRAFFICAI_API UTrafficAISimulator : public UWorldSubsystem
 {
 	GENERATED_BODY()
 
