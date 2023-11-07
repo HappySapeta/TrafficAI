@@ -27,6 +27,8 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void SetChaosEnabled(const bool bInEnable);
 
+	bool GetIsChaosEnabled() const { return bIsMovementComponentEnabled; }
+
 protected:
 
 	// The skeletal mesh component representing the vehicle.

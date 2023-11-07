@@ -19,20 +19,17 @@ ATrafficAIVehicle::ATrafficAIVehicle()
 
 void ATrafficAIVehicle::SetChaosEnabled(const bool bInEnable)
 {
-	FChaosVehicleManager* VehicleManager = FChaosVehicleManager::GetVehicleManagerFromScene(GetWorld()->GetPhysicsScene());
-	check(VehicleManager);
-
 	if(!bIsMovementComponentEnabled && bInEnable)
 	{
 		ChaosMovement->CreatePhysicsState();
 		ChaosMovement->ResetVehicleState();
-		VehicleRoot->SetSimulatePhysics(true);
+		VehicleRoot->SetEnableGravity(true);
 		bIsMovementComponentEnabled = true;
 	}
 	else if(bIsMovementComponentEnabled && !bInEnable)
 	{
 		ChaosMovement->DestroyPhysicsState();
-		VehicleRoot->SetSimulatePhysics(false);
+		VehicleRoot->SetEnableGravity(false);
 		bIsMovementComponentEnabled = false;
 	}
 }

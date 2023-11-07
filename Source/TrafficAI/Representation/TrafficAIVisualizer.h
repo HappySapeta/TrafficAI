@@ -17,6 +17,9 @@ public:
 	
 	// Sets default values for this actor's properties
 	ATrafficAIVisualizer();
+
+	// Get an InstancedStaticMeshComponent that renders a specific Mesh. 
+	UHierarchicalInstancedStaticMeshComponent* GetISMC(const UStaticMesh* Mesh) const;
 	
 private:
 	
@@ -27,9 +30,6 @@ private:
 	int32 AddInstance(UStaticMesh* Mesh, UMaterialInstance* Material = nullptr, const FTransform& Transform = FTransform::Identity);
 
 	void RemoveInstance(UStaticMesh* Mesh, const int32 InstanceIndex);
-
-	// Get an InstancedStaticMeshComponent that renders a specific Mesh. 
-	UHierarchicalInstancedStaticMeshComponent* GetISMC(const UStaticMesh* Mesh) const;
 
 private:
 

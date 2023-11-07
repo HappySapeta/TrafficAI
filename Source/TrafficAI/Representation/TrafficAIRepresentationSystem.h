@@ -51,7 +51,9 @@ public:
 	void SetFocus(const AActor* Actor) { FocussedActor = Actor; }
 
 	// Get a weak pointer to an array of all entities.
-	TWeakPtr<TArray<FTrafficAIEntity>> GetEntities() { return Entities; }
+	TWeakPtr<TArray<FTrafficAIEntity>> GetEntities() const { return Entities; }
+
+	class ATrafficAIVisualizer* GetTrafficVisualizer() const { return ISMCVisualizer; }
 
 	// Reset SharedPtr to Entities.
 	virtual void BeginDestroy() override;
