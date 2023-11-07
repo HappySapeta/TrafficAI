@@ -8,7 +8,7 @@
 
 #include "Components/HierarchicalInstancedStaticMeshComponent.h"
 #include "GameFramework/PlayerController.h"
-#include "TrafficAIVisualizer.h"
+#include "TrafficAIMeshManager.h"
 
 UTrafficAIRepresentationSystem::UTrafficAIRepresentationSystem()
 {
@@ -23,7 +23,7 @@ void UTrafficAIRepresentationSystem::Initialize(FSubsystemCollectionBase& Collec
 #if UE_EDITOR
 	SpawnParameters.bHideFromSceneOutliner = false;
 #endif
-	ISMCVisualizer = World->SpawnActor<ATrafficAIVisualizer>(SpawnParameters);
+	ISMCVisualizer = World->SpawnActor<ATrafficAIMeshManager>(SpawnParameters);
 
 	World->GetTimerManager().SetTimer(SpawnTimer, FTimerDelegate::CreateUObject(this, &UTrafficAIRepresentationSystem::ProcessSpawnRequests), 0.1f, true, 1.0f);
 	World->GetTimerManager().SetTimer(LODUpdateTimer, FTimerDelegate::CreateUObject(this, &UTrafficAIRepresentationSystem::UpdateLODs), LODUpdateInterval, true, 1.0f);

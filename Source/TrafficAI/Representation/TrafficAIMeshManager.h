@@ -4,10 +4,10 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "TrafficAIVisualizer.generated.h"
+#include "TrafficAIMeshManager.generated.h"
 
 UCLASS(NotPlaceable, Transient, NotBlueprintable)
-class TRAFFICAI_API ATrafficAIVisualizer : public AActor
+class TRAFFICAI_API ATrafficAIMeshManager : public AActor
 {
 	GENERATED_BODY()
 
@@ -16,7 +16,7 @@ class TRAFFICAI_API ATrafficAIVisualizer : public AActor
 public:
 	
 	// Sets default values for this actor's properties
-	ATrafficAIVisualizer();
+	ATrafficAIMeshManager();
 
 	// Get an InstancedStaticMeshComponent that renders a specific Mesh. 
 	UHierarchicalInstancedStaticMeshComponent* GetISMC(const UStaticMesh* Mesh) const;

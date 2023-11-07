@@ -1,16 +1,16 @@
 ﻿// Copyright Anupam Sahu. All Rights Reserved.
 
-#include "TrafficAISimulator.h"
+#include "TrafficAISimulatorSystem.h"
 
 #include "Components/HierarchicalInstancedStaticMeshComponent.h"
 #include "TrafficAI/Representation/TrafficAIRepresentationSystem.h"
-#include "TrafficAI/Representation/TrafficAIVisualizer.h"
+#include "TrafficAI/Representation/TrafficAIMeshManager.h"
 #include "TrafficAI/Vehicles/TrafficAIVehicle.h"
 
-void UTrafficAISimulator::StartSimulation(const float TickRate, const float Acceleration, const float MaxSpeed, const FVector Location, const float MaxLoopDistance)
+void UTrafficAISimulatorSystem::StartSimulation(const float TickRate, const float Acceleration, const float MaxSpeed, const FVector Location, const float MaxLoopDistance)
 {
 	FTimerDelegate SimTimerDelegate;
-	SimTimerDelegate.BindUObject(this, &UTrafficAISimulator::DoSimulation);
+	SimTimerDelegate.BindUObject(this, &UTrafficAISimulatorSystem::DoSimulation);
 
 	const UTrafficAIRepresentationSystem* RepresentationSystem = GetWorld()->GetSubsystem<UTrafficAIRepresentationSystem>();
 	Entities = RepresentationSystem->GetEntities();
@@ -25,7 +25,7 @@ void UTrafficAISimulator::StartSimulation(const float TickRate, const float Acce
 	GetWorld()->GetTimerManager().SetTimer(SimTimerHandle, SimTimerDelegate, TickRate, true);
 }
 
-void UTrafficAISimulator::DoSimulation()
+void UTrafficAISimulatorSystem::DoSimulation()
 {
 	FTrafficAIEntity& Entity = *Entities.Pin()->begin();
 

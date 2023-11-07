@@ -5,13 +5,13 @@
 #include "CoreMinimal.h"
 #include "TrafficAICommon.h"
 #include "Subsystems/WorldSubsystem.h"
-#include "TrafficAISimulator.generated.h"
+#include "TrafficAISimulatorSystem.generated.h"
 
 /**
  * 
  */
-UCLASS()
-class TRAFFICAI_API UTrafficAISimulator : public UWorldSubsystem
+UCLASS(DisplayName = "TrafficSimulatorSystem")
+class TRAFFICAI_API UTrafficAISimulatorSystem : public UWorldSubsystem
 {
 	GENERATED_BODY()
 
@@ -30,7 +30,7 @@ private:
 	TWeakPtr<TArray<FTrafficAIEntity>> Entities;
 
 	UPROPERTY()
-	class ATrafficAIVisualizer* Visualizer;
+	class ATrafficAIMeshManager* Visualizer;
 	
 	FTimerHandle SimTimerHandle;
 

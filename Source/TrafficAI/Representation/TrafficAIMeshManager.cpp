@@ -1,15 +1,15 @@
 ﻿// Copyright Anupam Sahu. All Rights Reserved.
 
-#include "TrafficAIVisualizer.h"
+#include "TrafficAIMeshManager.h"
 #include "Components/HierarchicalInstancedStaticMeshComponent.h"
 #include "Materials/MaterialInstance.h"
 
-ATrafficAIVisualizer::ATrafficAIVisualizer()
+ATrafficAIMeshManager::ATrafficAIMeshManager()
 {
 	PrimaryActorTick.bCanEverTick = false;
 }
 
-int32 ATrafficAIVisualizer::AddInstance(UStaticMesh* Mesh, UMaterialInstance* Material, const FTransform& Transform)
+int32 ATrafficAIMeshManager::AddInstance(UStaticMesh* Mesh, UMaterialInstance* Material, const FTransform& Transform)
 {
 	if(!ISMCMap.Contains(Mesh))
 	{
@@ -25,7 +25,7 @@ int32 ATrafficAIVisualizer::AddInstance(UStaticMesh* Mesh, UMaterialInstance* Ma
 	return ISMCMap[Mesh]->AddInstance(Transform, true);
 }
 
-void ATrafficAIVisualizer::RemoveInstance(UStaticMesh* Mesh, const int32 InstanceIndex)
+void ATrafficAIMeshManager::RemoveInstance(UStaticMesh* Mesh, const int32 InstanceIndex)
 {
 	if(ISMCMap.Contains(Mesh))
 	{
@@ -33,7 +33,7 @@ void ATrafficAIVisualizer::RemoveInstance(UStaticMesh* Mesh, const int32 Instanc
 	}
 }
 
-UHierarchicalInstancedStaticMeshComponent* ATrafficAIVisualizer::GetISMC(const UStaticMesh* Mesh) const
+UHierarchicalInstancedStaticMeshComponent* ATrafficAIMeshManager::GetISMC(const UStaticMesh* Mesh) const
 {
 	if(ISMCMap.Contains(Mesh))
 	{

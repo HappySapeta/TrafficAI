@@ -33,7 +33,7 @@ struct TRAFFICAI_API FTrafficAISpawnRequest
 /**
  * Subsystem responsible for spawning Entities and handling the seamless transition of LODs.
  */
-UCLASS(config = Game, DefaultConfig)
+UCLASS(config = Game, DefaultConfig, DisplayName = "TrafficRepresentationSystem")
 class TRAFFICAI_API UTrafficAIRepresentationSystem : public UWorldSubsystem
 {
 	GENERATED_BODY()
@@ -53,7 +53,7 @@ public:
 	// Get a weak pointer to an array of all entities.
 	TWeakPtr<TArray<FTrafficAIEntity>> GetEntities() const { return Entities; }
 
-	class ATrafficAIVisualizer* GetTrafficVisualizer() const { return ISMCVisualizer; }
+	class ATrafficAIMeshManager* GetTrafficVisualizer() const { return ISMCVisualizer; }
 
 	// Reset SharedPtr to Entities.
 	virtual void BeginDestroy() override;
@@ -80,7 +80,7 @@ protected:
 	TSharedPtr<TArray<FTrafficAIEntity>> Entities;
 
 	UPROPERTY()
-	TObjectPtr<class ATrafficAIVisualizer> ISMCVisualizer;
+	TObjectPtr<class ATrafficAIMeshManager> ISMCVisualizer;
 
 private:
 
