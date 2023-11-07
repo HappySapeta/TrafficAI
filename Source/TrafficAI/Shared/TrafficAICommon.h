@@ -4,10 +4,11 @@
 
 #define SET_ACTOR_ENABLED(Actor, Value) Actor->SetActorEnableCollision(Value); Actor->SetActorHiddenInGame(!Value); Actor->SetActorTickEnabled(Value);
 
-enum class ELODLevel : uint8
+enum class ELODLevel : int8
 {
-	LOD0,
-	LOD1
+	None = -1,
+	LOD0 = 0,
+	LOD1 = 1
 };
 
 // Simulated Entity
@@ -24,4 +25,6 @@ struct FTrafficAIEntity
 	AActor* Dummy = nullptr;
 
 	ELODLevel LODLevel;
+
+	ELODLevel PreviousLODLevel = ELODLevel::None;
 };
