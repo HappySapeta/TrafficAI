@@ -20,10 +20,7 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	UPrimitiveComponent* GetRoot() const { return VehicleRoot; }
-
-	UFUNCTION(BlueprintCallable)
-	void SetComplexSimulationEnabled(const bool bInEnable);
-
+	
 protected:
 
 	// The skeletal mesh component representing the vehicle.
@@ -32,9 +29,5 @@ protected:
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Vehicle")
 	TObjectPtr<class UTrafficAIVehicleMovementComponent> VehicleMovementComponent;
-
-private:
-
-	bool bIsComplexSimulationEnabled;
 	
 };

@@ -12,19 +12,4 @@ ATrafficAIVehicle::ATrafficAIVehicle()
 	SetRootComponent(VehicleRoot);
 
 	VehicleMovementComponent = CreateDefaultSubobject<UTrafficAIVehicleMovementComponent>(TEXT("ChaosWheelVehicleMovement"));
-	bIsComplexSimulationEnabled = true;
-}
-
-void ATrafficAIVehicle::SetComplexSimulationEnabled(const bool bInEnable)
-{
-	if(bIsComplexSimulationEnabled && !bInEnable)
-	{
-		VehicleMovementComponent->SetSimulationEnabled(false);
-		bIsComplexSimulationEnabled = false;
-	}
-	else if(!bIsComplexSimulationEnabled && bInEnable)
-	{
-		VehicleMovementComponent->SetSimulationEnabled(true);
-		bIsComplexSimulationEnabled = true;
-	}
 }
