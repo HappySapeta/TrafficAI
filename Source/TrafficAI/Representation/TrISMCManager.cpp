@@ -1,15 +1,15 @@
 ﻿// Copyright Anupam Sahu. All Rights Reserved.
 
-#include "TrafficAIMeshManager.h"
+#include "TrISMCManager.h"
 #include "Components/HierarchicalInstancedStaticMeshComponent.h"
 #include "Materials/MaterialInstance.h"
 
-ATrafficAIMeshManager::ATrafficAIMeshManager()
+ATrISMCManager::ATrISMCManager()
 {
 	PrimaryActorTick.bCanEverTick = false;
 }
 
-int32 ATrafficAIMeshManager::AddInstance(UStaticMesh* Mesh, UMaterialInstance* Material, const FTransform& Transform)
+int32 ATrISMCManager::AddInstance(UStaticMesh* Mesh, UMaterialInstance* Material, const FTransform& Transform)
 {
 	if(!ISMCMap.Contains(Mesh))
 	{
@@ -25,7 +25,7 @@ int32 ATrafficAIMeshManager::AddInstance(UStaticMesh* Mesh, UMaterialInstance* M
 	return ISMCMap[Mesh]->AddInstance(Transform, true);
 }
 
-void ATrafficAIMeshManager::RemoveInstance(UStaticMesh* Mesh, const int32 InstanceIndex)
+void ATrISMCManager::RemoveInstance(UStaticMesh* Mesh, const int32 InstanceIndex)
 {
 	if(ISMCMap.Contains(Mesh))
 	{
@@ -33,7 +33,7 @@ void ATrafficAIMeshManager::RemoveInstance(UStaticMesh* Mesh, const int32 Instan
 	}
 }
 
-UHierarchicalInstancedStaticMeshComponent* ATrafficAIMeshManager::GetISMC(const UStaticMesh* Mesh) const
+UHierarchicalInstancedStaticMeshComponent* ATrISMCManager::GetISMC(const UStaticMesh* Mesh) const
 {
 	if(ISMCMap.Contains(Mesh))
 	{
@@ -43,7 +43,7 @@ UHierarchicalInstancedStaticMeshComponent* ATrafficAIMeshManager::GetISMC(const 
 	return nullptr;
 }
 
-void ATrafficAIMeshManager::SetInstanceTransform(const UStaticMesh* Mesh, const int32 InstanceIndex, const FTransform& InTransform) const
+void ATrISMCManager::SetInstanceTransform(const UStaticMesh* Mesh, const int32 InstanceIndex, const FTransform& InTransform) const
 {
 	if(ISMCMap.Contains(Mesh))
 	{
@@ -51,7 +51,7 @@ void ATrafficAIMeshManager::SetInstanceTransform(const UStaticMesh* Mesh, const 
 	}
 }
 
-void ATrafficAIMeshManager::GetInstanceTransform(const UStaticMesh* Mesh, const int32 InstanceIndex, FTransform& OutTransform) const
+void ATrISMCManager::GetInstanceTransform(const UStaticMesh* Mesh, const int32 InstanceIndex, FTransform& OutTransform) const
 {
 	if(ISMCMap.Contains(Mesh))
 	{

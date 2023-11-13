@@ -4,19 +4,19 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "TrafficAIMeshManager.generated.h"
+#include "TrISMCManager.generated.h"
 
 UCLASS(NotPlaceable, Transient, NotBlueprintable)
-class TRAFFICAI_API ATrafficAIMeshManager : public AActor
+class TRAFFICAI_API ATrISMCManager : public AActor
 {
 	GENERATED_BODY()
 
-	friend class UTrafficAIRepresentationSystem;
+	friend class UTrRepresentationSystem;
 
 public:
 	
 	// Sets default values for this actor's properties
-	ATrafficAIMeshManager();
+	ATrISMCManager();
 
 	void SetInstanceTransform(const UStaticMesh* Mesh, const int32 InstanceIndex, const FTransform& InTransform) const;
 

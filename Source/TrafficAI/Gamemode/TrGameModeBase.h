@@ -4,13 +4,13 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameModeBase.h"
-#include "TrafficAIGameModeBase.generated.h"
+#include "TrGameModeBase.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class TRAFFICAI_API ATrafficAIGameModeBase : public AGameModeBase
+class TRAFFICAI_API ATrGameModeBase : public AGameModeBase
 {
 	GENERATED_BODY()
 	

@@ -2,9 +2,9 @@
 
 #pragma once
 #include "CoreMinimal.h"
-#include "TrafficAICommon.h"
+#include "TrCommon.h"
 #include "UObject/WeakFieldPtr.h"
-#include "TrafficAIRepresentationSystem.generated.h"
+#include "TrRepresentationSystem.generated.h"
 
 // Information required to spawn an Entity.
 USTRUCT(BlueprintType)
@@ -33,14 +33,14 @@ struct TRAFFICAI_API FTrafficAISpawnRequest
 /**
  * Subsystem responsible for spawning Entities and handling the seamless transition of LODs.
  */
-UCLASS(config = Game, DefaultConfig, DisplayName = "TrafficRepresentationSystem")
-class TRAFFICAI_API UTrafficAIRepresentationSystem : public UWorldSubsystem
+UCLASS(config = Game, DefaultConfig, DisplayName = "Traffic Representation System")
+class TRAFFICAI_API UTrRepresentationSystem : public UWorldSubsystem
 {
 	GENERATED_BODY()
 
 public:
 
-	UTrafficAIRepresentationSystem();
+	UTrRepresentationSystem();
 	
 	// Push a request to spawn an Entity. The request is not guaranteed to be processed immediately.
 	UFUNCTION(BlueprintCallable)
@@ -51,9 +51,9 @@ public:
 	void SetFocus(const AActor* Actor) { FocussedActor = Actor; }
 
 	// Get a weak pointer to an array of all entities.
-	TWeakPtr<TArray<FTrafficAIEntity>> GetEntities() const { return Entities; }
+	TWeakPtr<TArray<FTrEntity>> GetEntities() const { return Entities; }
 
-	class ATrafficAIMeshManager* GetTrafficVisualizer() const { return ISMCVisualizer; }
+	class ATrISMCManager* GetTrafficVisualizer() const { return ISMCManager; }
 
 	// Reset SharedPtr to Entities.
 	virtual void BeginDestroy() override;
@@ -63,7 +63,7 @@ public:
 	
 protected:
 
-	// Spawn an ISMCVisualizer and set timers.
+	// Spawn an ISMCManager and set timers.
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 
 	// Clear all timers.
@@ -77,10 +77,10 @@ protected:
 
 protected:
 
-	TSharedPtr<TArray<FTrafficAIEntity>> Entities;
+	TSharedPtr<TArray<FTrEntity>> Entities;
 
 	UPROPERTY()
-	TObjectPtr<class ATrafficAIMeshManager> ISMCVisualizer;
+	TObjectPtr<class ATrISMCManager> ISMCManager;
 
 private:
 

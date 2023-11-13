@@ -3,20 +3,20 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "TrafficAIVehicle.generated.h"
+#include "TrVehicle.generated.h"
 
 /**
  *
  */
 UCLASS()
-class TRAFFICAI_API ATrafficAIVehicle : public APawn
+class TRAFFICAI_API ATrVehicle : public APawn
 {
 	GENERATED_BODY()
 
 public:
 	
 	// Sets default values for this pawn's properties
-	ATrafficAIVehicle();
+	ATrVehicle();
 
 	UFUNCTION(BlueprintCallable)
 	UPrimitiveComponent* GetRoot() const { return VehicleRoot; }
@@ -28,6 +28,6 @@ protected:
 	TObjectPtr<USkeletalMeshComponent> VehicleRoot;
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Vehicle")
-	TObjectPtr<class UTrafficAIVehicleMovementComponent> VehicleMovementComponent;
+	TObjectPtr<class UTrVehicleMovementComponent> VehicleMovementComponent;
 	
 };
