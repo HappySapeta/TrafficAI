@@ -13,7 +13,7 @@
 UTrRepresentationSystem::UTrRepresentationSystem()
 {
 	Entities = MakeShared<TArray<FTrEntity>>();
-	FocussedActor = nullptr;
+	POVActor = nullptr;
 }
 
 void UTrRepresentationSystem::Initialize(FSubsystemCollectionBase& Collection)
@@ -25,8 +25,7 @@ void UTrRepresentationSystem::Initialize(FSubsystemCollectionBase& Collection)
 #endif
 	ISMCManager = World->SpawnActor<ATrISMCManager>(SpawnParameters);
 
-	World->GetTimerManager().SetTimer(SpawnTimer, FTimerDelegate::CreateUObject(this, &UTrRepresentationSystem::ProcessSpawnRequests), 0.1f, true, 1.0f);
-	World->GetTimerManager().SetTimer(LODUpdateTimer, FTimerDelegate::CreateUObject(this, &UTrRepresentationSystem::UpdateLODs), LODUpdateInterval, true, 1.0f);
+	World->GetTimerManager().SetTimer(MainTimer, FTimerDelegate::CreateUObject(this, &UTrRepresentationSystem::Update), TickRate, true);
 }
 
 void UTrRepresentationSystem::SpawnDeferred(const FTrafficAISpawnRequest& SpawnRequest)
@@ -35,6 +34,12 @@ void UTrRepresentationSystem::SpawnDeferred(const FTrafficAISpawnRequest& SpawnR
 	{
 		SpawnRequests.Push(SpawnRequest);
 	}
+}
+
+void UTrRepresentationSystem::Update()
+{
+	ProcessSpawnRequests();
+	UpdateLODs();
 }
 
 void UTrRepresentationSystem::ProcessSpawnRequests()
@@ -46,7 +51,7 @@ void UTrRepresentationSystem::ProcessSpawnRequests()
 #endif
 
 	int NumRequestsProcessed = 0;
-	while(SpawnRequests.Num() > 0 && NumRequestsProcessed < SpawnBatchSize)
+	while(SpawnRequests.Num() > 0 && NumRequestsProcessed < ProcessingBatchSize)
 	{
 		const FTrafficAISpawnRequest& Request = SpawnRequests[0];
 		if(Entities->Num() >= MaxInstances)
@@ -54,11 +59,11 @@ void UTrRepresentationSystem::ProcessSpawnRequests()
 			break;
 		}
 		
-		if(AActor* NewActor = GetWorld()->SpawnActor(Request.Dummy, &Request.Transform, SpawnParameters))
+		if(AActor* NewActor = GetWorld()->SpawnActor(Request.LOD1_Actor, &Request.Transform, SpawnParameters))
 		{
 			checkf(ISMCManager, TEXT("[UTrRepresentationSystem][ProcessSpawnRequests] Reference to the ISMCManager is null."))
-			const int32 ISMIndex = ISMCManager->AddInstance(Request.Mesh, Request.Material, Request.Transform); 
-			Entities->Add({Request.Mesh, ISMIndex, NewActor});
+			const int32 ISMIndex = ISMCManager->AddInstance(Request.LOD2_Mesh, nullptr, Request.Transform); 
+			Entities->Add({Request.LOD2_Mesh, ISMIndex, NewActor});
 			SET_ACTOR_ENABLED(NewActor, false);
 		}
 
@@ -75,34 +80,36 @@ void UTrRepresentationSystem::UpdateLODs()
 		EntityIndex = 0;
 	}
 
-	if(!IsValid(FocussedActor))
+	if(!IsValid(POVActor))
 	{
-		FocussedActor = GetWorld()->GetFirstPlayerController()->GetPawn();
-		if(!ensureMsgf(IsValid(FocussedActor), TEXT("[UTrRepresentationSystem::UpdateLODs] No focussed actor has been set.")))
+		POVActor = GetWorld()->GetFirstPlayerController()->GetPawn();
+		if(!ensureMsgf(IsValid(POVActor), TEXT("[UTrRepresentationSystem::UpdateLODs] No focussed actor has been set.")))
 		{
 			return;
 		}
 	}
 	
-	const FVector& FocusLocation = FocussedActor->GetActorLocation();
+	const FVector& FocusLocation = POVActor->GetActorLocation();
 	int CurrentBatchSize = 0;
-	while(EntityIndex < Entities->Num() && CurrentBatchSize < SpawnBatchSize)
+	while(EntityIndex < Entities->Num() && CurrentBatchSize < ProcessingBatchSize)
 	{
 		const FTrEntity& Entity = Entities->operator[](EntityIndex);
 		
 		const float Distance = FVector::Distance(FocusLocation, Entity.Dummy->GetActorLocation());
-		const bool bIsDummyRelevant = DummyRange.Contains(Distance);
-		const bool bIsMeshRelevant = StaticMeshRange.Contains(Distance);
 
-		SET_ACTOR_ENABLED(Entity.Dummy, bIsDummyRelevant);
+		// Toggle Actors.
+		const bool bIsActorRelevant = ActorRelevancyRange.Contains(Distance);
+		SET_ACTOR_ENABLED(Entity.Dummy, bIsActorRelevant);
 
+		// Toggle ISMCs.
+		const bool bIsMeshRelevant = !bIsActorRelevant && StaticMeshRelevancyRange.Contains(Distance);
 		const FVector& NewScale = bIsMeshRelevant * FVector::OneVector;
 		FTransform MeshTransform = Entity.Dummy->GetActorTransform();
 		MeshTransform.SetScale3D(NewScale);
 			
 		ISMCManager->GetISMC(Entity.Mesh)->UpdateInstanceTransform(Entity.InstanceIndex, MeshTransform, true, true, false);
 
-		Entities->operator[](EntityIndex).LODLevel = static_cast<ELODLevel>(!bIsDummyRelevant);
+		Entities->operator[](EntityIndex).LODLevel = static_cast<ELODLevel>(!bIsActorRelevant);
 			
 		++EntityIndex;
 		++CurrentBatchSize;
@@ -126,6 +133,5 @@ bool UTrRepresentationSystem::ShouldCreateSubsystem(UObject* Outer) const
 void UTrRepresentationSystem::Deinitialize()
 {
 	const UWorld* World = GetWorld();
-	World->GetTimerManager().ClearTimer(SpawnTimer);
-	World->GetTimerManager().ClearTimer(LODUpdateTimer);
+	World->GetTimerManager().ClearTimer(MainTimer);
 }
