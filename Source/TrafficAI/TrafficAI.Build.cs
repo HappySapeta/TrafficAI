@@ -10,7 +10,20 @@ public class TrafficAI : ModuleRules
 	
         PublicIncludePaths.AddRange(new string[] { "TrafficAI/Shared" });
         
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "AStarPathFinder", "ChaosVehicles" });
+		PublicDependencyModuleNames.AddRange(new string[]
+		{
+			"Core", 
+			"CoreUObject", 
+			"Engine", 
+			"InputCore", 
+			"AStarPathFinder", 
+			"ChaosVehicles",
+		});
+		
+		PrivateDependencyModuleNames.AddRange(new string[]
+		{
+			"Ripple"
+		});
 
 		if (Target.bBuildEditor)
 		{
