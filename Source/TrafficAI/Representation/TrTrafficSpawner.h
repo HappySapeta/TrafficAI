@@ -21,7 +21,7 @@ class TRAFFICAI_API UTrTrafficSpawner : public UWorldSubsystem
 	void SetTrafficGraph(const URpSpatialGraphComponent* NewGraphComponent);
 
 	UFUNCTION(BlueprintCallable)
-	void SetSpawnData(const TSubclassOf<AActor>& ActorClass, UStaticMesh* Mesh);
+	void SetSpawnData(TSubclassOf<AActor> ActorClass, UStaticMesh* Mesh);
 	
 	UFUNCTION(BlueprintCallable)
 	void SpawnTraffic();
@@ -29,7 +29,8 @@ class TRAFFICAI_API UTrTrafficSpawner : public UWorldSubsystem
 private:
 
 	void TraverseGraph();
-	void CreateSpawnPointsBetweenNodes(const URpSpatialGraphNode* Node1, const URpSpatialGraphNode* Node2);
+	
+	void CreateSpawnPointsBetweenNodes(const FVector& Node1Location, const FVector& Node2Location);
 	
 private:
 

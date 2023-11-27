@@ -3,14 +3,13 @@
 #include "TrTrafficSpawner.h"
 #include "TrRepresentationSystem.h"
 #include "RpSpatialGraphComponent.h"
-#include "Kismet/KismetMathLibrary.h"
 
 void UTrTrafficSpawner::SetTrafficGraph(const URpSpatialGraphComponent* NewGraphComponent)
 {
 	GraphComponent = NewGraphComponent;
 }
 
-void UTrTrafficSpawner::SetSpawnData(const TSubclassOf<AActor>& ActorClass, UStaticMesh* Mesh)
+void UTrTrafficSpawner::SetSpawnData(TSubclassOf<AActor> ActorClass, UStaticMesh* Mesh)
 {
 	DebugActor = ActorClass;
 	DebugMesh = Mesh;
@@ -29,36 +28,32 @@ void UTrTrafficSpawner::SpawnTraffic()
 
 void UTrTrafficSpawner::TraverseGraph()
 {
-	TArray<const URpSpatialGraphNode*> Nodes = GraphComponent->GetNodes();
-	TSet<TPair<const URpSpatialGraphNode*, const URpSpatialGraphNode*>> EdgeSet;
+	const TArray<FRpSpatialGraphNode>* Nodes = GraphComponent->GetNodes();
+	TSet<TPair<uint32, uint32>> EdgeSet;
 
-	for(const URpSpatialGraphNode* Node : Nodes)
+	uint32 NumNodes = static_cast<uint32>(Nodes->Num());
+	for(uint32 Index = 0; Index < NumNodes; ++Index)
 	{
-		TSet<const URpSpatialGraphNode*> Connections = Node->GetConnections();
-		for(const URpSpatialGraphNode* Connection : Connections)
+		TSet<uint32> ConnectedIndices = Nodes->operator[](Index).GetConnections();
+		for(uint32 ConnectedIndex : ConnectedIndices)
 		{
-			if(EdgeSet.Contains({Node, Connection}) || EdgeSet.Contains({Connection, Node}))
+			if(EdgeSet.Contains({Index, ConnectedIndex}) || EdgeSet.Contains({ConnectedIndex, Index}))
 			{
 				continue;
 			}
 
-			CreateSpawnPointsBetweenNodes(Node, Connection);
-
-			EdgeSet.Add({Node, Connection});
-			EdgeSet.Add({Connection, Node});
+			CreateSpawnPointsBetweenNodes(Nodes->operator[](Index).GetLocation(), Nodes->operator[](ConnectedIndex).GetLocation());
 		}
 	}
 }
 
-void UTrTrafficSpawner::CreateSpawnPointsBetweenNodes(const URpSpatialGraphNode* Node1, const URpSpatialGraphNode* Node2)
+void UTrTrafficSpawner::CreateSpawnPointsBetweenNodes(const FVector& Node1Location, const FVector& Node2Location)
 {
-	constexpr float AverageVehicleLength = 200.0f;
-	constexpr float MinimumGap = 100.0f;
-	constexpr float PackingFactor = 0.5f;
+	constexpr float AverageVehicleLength = 600.0f;
+	constexpr float MinimumGap = 200.0f;
+	constexpr float PackingFactor = 0.9f;
 
-	const FVector& P1 = Node1->GetLocation();
-	const FVector& P2 = Node2->GetLocation();
-	const float EdgeLength = FVector::Distance(P1, P2);
+	const float EdgeLength = FVector::Distance(Node1Location, Node2Location);
 	const float Separation = (AverageVehicleLength * 0.5f + MinimumGap) / EdgeLength;
 
 	float LowerLimit = 0.1f;
@@ -66,7 +61,7 @@ void UTrTrafficSpawner::CreateSpawnPointsBetweenNodes(const URpSpatialGraphNode*
 	{
 		float UpperLimit = FMath::Min(LowerLimit + (AverageVehicleLength * 0.5f) / EdgeLength + PackingFactor, 0.9f);
 		float Alpha = FMath::RandRange(LowerLimit, UpperLimit);
-		const FVector& NewLocation = FMath::Lerp(P1, P2, Alpha);
+		const FVector& NewLocation = FMath::Lerp(Node1Location, Node2Location, Alpha);
 		
 		DrawDebugPoint(GetWorld(), NewLocation, 5.0f, FColor::Blue, true);
 
