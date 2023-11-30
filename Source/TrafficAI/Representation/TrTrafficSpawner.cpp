@@ -3,31 +3,38 @@
 #include "TrTrafficSpawner.h"
 #include "TrRepresentationSystem.h"
 #include "RpSpatialGraphComponent.h"
+#include "TrTrafficDefinition.h"
+#include "Kismet/KismetMathLibrary.h"
 
-void UTrTrafficSpawner::SetTrafficGraph(const URpSpatialGraphComponent* NewGraphComponent)
+void UTrTrafficSpawner::Spawn(const URpSpatialGraphComponent* NewGraphComponent, const FTrafficSpawnConfiguration& NewRequestData)
 {
-	GraphComponent = NewGraphComponent;
-}
-
-void UTrTrafficSpawner::SetSpawnData(TSubclassOf<AActor> ActorClass, UStaticMesh* Mesh)
-{
-	DebugActor = ActorClass;
-	DebugMesh = Mesh;
-}
-
-void UTrTrafficSpawner::SpawnTraffic()
-{
-	RepresentationSystem = GetWorld()->GetSubsystem<UTrRepresentationSystem>();
-	if(IsValid(RepresentationSystem) && IsValid(GraphComponent))
+	UTrRepresentationSystem* RepresentationSystem = GetWorld()->GetSubsystem<UTrRepresentationSystem>();
+	SpawnRequestData = NewRequestData;
+	
+	if(IsValid(RepresentationSystem) && IsValid(NewGraphComponent))
 	{
-		TraverseGraph();
+		TArray<TArray<FTransform>> GraphPoints;
+		CreateSpawnPointsOnGraph(NewGraphComponent, GraphPoints);
+		
+		for(const TArray<FTransform>& Edge : GraphPoints)
+		{
+			for(const FTransform& SpawnTransform : Edge)
+			{
+				FTrafficAISpawnRequest NewSpawnRequest;
+				NewSpawnRequest.Transform = SpawnTransform;
+				NewSpawnRequest.LOD1_Actor = NewRequestData.TrafficDefinitions[0]->ActorClass;
+				NewSpawnRequest.LOD2_Mesh = NewRequestData.TrafficDefinitions[0]->StaticMesh;
+				
+				RepresentationSystem->SpawnDeferred(NewSpawnRequest);
+			}
+		}
 	}
 }
 
-void UTrTrafficSpawner::TraverseGraph()
+void UTrTrafficSpawner::CreateSpawnPointsOnGraph(const URpSpatialGraphComponent* GraphComponent, TArray<TArray<FTransform>>& GraphSpawnPoints)
 {
 	const TArray<FRpSpatialGraphNode>* Nodes = GraphComponent->GetNodes();
-	TSet<uint32> EdgeSet;
+	TSet<TPair<uint32, uint32>> EdgeSet;
 
 	uint32 NumNodes = static_cast<uint32>(Nodes->Num());
 	for(uint32 Index = 0; Index < NumNodes; ++Index)
@@ -35,40 +42,43 @@ void UTrTrafficSpawner::TraverseGraph()
 		TSet<uint32> ConnectedIndices = Nodes->operator[](Index).GetConnections();
 		for(uint32 ConnectedIndex : ConnectedIndices)
 		{
-			if(EdgeSet.Contains(Index ^ ConnectedIndex))
+			if(EdgeSet.Contains({Index, ConnectedIndex}) || EdgeSet.Contains({ConnectedIndex, Index}))
 			{
 				continue;
 			}
 
-			CreateSpawnPointsBetweenNodes(Nodes->operator[](Index).GetLocation(), Nodes->operator[](ConnectedIndex).GetLocation());
-
-			EdgeSet.Add(Index ^ ConnectedIndex);
+			TArray<FTransform> SpawnPoints;
+			const FVector& Node1Location = Nodes->operator[](Index).GetLocation();
+			const FVector& Node2Location = Nodes->operator[](ConnectedIndex).GetLocation();
+			
+			CreateSpawnPointsOnEdge(Node1Location, Node2Location, SpawnPoints);
+			CreateSpawnPointsOnEdge(Node2Location, Node1Location, SpawnPoints);
+			GraphSpawnPoints.Push(SpawnPoints);
+			
+			EdgeSet.Add({Index, ConnectedIndex});
+			EdgeSet.Add({ConnectedIndex, Index});
 		}
 	}
 }
 
-void UTrTrafficSpawner::CreateSpawnPointsBetweenNodes(const FVector& Node1Location, const FVector& Node2Location)
+void UTrTrafficSpawner::CreateSpawnPointsOnEdge(const FVector& Node1Location, const FVector& Node2Location, TArray<FTransform>& SpawnTransforms)
 {
-	constexpr float AverageVehicleLength = 600.0f;
-	constexpr float VariableSeparation = 0.125f;
 	const float EdgeLength = FVector::Distance(Node1Location, Node2Location);
-	const float RequiredSeparation = (AverageVehicleLength) / EdgeLength;
-
-	float TMin = 0.0f;
-	while(TMin < 1.0f)
+	const float NormalizedMinimumSeparation = (SpawnRequestData.MinimumSeparation) / EdgeLength;
+	
+	float TMin = SpawnRequestData.IntersectionCutoff;
+	while(TMin < 1.0f - SpawnRequestData.IntersectionCutoff)
 	{
-		float TMax = TMin + VariableSeparation;
-		float T = FMath::RandRange(TMin, TMax);
-		TMin = T + RequiredSeparation;
+		float TMax = TMin + (1 - FMath::Clamp(SpawnRequestData.VariableSeparation, 0.0f, 1.0f));
+		float T = FMath::Clamp(FMath::RandRange(TMin, TMax), 0.0f, 1.0f);
 		
-		const FVector NewLocation = FMath::Lerp(Node1Location, Node2Location, T); 
+		TMin = T + NormalizedMinimumSeparation;
 		
-		DrawDebugPoint(GetWorld(), NewLocation, 20.0f, FColor::MakeRandomColor(), true);
-        
-        FTrafficAISpawnRequest SpawnRequest;
-        SpawnRequest.Transform = FTransform(NewLocation);
-        SpawnRequest.LOD1_Actor = DebugActor;
-        SpawnRequest.LOD2_Mesh = DebugMesh;
-        RepresentationSystem->SpawnDeferred(SpawnRequest);
+		const FVector NewForwardVector = (Node2Location - Node1Location).GetSafeNormal();
+		const FRotator NewRotation = UKismetMathLibrary::MakeRotFromX(NewForwardVector);
+		const FVector NewRightVector = NewForwardVector.Cross(FVector::UpVector);
+		const FVector NewLocation = FMath::Lerp(Node1Location, Node2Location, T) + NewRightVector * SpawnRequestData.LaneWidth;
+		
+		SpawnTransforms.Push(FTransform(NewRotation, NewLocation, FVector::One()));
 	}
 }
