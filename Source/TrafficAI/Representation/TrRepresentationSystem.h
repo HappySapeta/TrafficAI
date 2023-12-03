@@ -38,6 +38,8 @@ public:
 
 	UTrRepresentationSystem();
 	
+	virtual void PostInitialize() override;
+
 	// Push a request to spawn an Entity. The request is not guaranteed to be processed immediately.
 	UFUNCTION(BlueprintCallable)
 	void SpawnDeferred(const FTrafficAISpawnRequest& SpawnRequest);
@@ -45,20 +47,21 @@ public:
 	// Assign an actor whose distance is used for determining the appropriate Level of Detail to be used.
 	UFUNCTION(BlueprintCallable)
 	void SetFocus(const AActor* Actor) { POVActor = Actor; }
-
-
+	
 	// Get a weak pointer to an array of all entities.
 	TWeakPtr<TArray<FTrEntity>> GetEntities() const { return Entities; }
 
+	// Get a reference to the actor managing Static Mesh Instances.
 	class ATrISMCManager* GetTrafficVisualizer() const { return ISMCManager; }
 
-	// Reset SharedPtr to Entities.
+	// Reset SharedPtrs to Entities.
 	virtual void BeginDestroy() override;
 
 	// Create this Subsystem only if playing in PIE or in game.
 	virtual bool ShouldCreateSubsystem(UObject* Outer) const override;
 
 protected:
+	
 	// Spawn an ISMCManager and set timers.
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 
@@ -67,15 +70,10 @@ protected:
 
 private:
 	
-	// Process the Spawn queue in batches.
-	virtual void ProcessSpawnRequests();
-
-	// Perform LOD swaps based on the distance from the POVActor.
-	virtual void UpdateLODs();
-
-	virtual void Update();
+	virtual void InitializeLODUpdater();
 
 protected:
+	
 	TSharedPtr<TArray<FTrEntity>> Entities;
 
 	UPROPERTY()
@@ -90,10 +88,6 @@ private:
 	// Amount of Entities updated in a single batch.
 	UPROPERTY(Config, EditAnywhere, Category = "Representation System | Update Settings", meta = (TitleProperty = "Entity Spawn & Update Batch Size", ClampMin = 1, UIMin = 1))
 	uint8 ProcessingBatchSize = 100;
-
-	// Time interval before the LODs of Entities are updated.
-	UPROPERTY(Config, EditAnywhere, Category = "Representation System | Update Settings", meta = (TitleProperty = "LOD Update and Spawn Rate", ClampMin = 0, UIMin = 0))
-	float TickRate = 0.03333f;
 
 	// The range in which Actors become relevant. Since Actors have physics simulations, they are more expensive to simulate.
 	UPROPERTY(Config, EditAnywhere, Category = "Representation System | Update Settings")
