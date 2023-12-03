@@ -39,11 +39,14 @@ void UTrRepresentationSystem::PostInitialize()
 
 void UTrRepresentationSystem::InitializeLODUpdater()
 {
+	// TODO : Can we completely rely on the Batch Processor to do the LOD update instead of using custom batching logic ?
 	URpDeferredBatchProcessingSystem* BatchProcessor = GetWorld()->GetSubsystem<URpDeferredBatchProcessingSystem>();
 	if(ensureMsgf(BatchProcessor, TEXT("BatchProcessor not found.")))
 	{
 		BatchProcessor->QueueCommand("LODUpdateProcessor", [this]()
 		{
+			TRACE_CPUPROFILER_EVENT_SCOPE(UTrRepresentationSystem::UpdateLODLambda)
+			
 			static int EntityIndex = 0;
 			if(EntityIndex >= Entities->Num())
 			{
@@ -64,7 +67,6 @@ void UTrRepresentationSystem::InitializeLODUpdater()
 			while(EntityIndex < Entities->Num() && CurrentBatchSize < ProcessingBatchSize)
 			{
 				const FTrEntity& Entity = Entities->operator[](EntityIndex);
-		
 				const float Distance = FVector::Distance(FocusLocation, Entity.Dummy->GetActorLocation());
 
 				// Toggle Actors.
@@ -76,7 +78,6 @@ void UTrRepresentationSystem::InitializeLODUpdater()
 				const FVector& NewScale = bIsMeshRelevant * FVector::OneVector;
 				FTransform MeshTransform = Entity.Dummy->GetActorTransform();
 				MeshTransform.SetScale3D(NewScale);
-			
 				ISMCManager->GetISMC(Entity.Mesh)->UpdateInstanceTransform(Entity.InstanceIndex, MeshTransform, true, true, false);
 
 				Entities->operator[](EntityIndex).LODLevel = static_cast<ELODLevel>(!bIsActorRelevant);
