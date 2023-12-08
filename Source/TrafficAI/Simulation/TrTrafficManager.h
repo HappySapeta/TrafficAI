@@ -12,31 +12,19 @@ class TRAFFICAI_API ATrTrafficManager : public AActor
 	GENERATED_BODY()
 
 public:
-
-	UFUNCTION(CallInEditor, BlueprintCallable)
-	void Spawn();
-
-	UFUNCTION(CallInEditor, BlueprintCallable)
-	void RegisterEntities();
-
-	UFUNCTION(CallInEditor, BlueprintCallable)
-	void StartSimulation();
-
-	UFUNCTION(CallInEditor, BlueprintCallable)
-	void StopSimulation();
 	
 	ATrTrafficManager();
-
+	
 protected:
 	
 	virtual void BeginPlay() override;
 
 protected:
 
-	UPROPERTY(VisibleAnywhere, Category = "Default")
+	UPROPERTY(VisibleDefaultsOnly, Category = "Default")
 	TObjectPtr<class URpSpatialGraphComponent> SpatialGraphComponent;
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category = "Default")
 	TObjectPtr<class UTrTrafficSpawnConfiguration> SpawnConfiguration;
 
 	UPROPERTY()
