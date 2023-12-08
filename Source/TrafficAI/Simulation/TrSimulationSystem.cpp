@@ -1,9 +1,6 @@
 ﻿// Copyright Anupam Sahu. All Rights Reserved.
 
-
 #include "TrSimulationSystem.h"
-
-#include "Async/ParallelFor.h"
 
 void UTrSimulationSystem::RegisterEntites(TWeakPtr<TArray<FTrEntity>> NewEntities)
 {
@@ -19,7 +16,7 @@ void UTrSimulationSystem::RegisterEntities_Internal()
 	}
 
 	const uint32 NumEntities = Entities.Pin()->Num();
-	ParallelFor(NumEntities, [this](const uint32 Index)
+	for(uint32 Index = 0; Index < NumEntities; ++Index)
 	{
 		const AActor* Dummy = Entities.Pin()->operator[](Index).Dummy;
 		FVector NewPosition = Dummy->GetActorLocation();
@@ -38,8 +35,7 @@ void UTrSimulationSystem::RegisterEntities_Internal()
 
 		float NewSpeed = Dummy->GetVelocity().Length();
 		Speeds.Add(NewSpeed);
-		
-	});
+	}
 
 	for(uint32 Index = 0; Index < NumEntities; ++Index)
 	{

@@ -37,6 +37,13 @@ void ATrTrafficManager::Spawn()
 	TrafficSpawner->Spawn(SpatialGraphComponent, SpawnConfiguration);
 }
 
+void ATrTrafficManager::RegisterEntities()
+{
+	check(RepresentationSystem);
+	check(SimulationSystem);
+	SimulationSystem->RegisterEntites(RepresentationSystem->GetEntities());
+}
+
 void ATrTrafficManager::StartSimulation()
 {
 }

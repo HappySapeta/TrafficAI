@@ -17,6 +17,9 @@ public:
 	void Spawn();
 
 	UFUNCTION(CallInEditor, BlueprintCallable)
+	void RegisterEntities();
+
+	UFUNCTION(CallInEditor, BlueprintCallable)
 	void StartSimulation();
 
 	UFUNCTION(CallInEditor, BlueprintCallable)
