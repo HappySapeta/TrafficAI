@@ -33,7 +33,7 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category = "Default")
 	TObjectPtr<class URpSpatialGraphComponent> SpatialGraphComponent;
 
-	UPROPERTY(VisibleAnywhere)
+	UPROPERTY(EditAnywhere)
 	TObjectPtr<class UTrTrafficSpawnConfiguration> SpawnConfiguration;
 
 	UPROPERTY()
