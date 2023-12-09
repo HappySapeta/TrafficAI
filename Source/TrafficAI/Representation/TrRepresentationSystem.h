@@ -37,8 +37,10 @@ class TRAFFICAI_API UTrRepresentationSystem : public UWorldSubsystem
 public:
 
 	UTrRepresentationSystem();
-	
-	virtual void PostInitialize() override;
+
+	// Spawn Vehicles
+	UFUNCTION(BlueprintCallable)
+	void Spawn(const URpSpatialGraphComponent* NewGraphComponent, const UTrTrafficSpawnConfiguration* NewRequestData);
 
 	// Push a request to spawn an Entity. The request is not guaranteed to be processed immediately.
 	UFUNCTION(BlueprintCallable)
@@ -51,8 +53,7 @@ public:
 	// Get a weak pointer to an array of all entities.
 	TWeakPtr<TArray<FTrEntity>> GetEntities() const { return Entities; }
 
-	// Get a reference to the actor managing Static Mesh Instances.
-	class ATrISMCManager* GetTrafficVisualizer() const { return ISMCManager; }
+	virtual void PostInitialize() override;
 
 	// Reset SharedPtrs to Entities.
 	virtual void BeginDestroy() override;
@@ -70,7 +71,13 @@ protected:
 
 private:
 	
-	virtual void InitializeLODUpdater();
+	void InitializeLODUpdater();
+
+	// Traverse the edges of the Graph
+	void CreateSpawnPointsOnGraph(const URpSpatialGraphComponent* GraphComponent, TArray<TArray<FTransform>>& GraphSpawnPoints);
+
+	// Create spawn points along an edge
+	void CreateSpawnPointsOnEdge(const FVector& Node1Location, const FVector& Node2Location, TArray<FTransform>& SpawnTransforms);
 
 protected:
 	
@@ -78,6 +85,9 @@ protected:
 
 	UPROPERTY()
 	TObjectPtr<class ATrISMCManager> ISMCManager;
+
+	UPROPERTY()
+	const class UTrTrafficSpawnConfiguration* SpawnRequestData;
 
 private:
 

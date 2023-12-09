@@ -2,7 +2,6 @@
 
 #include "TrTrafficManager.h"
 #include "RpSpatialGraphComponent.h"
-#include "TrafficAI/Representation/TrTrafficSpawner.h"
 #include "TrafficAI/Representation/TrRepresentationSystem.h"
 #include "TrafficAI/Simulation/TrSimulationSystem.h"
 
@@ -20,7 +19,6 @@ void ATrTrafficManager::BeginPlay()
 	const UWorld* World = GetWorld();
 	check(World);
 
-	TrafficSpawner = World->GetSubsystem<UTrTrafficSpawner>();
 	RepresentationSystem = World->GetSubsystem<UTrRepresentationSystem>();
 	SimulationSystem = World->GetSubsystem<UTrSimulationSystem>();
 	

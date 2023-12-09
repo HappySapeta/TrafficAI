@@ -28,9 +28,6 @@ protected:
 	TObjectPtr<class UTrTrafficSpawnConfiguration> SpawnConfiguration;
 
 	UPROPERTY()
-	TObjectPtr<class UTrTrafficSpawner> TrafficSpawner;
-
-	UPROPERTY()
 	TObjectPtr<class UTrRepresentationSystem> RepresentationSystem;
 
 	UPROPERTY()
