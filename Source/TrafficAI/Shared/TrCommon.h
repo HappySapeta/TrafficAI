@@ -33,7 +33,11 @@ struct FTrEntity
 };
 
 /**
- * 
+ * @struct FTrTrafficDefinition
+ * @brief Defines the properties of a traffic object.
+ *
+ * A traffic object is represented by a static mesh and an actor class.
+ * The ratio property determines the probability of generating this traffic object in relation to other traffic objects.
  */
 USTRUCT(BlueprintType, Blueprintable)
 struct TRAFFICAI_API FTrTrafficDefinition
