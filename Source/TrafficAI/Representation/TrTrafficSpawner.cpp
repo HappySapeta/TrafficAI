@@ -3,10 +3,9 @@
 #include "TrTrafficSpawner.h"
 #include "TrRepresentationSystem.h"
 #include "RpSpatialGraphComponent.h"
-#include "TrTrafficDefinition.h"
 #include "Kismet/KismetMathLibrary.h"
 
-void UTrTrafficSpawner::Spawn(const URpSpatialGraphComponent* NewGraphComponent, const FTrafficSpawnConfiguration& NewRequestData)
+void UTrTrafficSpawner::Spawn(const URpSpatialGraphComponent* NewGraphComponent, const UTrTrafficSpawnConfiguration* NewRequestData)
 {
 	UTrRepresentationSystem* RepresentationSystem = GetWorld()->GetSubsystem<UTrRepresentationSystem>();
 	SpawnRequestData = NewRequestData;
@@ -22,8 +21,8 @@ void UTrTrafficSpawner::Spawn(const URpSpatialGraphComponent* NewGraphComponent,
 			{
 				FTrafficAISpawnRequest NewSpawnRequest;
 				NewSpawnRequest.Transform = SpawnTransform;
-				NewSpawnRequest.LOD1_Actor = NewRequestData.TrafficDefinitions[0]->ActorClass;
-				NewSpawnRequest.LOD2_Mesh = NewRequestData.TrafficDefinitions[0]->StaticMesh;
+				NewSpawnRequest.LOD1_Actor = NewRequestData->TrafficDefinitions[0].ActorClass;
+				NewSpawnRequest.LOD2_Mesh = NewRequestData->TrafficDefinitions[0].StaticMesh;
 				
 				RepresentationSystem->SpawnDeferred(NewSpawnRequest);
 			}
@@ -64,12 +63,12 @@ void UTrTrafficSpawner::CreateSpawnPointsOnGraph(const URpSpatialGraphComponent*
 void UTrTrafficSpawner::CreateSpawnPointsOnEdge(const FVector& Node1Location, const FVector& Node2Location, TArray<FTransform>& SpawnTransforms)
 {
 	const float EdgeLength = FVector::Distance(Node1Location, Node2Location);
-	const float NormalizedMinimumSeparation = (SpawnRequestData.MinimumSeparation) / EdgeLength;
+	const float NormalizedMinimumSeparation = (SpawnRequestData->MinimumSeparation) / EdgeLength;
 	
-	float TMin = SpawnRequestData.IntersectionCutoff;
-	while(TMin < 1.0f - SpawnRequestData.IntersectionCutoff)
+	float TMin = SpawnRequestData->IntersectionCutoff;
+	while(TMin < 1.0f - SpawnRequestData->IntersectionCutoff)
 	{
-		float TMax = TMin + (1 - FMath::Clamp(SpawnRequestData.VariableSeparation, 0.0f, 1.0f));
+		float TMax = TMin + (1 - FMath::Clamp(SpawnRequestData->VariableSeparation, 0.0f, 1.0f));
 		float T = FMath::Clamp(FMath::RandRange(TMin, TMax), 0.0f, 1.0f);
 		
 		TMin = T + NormalizedMinimumSeparation;
@@ -77,7 +76,7 @@ void UTrTrafficSpawner::CreateSpawnPointsOnEdge(const FVector& Node1Location, co
 		const FVector NewForwardVector = (Node2Location - Node1Location).GetSafeNormal();
 		const FRotator NewRotation = UKismetMathLibrary::MakeRotFromX(NewForwardVector);
 		const FVector NewRightVector = NewForwardVector.Cross(FVector::UpVector);
-		const FVector NewLocation = FMath::Lerp(Node1Location, Node2Location, T) + NewRightVector * SpawnRequestData.LaneWidth;
+		const FVector NewLocation = FMath::Lerp(Node1Location, Node2Location, T) + NewRightVector * SpawnRequestData->LaneWidth;
 		
 		SpawnTransforms.Push(FTransform(NewRotation, NewLocation, FVector::One()));
 	}
