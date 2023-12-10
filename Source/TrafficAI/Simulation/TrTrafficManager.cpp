@@ -14,6 +14,27 @@ ATrTrafficManager::ATrTrafficManager()
 	SpatialGraphComponent = CreateDefaultSubobject<URpSpatialGraphComponent>(TEXT("SpatialGraphComponent"));
 }
 
+void ATrTrafficManager::SpawnVehicles()
+{
+	RepresentationSystem->Spawn(SpatialGraphComponent, SpawnConfiguration);
+}
+
+void ATrTrafficManager::InitializeSimulator()
+{
+	SimulationSystem->RegisterEntities(RepresentationSystem->GetEntities());
+	SimulationSystem->RegisterPath(SpatialGraphComponent);
+}
+
+void ATrTrafficManager::StartSimulation()
+{
+	SimulationSystem->StartSimulation();
+}
+
+void ATrTrafficManager::StopSimulation()
+{
+	SimulationSystem->StopSimulation();
+}
+
 void ATrTrafficManager::BeginPlay()
 {
 	const UWorld* World = GetWorld();

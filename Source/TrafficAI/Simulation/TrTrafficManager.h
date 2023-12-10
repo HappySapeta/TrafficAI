@@ -14,6 +14,18 @@ class TRAFFICAI_API ATrTrafficManager : public AActor
 public:
 	
 	ATrTrafficManager();
+
+	UFUNCTION(CallInEditor, BlueprintCallable)
+	void SpawnVehicles();
+	
+	UFUNCTION(CallInEditor, BlueprintCallable)
+	void InitializeSimulator();
+
+	UFUNCTION(CallInEditor, BlueprintCallable)
+	void StartSimulation();
+
+	UFUNCTION(CallInEditor, BlueprintCallable)
+	void StopSimulation();
 	
 protected:
 	
