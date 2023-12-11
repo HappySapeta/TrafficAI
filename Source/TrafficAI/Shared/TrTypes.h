@@ -3,9 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "TrCommon.generated.h"
-
-#define SET_ACTOR_ENABLED(Actor, Value) Actor->SetActorEnableCollision(Value); Actor->SetActorHiddenInGame(!Value); Actor->SetActorTickEnabled(Value);
+#include "TrTypes.generated.h"
 
 // Simulated Entity
 struct FTrVehicleRepresentation

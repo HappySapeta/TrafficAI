@@ -6,12 +6,15 @@
 #include "Editor.h"
 #endif
 
-#include "RpSpatialGraphComponent.h"
-#include "Components/HierarchicalInstancedStaticMeshComponent.h"
+#include "TrUtility.h"
 #include "TrISMCManager.h"
-#include "GameFramework/PlayerController.h"
+
+#include "RpSpatialGraphComponent.h"
 #include "DeferredBatchProcessor/RpDeferredBatchProcessingSystem.h"
+
 #include "Kismet/KismetMathLibrary.h"
+#include "GameFramework/PlayerController.h"
+#include "Components/HierarchicalInstancedStaticMeshComponent.h"
 
 UTrRepresentationSystem::UTrRepresentationSystem()
 {

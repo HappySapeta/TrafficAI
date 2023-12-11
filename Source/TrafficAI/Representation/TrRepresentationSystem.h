@@ -2,7 +2,7 @@
 
 #pragma once
 #include "CoreMinimal.h"
-#include "TrCommon.h"
+#include "..\Shared\TrTypes.h"
 #include "UObject/WeakFieldPtr.h"
 #include "TrRepresentationSystem.generated.h"
 

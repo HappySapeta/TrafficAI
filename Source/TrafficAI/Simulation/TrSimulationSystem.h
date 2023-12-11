@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "TrCommon.h"
+#include "..\Shared\TrTypes.h"
 #include "TrSimulationSystem.generated.h"
 
 enum class ETrMotionState
