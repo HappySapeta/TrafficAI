@@ -84,3 +84,27 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawn Configuration")
 	TArray<FTrTrafficDefinition> TrafficDefinitions;
 };
+
+USTRUCT(BlueprintType)
+struct FTrModelData
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere)
+	float DesiredSpeed = 1500; // 15 m/s or 54 Km/h
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
+	float MinimumGap = 200; // 2 m
+
+	UPROPERTY(EditAnywhere)
+	float DesiredTimeHeadWay = 1.5f; // 1.5s
+
+	UPROPERTY(EditAnywhere)
+	float MaximumAcceleration = 73.0f; // 0.73 m/s/s
+
+	UPROPERTY(EditAnywhere)
+	float ComfortableBrakingDeceleration = 167.0f; // 1.67 m/s/s
+
+	UPROPERTY(EditAnywhere)
+	float AccelerationExponent = 4.0f;
+};
