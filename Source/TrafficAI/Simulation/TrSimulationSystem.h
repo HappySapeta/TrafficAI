@@ -25,7 +25,7 @@ class TRAFFICAI_API UTrSimulationSystem : public UWorldSubsystem
 
 public:
 
-	void RegisterEntities(TWeakPtr<TArray<FTrEntity>> TrafficEntities);
+	void RegisterEntities(TWeakPtr<TArray<FTrVehicleRepresentation>> TrafficEntities);
 
 	void RegisterPath(const class URpSpatialGraphComponent* GraphComponent);
 

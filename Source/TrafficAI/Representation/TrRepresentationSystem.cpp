@@ -15,7 +15,7 @@
 
 UTrRepresentationSystem::UTrRepresentationSystem()
 {
-	Entities = MakeShared<TArray<FTrEntity>>();
+	Entities = MakeShared<TArray<FTrVehicleRepresentation>>();
 	POVActor = nullptr;
 }
 
@@ -112,7 +112,7 @@ void UTrRepresentationSystem::InitializeLODUpdater()
 			int CurrentBatchSize = 0;
 			while(EntityIndex < Entities->Num() && CurrentBatchSize < ProcessingBatchSize)
 			{
-				const FTrEntity& Entity = Entities->operator[](EntityIndex);
+				const FTrVehicleRepresentation& Entity = Entities->operator[](EntityIndex);
 				const float Distance = FVector::Distance(FocusLocation, Entity.Dummy->GetActorLocation());
 
 				// Toggle Actors.

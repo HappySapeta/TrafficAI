@@ -67,7 +67,7 @@ public:
 	void SetFocus(const AActor* Actor) { POVActor = Actor; }
 	
 	// Get a weak pointer to an array of all entities.
-	TWeakPtr<TArray<FTrEntity>> GetEntities() const { return Entities; }
+	TWeakPtr<TArray<FTrVehicleRepresentation>> GetEntities() const { return Entities; }
 
 	virtual void PostInitialize() override;
 
@@ -93,7 +93,7 @@ protected:
 
 	FTrSpawner Spawner;
 	
-	TSharedPtr<TArray<FTrEntity>> Entities;
+	TSharedPtr<TArray<FTrVehicleRepresentation>> Entities;
 
 	UPROPERTY()
 	TObjectPtr<class ATrISMCManager> ISMCManager;

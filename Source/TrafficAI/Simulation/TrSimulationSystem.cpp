@@ -3,12 +3,12 @@
 #include "TrSimulationSystem.h"
 #include "RpSpatialGraphComponent.h"
 
-void UTrSimulationSystem::RegisterEntities(TWeakPtr<TArray<FTrEntity>> TrafficEntities)
+void UTrSimulationSystem::RegisterEntities(TWeakPtr<TArray<FTrVehicleRepresentation>> TrafficEntities)
 {
 	if(TrafficEntities.IsValid())
 	{
 		NumEntities = TrafficEntities.Pin()->Num();
-		for(const FTrEntity& Entity : *TrafficEntities.Pin())
+		for(const FTrVehicleRepresentation& Entity : *TrafficEntities.Pin())
 		{
 			Positions.Push(Entity.Dummy->GetActorLocation());
 			Velocities.Push(Entity.Dummy->GetVelocity());

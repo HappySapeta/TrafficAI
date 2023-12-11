@@ -8,7 +8,7 @@
 #define SET_ACTOR_ENABLED(Actor, Value) Actor->SetActorEnableCollision(Value); Actor->SetActorHiddenInGame(!Value); Actor->SetActorTickEnabled(Value);
 
 // Simulated Entity
-struct FTrEntity
+struct FTrVehicleRepresentation
 {
 	// Mesh used for the lowest LOD.
 	UStaticMesh* Mesh = nullptr;
