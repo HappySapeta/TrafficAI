@@ -26,6 +26,22 @@ struct TRAFFICAI_API FTrafficAISpawnRequest
 	FTransform Transform;
 };
 
+class TRAFFICAI_API FTrSpawner
+{
+public:
+
+	FTrSpawner() = default;
+	
+	// Traverse the edges of the Graph
+	UFUNCTION(BlueprintCallable)
+	void CreateSpawnPointsOnGraph(const URpSpatialGraphComponent* GraphComponent, TArray<TArray<FTransform>>& GraphSpawnPoints, const UTrTrafficSpawnConfiguration* SpawnConfiguration);
+
+	// Create spawn points along an edge
+	UFUNCTION(BlueprintCallable)
+	void CreateSpawnPointsOnEdge(const FVector& Node1Location, const FVector& Node2Location, TArray<FTransform>& SpawnTransforms, const UTrTrafficSpawnConfiguration* SpawnConfiguration);
+	
+};
+
 /**
  * Subsystem responsible for spawning Entities and handling the seamless transition of LODs.
  */
@@ -73,21 +89,14 @@ private:
 	
 	void InitializeLODUpdater();
 
-	// Traverse the edges of the Graph
-	void CreateSpawnPointsOnGraph(const URpSpatialGraphComponent* GraphComponent, TArray<TArray<FTransform>>& GraphSpawnPoints);
-
-	// Create spawn points along an edge
-	void CreateSpawnPointsOnEdge(const FVector& Node1Location, const FVector& Node2Location, TArray<FTransform>& SpawnTransforms);
-
 protected:
+
+	FTrSpawner Spawner;
 	
 	TSharedPtr<TArray<FTrEntity>> Entities;
 
 	UPROPERTY()
 	TObjectPtr<class ATrISMCManager> ISMCManager;
-
-	UPROPERTY()
-	const class UTrTrafficSpawnConfiguration* SpawnRequestData;
 
 private:
 
