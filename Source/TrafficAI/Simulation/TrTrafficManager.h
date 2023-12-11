@@ -37,7 +37,7 @@ protected:
 	TObjectPtr<class URpSpatialGraphComponent> SpatialGraphComponent;
 
 	UPROPERTY(EditAnywhere, Category = "Default")
-	TObjectPtr<class UTrTrafficSpawnConfiguration> SpawnConfiguration;
+	TObjectPtr<class UTrSpawnConfiguration> SpawnConfiguration;
 
 	UPROPERTY()
 	TObjectPtr<class UTrRepresentationSystem> RepresentationSystem;

@@ -19,7 +19,7 @@ UTrRepresentationSystem::UTrRepresentationSystem()
 	POVActor = nullptr;
 }
 
-void UTrRepresentationSystem::Spawn(const URpSpatialGraphComponent* NewGraphComponent, const UTrTrafficSpawnConfiguration* NewSpawnConfiguration)
+void UTrRepresentationSystem::Spawn(const URpSpatialGraphComponent* NewGraphComponent, const UTrSpawnConfiguration* NewSpawnConfiguration)
 {
 	if(IsValid(NewGraphComponent))
 	{
@@ -145,7 +145,7 @@ void UTrRepresentationSystem::Deinitialize()
 	World->GetTimerManager().ClearTimer(MainTimer);
 }
 
-void FTrSpawner::CreateSpawnPointsOnGraph(const URpSpatialGraphComponent* GraphComponent, TArray<TArray<FTransform>>& GraphSpawnPoints, const UTrTrafficSpawnConfiguration* SpawnConfiguration)
+void FTrSpawner::CreateSpawnPointsOnGraph(const URpSpatialGraphComponent* GraphComponent, TArray<TArray<FTransform>>& GraphSpawnPoints, const UTrSpawnConfiguration* SpawnConfiguration)
 {
 	check(SpawnConfiguration);
 	
@@ -178,7 +178,7 @@ void FTrSpawner::CreateSpawnPointsOnGraph(const URpSpatialGraphComponent* GraphC
 	}
 }
 
-void FTrSpawner::CreateSpawnPointsOnEdge(const FVector& Node1Location, const FVector& Node2Location, TArray<FTransform>& SpawnTransforms, const UTrTrafficSpawnConfiguration* SpawnConfiguration)
+void FTrSpawner::CreateSpawnPointsOnEdge(const FVector& Node1Location, const FVector& Node2Location, TArray<FTransform>& SpawnTransforms, const UTrSpawnConfiguration* SpawnConfiguration)
 {
 	const float EdgeLength = FVector::Distance(Node1Location, Node2Location);
 	const float NormalizedMinimumSeparation = (SpawnConfiguration->MinimumSeparation) / EdgeLength;

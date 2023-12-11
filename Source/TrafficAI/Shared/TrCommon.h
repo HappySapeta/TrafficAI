@@ -25,14 +25,11 @@ struct FTrEntity
 };
 
 /**
- * @struct FTrTrafficDefinition
- * @brief Defines the properties of a traffic object.
- *
- * A traffic object is represented by a static mesh and an actor class.
- * The ratio property determines the probability of generating this traffic object in relation to other traffic objects.
+ * A traffic vehicle is represented by a static mesh and an actor class.
+ * The ratio property determines the probability of generating this vehicle in relation to other vehicles.
  */
 USTRUCT(BlueprintType, Blueprintable)
-struct TRAFFICAI_API FTrTrafficDefinition
+struct TRAFFICAI_API FTrVehicleDefinition
 {
 	GENERATED_BODY()
 	
@@ -50,7 +47,7 @@ struct TRAFFICAI_API FTrTrafficDefinition
  * Configure Traffic Population Characterisics and Control overall Traffic density.
  */
 UCLASS()
-class TRAFFICAI_API UTrTrafficSpawnConfiguration : public UDataAsset
+class TRAFFICAI_API UTrSpawnConfiguration : public UDataAsset
 {
 	GENERATED_BODY()
 
@@ -74,7 +71,7 @@ public:
 
 	// Traffic Archetypes defined by their LODs
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawn Configuration")
-	TArray<FTrTrafficDefinition> TrafficDefinitions;
+	TArray<FTrVehicleDefinition> TrafficDefinitions;
 };
 
 USTRUCT(BlueprintType)

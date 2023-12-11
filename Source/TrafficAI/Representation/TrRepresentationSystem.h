@@ -34,11 +34,11 @@ public:
 	
 	// Traverse the edges of the Graph
 	UFUNCTION(BlueprintCallable)
-	void CreateSpawnPointsOnGraph(const URpSpatialGraphComponent* GraphComponent, TArray<TArray<FTransform>>& GraphSpawnPoints, const UTrTrafficSpawnConfiguration* SpawnConfiguration);
+	void CreateSpawnPointsOnGraph(const URpSpatialGraphComponent* GraphComponent, TArray<TArray<FTransform>>& GraphSpawnPoints, const UTrSpawnConfiguration* SpawnConfiguration);
 
 	// Create spawn points along an edge
 	UFUNCTION(BlueprintCallable)
-	void CreateSpawnPointsOnEdge(const FVector& Node1Location, const FVector& Node2Location, TArray<FTransform>& SpawnTransforms, const UTrTrafficSpawnConfiguration* SpawnConfiguration);
+	void CreateSpawnPointsOnEdge(const FVector& Node1Location, const FVector& Node2Location, TArray<FTransform>& SpawnTransforms, const UTrSpawnConfiguration* SpawnConfiguration);
 	
 };
 
@@ -56,7 +56,7 @@ public:
 
 	// Spawn Vehicles
 	UFUNCTION(BlueprintCallable)
-	void Spawn(const URpSpatialGraphComponent* NewGraphComponent, const UTrTrafficSpawnConfiguration* NewRequestData);
+	void Spawn(const URpSpatialGraphComponent* NewGraphComponent, const UTrSpawnConfiguration* NewRequestData);
 
 	// Push a request to spawn an Entity. The request is not guaranteed to be processed immediately.
 	UFUNCTION(BlueprintCallable)
