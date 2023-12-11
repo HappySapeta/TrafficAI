@@ -19,14 +19,12 @@ UTrRepresentationSystem::UTrRepresentationSystem()
 	POVActor = nullptr;
 }
 
-void UTrRepresentationSystem::Spawn(const URpSpatialGraphComponent* NewGraphComponent, const UTrTrafficSpawnConfiguration* NewRequestData)
+void UTrRepresentationSystem::Spawn(const URpSpatialGraphComponent* NewGraphComponent, const UTrTrafficSpawnConfiguration* NewSpawnConfiguration)
 {
-	SpawnRequestData = NewRequestData;
-	
 	if(IsValid(NewGraphComponent))
 	{
 		TArray<TArray<FTransform>> GraphPoints;
-		CreateSpawnPointsOnGraph(NewGraphComponent, GraphPoints);
+		Spawner.CreateSpawnPointsOnGraph(NewGraphComponent, GraphPoints, NewSpawnConfiguration);
 		
 		for(const TArray<FTransform>& Edge : GraphPoints)
 		{
@@ -34,64 +32,12 @@ void UTrRepresentationSystem::Spawn(const URpSpatialGraphComponent* NewGraphComp
 			{
 				FTrafficAISpawnRequest NewSpawnRequest;
 				NewSpawnRequest.Transform = SpawnTransform;
-				NewSpawnRequest.LOD1_Actor = NewRequestData->TrafficDefinitions[0].ActorClass;
-				NewSpawnRequest.LOD2_Mesh = NewRequestData->TrafficDefinitions[0].StaticMesh;
+				NewSpawnRequest.LOD1_Actor = NewSpawnConfiguration->TrafficDefinitions[0].ActorClass;
+				NewSpawnRequest.LOD2_Mesh = NewSpawnConfiguration->TrafficDefinitions[0].StaticMesh;
 				
 				SpawnDeferred(NewSpawnRequest);
 			}
 		}
-	}
-}
-
-void UTrRepresentationSystem::CreateSpawnPointsOnGraph(const URpSpatialGraphComponent* GraphComponent, TArray<TArray<FTransform>>& GraphSpawnPoints)
-{
-	const TArray<FRpSpatialGraphNode>* Nodes = GraphComponent->GetNodes();
-	TSet<TPair<uint32, uint32>> EdgeSet;
-
-	uint32 NumNodes = static_cast<uint32>(Nodes->Num());
-	for(uint32 Index = 0; Index < NumNodes; ++Index)
-	{
-		TSet<uint32> ConnectedIndices = Nodes->operator[](Index).GetConnections();
-		for(uint32 ConnectedIndex : ConnectedIndices)
-		{
-			if(EdgeSet.Contains({Index, ConnectedIndex}) || EdgeSet.Contains({ConnectedIndex, Index}))
-			{
-				continue;
-			}
-
-			TArray<FTransform> SpawnPoints;
-			const FVector& Node1Location = Nodes->operator[](Index).GetLocation();
-			const FVector& Node2Location = Nodes->operator[](ConnectedIndex).GetLocation();
-			
-			CreateSpawnPointsOnEdge(Node1Location, Node2Location, SpawnPoints);
-			CreateSpawnPointsOnEdge(Node2Location, Node1Location, SpawnPoints);
-			GraphSpawnPoints.Push(SpawnPoints);
-			
-			EdgeSet.Add({Index, ConnectedIndex});
-			EdgeSet.Add({ConnectedIndex, Index});
-		}
-	}
-}
-
-void UTrRepresentationSystem::CreateSpawnPointsOnEdge(const FVector& Node1Location, const FVector& Node2Location, TArray<FTransform>& SpawnTransforms)
-{
-	const float EdgeLength = FVector::Distance(Node1Location, Node2Location);
-	const float NormalizedMinimumSeparation = (SpawnRequestData->MinimumSeparation) / EdgeLength;
-	
-	float TMin = SpawnRequestData->IntersectionCutoff;
-	while(TMin < 1.0f - SpawnRequestData->IntersectionCutoff)
-	{
-		float TMax = TMin + (1 - FMath::Clamp(SpawnRequestData->VariableSeparation, 0.0f, 1.0f));
-		float T = FMath::Clamp(FMath::RandRange(TMin, TMax), 0.0f, 1.0f);
-		
-		TMin = T + NormalizedMinimumSeparation;
-		
-		const FVector NewForwardVector = (Node2Location - Node1Location).GetSafeNormal();
-		const FRotator NewRotation = UKismetMathLibrary::MakeRotFromX(NewForwardVector);
-		const FVector NewRightVector = NewForwardVector.Cross(FVector::UpVector);
-		const FVector NewLocation = FMath::Lerp(Node1Location, Node2Location, T) + NewRightVector * SpawnRequestData->LaneWidth;
-		
-		SpawnTransforms.Push(FTransform(NewRotation, NewLocation, FVector::One()));
 	}
 }
 
@@ -199,4 +145,59 @@ void UTrRepresentationSystem::Deinitialize()
 {
 	const UWorld* World = GetWorld();
 	World->GetTimerManager().ClearTimer(MainTimer);
+}
+
+void FTrSpawner::CreateSpawnPointsOnGraph(const URpSpatialGraphComponent* GraphComponent, TArray<TArray<FTransform>>& GraphSpawnPoints, const UTrTrafficSpawnConfiguration* SpawnConfiguration)
+{
+	check(SpawnConfiguration);
+	
+	const TArray<FRpSpatialGraphNode>* Nodes = GraphComponent->GetNodes();
+	TSet<TPair<uint32, uint32>> EdgeSet;
+
+	uint32 NumNodes = static_cast<uint32>(Nodes->Num());
+	for(uint32 Index = 0; Index < NumNodes; ++Index)
+	{
+		TSet<uint32> ConnectedIndices = Nodes->operator[](Index).GetConnections();
+		for(uint32 ConnectedIndex : ConnectedIndices)
+		{
+			if(EdgeSet.Contains({Index, ConnectedIndex}) || EdgeSet.Contains({ConnectedIndex, Index}))
+			{
+				continue;
+			}
+
+			TArray<FTransform> SpawnPoints;
+			const FVector& Node1Location = Nodes->operator[](Index).GetLocation();
+			const FVector& Node2Location = Nodes->operator[](ConnectedIndex).GetLocation();
+			
+			CreateSpawnPointsOnEdge(Node1Location, Node2Location, SpawnPoints, SpawnConfiguration);
+			CreateSpawnPointsOnEdge(Node2Location, Node1Location, SpawnPoints, SpawnConfiguration);
+			
+			GraphSpawnPoints.Push(SpawnPoints);
+			
+			EdgeSet.Add({Index, ConnectedIndex});
+			EdgeSet.Add({ConnectedIndex, Index});
+		}
+	}
+}
+
+void FTrSpawner::CreateSpawnPointsOnEdge(const FVector& Node1Location, const FVector& Node2Location, TArray<FTransform>& SpawnTransforms, const UTrTrafficSpawnConfiguration* SpawnConfiguration)
+{
+	const float EdgeLength = FVector::Distance(Node1Location, Node2Location);
+	const float NormalizedMinimumSeparation = (SpawnConfiguration->MinimumSeparation) / EdgeLength;
+	
+	float TMin = SpawnConfiguration->IntersectionCutoff;
+	while(TMin < 1.0f - SpawnConfiguration->IntersectionCutoff)
+	{
+		float TMax = TMin + (1 - FMath::Clamp(SpawnConfiguration->VariableSeparation, 0.0f, 1.0f));
+		float T = FMath::Clamp(FMath::RandRange(TMin, TMax), 0.0f, 1.0f);
+		
+		TMin = T + NormalizedMinimumSeparation;
+		
+		const FVector NewForwardVector = (Node2Location - Node1Location).GetSafeNormal();
+		const FRotator NewRotation = UKismetMathLibrary::MakeRotFromX(NewForwardVector);
+		const FVector NewRightVector = NewForwardVector.Cross(FVector::UpVector);
+		const FVector NewLocation = FMath::Lerp(Node1Location, Node2Location, T) + NewRightVector * SpawnConfiguration->LaneWidth;
+		
+		SpawnTransforms.Push(FTransform(NewRotation, NewLocation, FVector::One()));
+	}
 }
