@@ -125,9 +125,7 @@ void UTrRepresentationSystem::InitializeLODUpdater()
 				FTransform MeshTransform = Entity.Dummy->GetActorTransform();
 				MeshTransform.SetScale3D(NewScale);
 				ISMCManager->GetISMC(Entity.Mesh)->UpdateInstanceTransform(Entity.InstanceIndex, MeshTransform, true, true, false);
-
-				Entities->operator[](EntityIndex).LODLevel = static_cast<ELODLevel>(!bIsActorRelevant);
-			
+				
 				++EntityIndex;
 				++CurrentBatchSize;
 			}

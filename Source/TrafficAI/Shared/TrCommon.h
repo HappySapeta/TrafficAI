@@ -7,13 +7,6 @@
 
 #define SET_ACTOR_ENABLED(Actor, Value) Actor->SetActorEnableCollision(Value); Actor->SetActorHiddenInGame(!Value); Actor->SetActorTickEnabled(Value);
 
-enum class ELODLevel : int8
-{
-	None = -1,
-	LOD0 = 0,
-	LOD1 = 1
-};
-
 // Simulated Entity
 struct FTrEntity
 {
@@ -27,9 +20,8 @@ struct FTrEntity
 	// Actor used for the highest LOD.
 	AActor* Dummy = nullptr;
 
-	ELODLevel LODLevel;
-
-	ELODLevel PreviousLODLevel = ELODLevel::None;
+	// The first waypoint assigned to this entity.
+	uint32 InitialWaypoint = 0;
 };
 
 /**
