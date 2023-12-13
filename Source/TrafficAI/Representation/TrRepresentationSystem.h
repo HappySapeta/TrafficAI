@@ -35,11 +35,11 @@ struct FTrVehicleStart
 	uint32 StartingWaypoint;
 };
 
-class TRAFFICAI_API FTrSpawner
+class TRAFFICAI_API FTrVehicleStartCreator
 {
 public:
 
-	FTrSpawner() = default;
+	FTrVehicleStartCreator() = default;
 	
 	// Traverse the edges of the Graph
 	UFUNCTION(BlueprintCallable)
@@ -99,7 +99,7 @@ private:
 
 protected:
 
-	FTrSpawner Spawner;
+	FTrVehicleStartCreator VehicleStartCreator;
 	
 	TSharedPtr<TArray<FTrVehicleRepresentation>> Entities;
 

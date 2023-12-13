@@ -27,7 +27,7 @@ void UTrRepresentationSystem::Spawn(const URpSpatialGraphComponent* NewGraphComp
 	if(IsValid(NewGraphComponent))
 	{
 		TArray<TArray<FTrVehicleStart>> VehicleStarts;
-		Spawner.CreateVehicleStartsOnGraph(NewGraphComponent, NewSpawnConfiguration, VehicleStarts);
+		VehicleStartCreator.CreateVehicleStartsOnGraph(NewGraphComponent, NewSpawnConfiguration, VehicleStarts);
 		
 		for(const TArray<FTrVehicleStart>& EdgeStarts : VehicleStarts)
 		{
@@ -152,7 +152,7 @@ void UTrRepresentationSystem::Deinitialize()
 	World->GetTimerManager().ClearTimer(MainTimer);
 }
 
-void FTrSpawner::CreateVehicleStartsOnGraph(const URpSpatialGraphComponent* GraphComponent, const UTrSpawnConfiguration* SpawnConfiguration, TArray<TArray<FTrVehicleStart>>& OutVehicleStarts)
+void FTrVehicleStartCreator::CreateVehicleStartsOnGraph(const URpSpatialGraphComponent* GraphComponent, const UTrSpawnConfiguration* SpawnConfiguration, TArray<TArray<FTrVehicleStart>>& OutVehicleStarts)
 {
 	check(SpawnConfiguration);
 	
@@ -178,10 +178,8 @@ void FTrSpawner::CreateVehicleStartsOnGraph(const URpSpatialGraphComponent* Grap
 			CreateStartTransformsOnEdge(Node1Location, Node2Location, SpawnConfiguration, NewStartTransforms);
 			for(const FTransform& Transform : NewStartTransforms)
 			{
-				//DrawDebugString(, Transform.GetLocation() + FVector::UpVector * 100.0f, FString::Printf(TEXT("%d"), ConnectedIndex));
 				NewVehicleStarts.Push({Transform.GetLocation(), Transform.GetRotation(), ConnectedIndex});
 			}
-
 			
 			NewStartTransforms.Reset();
 			CreateStartTransformsOnEdge(Node2Location, Node1Location, SpawnConfiguration, NewStartTransforms);
@@ -198,7 +196,7 @@ void FTrSpawner::CreateVehicleStartsOnGraph(const URpSpatialGraphComponent* Grap
 	}
 }
 
-void FTrSpawner::CreateStartTransformsOnEdge(const FVector& Start, const FVector& Destination, const UTrSpawnConfiguration* SpawnConfiguration, TArray<FTransform>& OutStartTransforms)
+void FTrVehicleStartCreator::CreateStartTransformsOnEdge(const FVector& Start, const FVector& Destination, const UTrSpawnConfiguration* SpawnConfiguration, TArray<FTransform>& OutStartTransforms)
 {
 	const float EdgeLength = FVector::Distance(Start, Destination);
 	const float NormalizedMinimumSeparation = (SpawnConfiguration->MinimumSeparation) / EdgeLength;
