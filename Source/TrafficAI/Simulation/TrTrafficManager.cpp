@@ -27,6 +27,11 @@ void ATrTrafficManager::InitializeSimulator()
 
 void ATrTrafficManager::StartSimulation()
 {
+	if(!bInitialized)
+	{
+		InitializeSimulator();
+		bInitialized = true;
+	}
 	SimulationSystem->StartSimulation();
 }
 

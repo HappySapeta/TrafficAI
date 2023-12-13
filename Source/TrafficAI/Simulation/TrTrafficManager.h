@@ -19,9 +19,6 @@ public:
 	void SpawnVehicles();
 	
 	UFUNCTION(CallInEditor, BlueprintCallable)
-	void InitializeSimulator();
-
-	UFUNCTION(CallInEditor, BlueprintCallable)
 	void StartSimulation();
 
 	UFUNCTION(CallInEditor, BlueprintCallable)
@@ -31,6 +28,8 @@ protected:
 	
 	virtual void BeginPlay() override;
 
+	void InitializeSimulator();
+	
 protected:
 
 	UPROPERTY(VisibleDefaultsOnly, Category = "Default")
@@ -44,4 +43,9 @@ protected:
 
 	UPROPERTY()
 	TObjectPtr<class UTrSimulationSystem> SimulationSystem;
+
+private:
+
+	bool bInitialized = false;
+	
 };

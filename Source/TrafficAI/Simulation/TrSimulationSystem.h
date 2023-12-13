@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "..\Shared\TrTypes.h"
+#include "Ripple/Public/RpSpatialGraphComponent.h"
 #include "TrSimulationSystem.generated.h"
 
 enum class ETrMotionState
@@ -40,20 +41,12 @@ private:
 	void TickSimulation();
 
 	virtual void PathFollow();
-
-	virtual void LaneInsertion();
-
+	
 	virtual void Drive();
 	
 	virtual void IntersectionHandling();
 	
-	virtual void Separation();
-
 	void ApplyAcceleration();
-
-	void GenerateRoutes();
-
-	void AssignRoutes();
 	
 	float CalculateAcceleration(float CurrentSpeed, float RelativeSpeed, float CurrentGap) const;
 
@@ -63,14 +56,14 @@ private:
 	TArray<FVector> Positions;
 	TArray<FVector> Velocities;
 	TArray<FVector> Headings;
+	TArray<uint32> Waypoints;
 	TArray<FVector> Accelerations;
 	TArray<ETrMotionState> States;
-	TArray<TPair<int, int>> RouteIndices;
 
 	FTrModelData ModelData;
 	FTimerHandle SimTimerHandle;
-
-	TArray<TArray<FVector>> Routes;
-
+	
 	float SimTickRate = 0.016f;
+
+	TArray<FRpSpatialGraphNode> Nodes;
 };

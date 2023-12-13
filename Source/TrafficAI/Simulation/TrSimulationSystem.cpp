@@ -2,6 +2,7 @@
 
 #include "TrSimulationSystem.h"
 #include "RpSpatialGraphComponent.h"
+#include "Kismet/KismetMathLibrary.h"
 
 void UTrSimulationSystem::RegisterEntities(TWeakPtr<TArray<FTrVehicleRepresentation>> TrafficEntities)
 {
@@ -15,20 +16,18 @@ void UTrSimulationSystem::RegisterEntities(TWeakPtr<TArray<FTrVehicleRepresentat
 			Headings.Push(Entity.Dummy->GetActorForwardVector());
 			Accelerations.Push(FVector::Zero());
 			States.Push(ETrMotionState::Driving);
+			Waypoints.Push(Entity.InitialWaypoint);
 		}
 	}
 }
 
 void UTrSimulationSystem::RegisterPath(const URpSpatialGraphComponent* GraphComponent)
 {
-	
+	Nodes = *GraphComponent->GetNodes();
 }
 
 void UTrSimulationSystem::StartSimulation()
 {
-	GenerateRoutes();
-	AssignRoutes();
-	
 	FTimerDelegate SimTimerDelegate;
 	SimTimerDelegate.BindUObject(this, &UTrSimulationSystem::TickSimulation);
 
@@ -56,33 +55,29 @@ void UTrSimulationSystem::TickSimulation()
 	DebugVisualization();
 	
 	PathFollow();
-	LaneInsertion();
 	Drive();
 	IntersectionHandling();
-	Separation();
 	ApplyAcceleration();
 }
 
 void UTrSimulationSystem::PathFollow()
 {
+	constexpr float IntersectionRadius = 300.0f;
 	// adjust heading - TODO
-	//for(int Index = 0; Index < NumEntities; ++Index)
-	//{
-	//	if(States[Index] == ETrMotionState::Driving)
-	//	{
-	//		int RouteIndex = RouteIndices[Index].Get<0>();
-	//		int WaypointIndex = RouteIndices[Index].Get<1>();
-//
-	//		Headings[Index] = (Routes[RouteIndex][WaypointIndex] - Positions[Index]).GetSafeNormal();
-	//	}
-	//}
+
+	for(int Index = 0; Index < NumEntities; ++Index)
+	{
+		uint32& CurrentWaypointIndex = Waypoints[Index];
+		FVector CurrentWaypointLocation = Nodes[CurrentWaypointIndex].GetLocation();
+		if(FVector::Dist2D(Positions[Index], CurrentWaypointLocation) <= IntersectionRadius)
+		{
+			TSet<uint32> ConnectedIndices = Nodes[CurrentWaypointIndex].GetConnections();
+			CurrentWaypointIndex = UKismetMathLibrary::RandomInteger(ConnectedIndices.Num());
+			Headings[Index] = (Nodes[CurrentWaypointIndex].GetLocation() - Positions[Index]).GetSafeNormal();
+		}
+	}
 	
 	// switch to LaneInsertion or IntersectionHandling - TODO
-}
-
-void UTrSimulationSystem::LaneInsertion()
-{
-	// insert into lane - TODO
 }
 
 void UTrSimulationSystem::Drive()
@@ -102,11 +97,6 @@ void UTrSimulationSystem::IntersectionHandling()
 	// if leading (no cars in front) - stop if red, go if green
 }
 
-void UTrSimulationSystem::Separation()
-{
-	// Avoid peds, other cars, player
-}
-
 void UTrSimulationSystem::ApplyAcceleration()
 {
 	for(int Index = 0; Index < NumEntities; ++Index)
@@ -119,16 +109,6 @@ void UTrSimulationSystem::ApplyAcceleration()
 
 		Accelerations[Index] = FVector::ZeroVector;
 	}
-}
-
-void UTrSimulationSystem::GenerateRoutes()
-{
-	// Generate a set of random cyclic routes
-}
-
-void UTrSimulationSystem::AssignRoutes()
-{
-	// Assign routes to each vehicle at Random
 }
 
 float UTrSimulationSystem::CalculateAcceleration(const float CurrentSpeed, const float RelativeSpeed, const float CurrentGap) const
