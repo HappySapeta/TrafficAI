@@ -26,15 +26,19 @@ void UTrRepresentationSystem::Spawn(const URpSpatialGraphComponent* NewGraphComp
 {
 	if(IsValid(NewGraphComponent))
 	{
-		TArray<TArray<FTransform>> GraphPoints;
-		Spawner.CreateSpawnPointsOnGraph(NewGraphComponent, GraphPoints, NewSpawnConfiguration);
+		TArray<TArray<FTrVehicleStart>> VehicleStarts;
+		Spawner.CreateVehicleStartsOnGraph(NewGraphComponent, NewSpawnConfiguration, VehicleStarts);
 		
-		for(const TArray<FTransform>& Edge : GraphPoints)
+		for(const TArray<FTrVehicleStart>& EdgeStarts : VehicleStarts)
 		{
-			for(const FTransform& SpawnTransform : Edge)
+			for(const FTrVehicleStart& VehicleStart : EdgeStarts)
 			{
 				FTrafficAISpawnRequest NewSpawnRequest;
-				NewSpawnRequest.Transform = SpawnTransform;
+				NewSpawnRequest.Transform.SetLocation(VehicleStart.Location);
+				NewSpawnRequest.Transform.SetRotation(VehicleStart.Rotation);
+				NewSpawnRequest.InitialWaypoint = VehicleStart.StartingWaypoint;
+
+				// TODO : support for multiple definitions
 				NewSpawnRequest.LOD1_Actor = NewSpawnConfiguration->TrafficDefinitions[0].ActorClass;
 				NewSpawnRequest.LOD2_Mesh = NewSpawnConfiguration->TrafficDefinitions[0].StaticMesh;
 				
@@ -59,7 +63,7 @@ void UTrRepresentationSystem::SpawnDeferred(const FTrafficAISpawnRequest& SpawnR
 			{
 				checkf(ISMCManager, TEXT("[UTrRepresentationSystem][ProcessSpawnRequests] Reference to the ISMCManager is null."))
 				const int32 ISMIndex = ISMCManager->AddInstance(SpawnRequest.LOD2_Mesh, nullptr, SpawnRequest.Transform); 
-				Entities->Add({SpawnRequest.LOD2_Mesh, ISMIndex, NewActor});
+				Entities->Add({SpawnRequest.LOD2_Mesh, ISMIndex, NewActor, SpawnRequest.InitialWaypoint});
 				SET_ACTOR_ENABLED(NewActor, false);
 			}
 		});
@@ -148,7 +152,7 @@ void UTrRepresentationSystem::Deinitialize()
 	World->GetTimerManager().ClearTimer(MainTimer);
 }
 
-void FTrSpawner::CreateSpawnPointsOnGraph(const URpSpatialGraphComponent* GraphComponent, TArray<TArray<FTransform>>& GraphSpawnPoints, const UTrSpawnConfiguration* SpawnConfiguration)
+void FTrSpawner::CreateVehicleStartsOnGraph(const URpSpatialGraphComponent* GraphComponent, const UTrSpawnConfiguration* SpawnConfiguration, TArray<TArray<FTrVehicleStart>>& OutVehicleStarts)
 {
 	check(SpawnConfiguration);
 	
@@ -166,14 +170,27 @@ void FTrSpawner::CreateSpawnPointsOnGraph(const URpSpatialGraphComponent* GraphC
 				continue;
 			}
 
-			TArray<FTransform> SpawnPoints;
 			const FVector& Node1Location = Nodes->operator[](Index).GetLocation();
 			const FVector& Node2Location = Nodes->operator[](ConnectedIndex).GetLocation();
+
+			TArray<FTransform> NewStartTransforms;
+			TArray<FTrVehicleStart> NewVehicleStarts;
+			CreateStartTransformsOnEdge(Node1Location, Node2Location, SpawnConfiguration, NewStartTransforms);
+			for(const FTransform& Transform : NewStartTransforms)
+			{
+				//DrawDebugString(, Transform.GetLocation() + FVector::UpVector * 100.0f, FString::Printf(TEXT("%d"), ConnectedIndex));
+				NewVehicleStarts.Push({Transform.GetLocation(), Transform.GetRotation(), ConnectedIndex});
+			}
+
 			
-			CreateSpawnPointsOnEdge(Node1Location, Node2Location, SpawnPoints, SpawnConfiguration);
-			CreateSpawnPointsOnEdge(Node2Location, Node1Location, SpawnPoints, SpawnConfiguration);
-			
-			GraphSpawnPoints.Push(SpawnPoints);
+			NewStartTransforms.Reset();
+			CreateStartTransformsOnEdge(Node2Location, Node1Location, SpawnConfiguration, NewStartTransforms);
+			for(const FTransform& Transform : NewStartTransforms)
+			{
+				NewVehicleStarts.Push({Transform.GetLocation(), Transform.GetRotation(), Index});
+			}
+
+			OutVehicleStarts.Push(NewVehicleStarts);
 			
 			EdgeSet.Add({Index, ConnectedIndex});
 			EdgeSet.Add({ConnectedIndex, Index});
@@ -181,9 +198,9 @@ void FTrSpawner::CreateSpawnPointsOnGraph(const URpSpatialGraphComponent* GraphC
 	}
 }
 
-void FTrSpawner::CreateSpawnPointsOnEdge(const FVector& Node1Location, const FVector& Node2Location, TArray<FTransform>& SpawnTransforms, const UTrSpawnConfiguration* SpawnConfiguration)
+void FTrSpawner::CreateStartTransformsOnEdge(const FVector& Start, const FVector& Destination, const UTrSpawnConfiguration* SpawnConfiguration, TArray<FTransform>& OutStartTransforms)
 {
-	const float EdgeLength = FVector::Distance(Node1Location, Node2Location);
+	const float EdgeLength = FVector::Distance(Start, Destination);
 	const float NormalizedMinimumSeparation = (SpawnConfiguration->MinimumSeparation) / EdgeLength;
 	
 	float TMin = SpawnConfiguration->IntersectionCutoff;
@@ -194,11 +211,11 @@ void FTrSpawner::CreateSpawnPointsOnEdge(const FVector& Node1Location, const FVe
 		
 		TMin = T + NormalizedMinimumSeparation;
 		
-		const FVector NewForwardVector = (Node2Location - Node1Location).GetSafeNormal();
+		const FVector NewForwardVector = (Destination - Start).GetSafeNormal();
 		const FRotator NewRotation = UKismetMathLibrary::MakeRotFromX(NewForwardVector);
 		const FVector NewRightVector = NewForwardVector.Cross(FVector::UpVector);
-		const FVector NewLocation = FMath::Lerp(Node1Location, Node2Location, T) + NewRightVector * SpawnConfiguration->LaneWidth;
+		const FVector NewLocation = FMath::Lerp(Start, Destination, T) + NewRightVector * SpawnConfiguration->LaneWidth;
 		
-		SpawnTransforms.Push(FTransform(NewRotation, NewLocation, FVector::One()));
+		OutStartTransforms.Push(FTransform(NewRotation, NewLocation, FVector::One()));
 	}
 }

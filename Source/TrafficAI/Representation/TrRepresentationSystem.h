@@ -24,6 +24,15 @@ struct TRAFFICAI_API FTrafficAISpawnRequest
 	// Initial transform when the Entity is spawned.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FTransform Transform;
+
+	uint32 InitialWaypoint = 0;
+};
+
+struct FTrVehicleStart
+{
+	FVector Location;
+	FQuat Rotation;
+	uint32 StartingWaypoint;
 };
 
 class TRAFFICAI_API FTrSpawner
@@ -34,12 +43,11 @@ public:
 	
 	// Traverse the edges of the Graph
 	UFUNCTION(BlueprintCallable)
-	void CreateSpawnPointsOnGraph(const URpSpatialGraphComponent* GraphComponent, TArray<TArray<FTransform>>& GraphSpawnPoints, const UTrSpawnConfiguration* SpawnConfiguration);
+	void CreateVehicleStartsOnGraph(const URpSpatialGraphComponent* GraphComponent, const UTrSpawnConfiguration* SpawnConfiguration, TArray<TArray<FTrVehicleStart>>& OutVehicleStarts);
 
 	// Create spawn points along an edge
 	UFUNCTION(BlueprintCallable)
-	void CreateSpawnPointsOnEdge(const FVector& Node1Location, const FVector& Node2Location, TArray<FTransform>& SpawnTransforms, const UTrSpawnConfiguration* SpawnConfiguration);
-	
+	void CreateStartTransformsOnEdge(const FVector& Start, const FVector& Destination, const UTrSpawnConfiguration* SpawnConfiguration, TArray<FTransform>& OutStartTransforms);
 };
 
 /**
