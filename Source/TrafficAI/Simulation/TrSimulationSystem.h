@@ -40,16 +40,6 @@ private:
 	
 	void TickSimulation();
 
-	virtual void PathFollow();
-	
-	virtual void Drive();
-	
-	virtual void IntersectionHandling();
-	
-	void ApplyAcceleration();
-	
-	float CalculateAcceleration(float CurrentSpeed, float RelativeSpeed, float CurrentGap) const;
-
 private:
 
 	int NumEntities;
