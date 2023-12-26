@@ -28,11 +28,15 @@ public:
 
 	void RegisterEntities(TWeakPtr<TArray<FTrVehicleRepresentation>> TrafficEntities);
 
-	void RegisterPath(const class URpSpatialGraphComponent* GraphComponent);
+	void RegisterPath(const URpSpatialGraphComponent* GraphComponent, const TArray<TPair<uint32, uint32>>& NewPaths);
 
 	void StartSimulation();
 
 	void StopSimulation();
+
+protected:
+
+	FVector Seek(const FVector& CurrentPosition, const FVector& TargetLocation, const FVector& CurrentVelocity);
 	
 private:
 
@@ -40,20 +44,22 @@ private:
 	
 	void TickSimulation();
 
+	void PathFollow();
+
+	void UpdatePhsyics();
+
 private:
 
 	int NumEntities;
 	TArray<FVector> Positions;
 	TArray<FVector> Velocities;
 	TArray<FVector> Headings;
-	TArray<uint32> Waypoints;
+	TArray<TPair<uint32, uint32>> Paths;
 	TArray<FVector> Accelerations;
 	TArray<ETrMotionState> States;
 
 	FTrModelData ModelData;
 	FTimerHandle SimTimerHandle;
 	
-	float SimTickRate = 0.016f;
-
 	TArray<FRpSpatialGraphNode> Nodes;
 };

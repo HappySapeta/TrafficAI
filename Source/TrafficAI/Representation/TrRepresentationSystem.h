@@ -24,8 +24,6 @@ struct TRAFFICAI_API FTrafficAISpawnRequest
 	// Initial transform when the Entity is spawned.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FTransform Transform;
-
-	uint32 InitialWaypoint = 0;
 };
 
 struct FTrVehicleStart
@@ -42,11 +40,13 @@ public:
 	FTrVehicleStartCreator() = default;
 	
 	// Traverse the edges of the Graph
-	UFUNCTION(BlueprintCallable)
-	void CreateVehicleStartsOnGraph(const URpSpatialGraphComponent* GraphComponent, const UTrSpawnConfiguration* SpawnConfiguration, TArray<TArray<FTrVehicleStart>>& OutVehicleStarts);
+	void CreateVehicleStartsOnGraph(
+		const URpSpatialGraphComponent* GraphComponent,
+		const UTrSpawnConfiguration* SpawnConfiguration,
+		TArray<TArray<FTrVehicleStart>>& OutVehicleStarts,
+		TArray<TPair<uint32, uint32>>& NewStartingPaths);
 
 	// Create spawn points along an edge
-	UFUNCTION(BlueprintCallable)
 	void CreateStartTransformsOnEdge(const FVector& Start, const FVector& Destination, const UTrSpawnConfiguration* SpawnConfiguration, TArray<FTransform>& OutStartTransforms);
 };
 
@@ -84,6 +84,8 @@ public:
 
 	// Create this Subsystem only if playing in PIE or in game.
 	virtual bool ShouldCreateSubsystem(UObject* Outer) const override;
+	
+	TArray<TPair<uint32, uint32>> GetStartingPaths();
 
 protected:
 	
@@ -133,4 +135,6 @@ private:
 	FTimerHandle MainTimer;
 
 	TArray<FTrafficAISpawnRequest> SpawnRequests;
+
+	TArray<TPair<uint32, uint32>> StartingPaths;
 };
