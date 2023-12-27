@@ -28,7 +28,7 @@ public:
 
 	void RegisterEntities(TWeakPtr<TArray<FTrVehicleRepresentation>> TrafficEntities);
 
-	void RegisterPath(const URpSpatialGraphComponent* GraphComponent, const TArray<TPair<uint32, uint32>>& NewPaths);
+	void RegisterPath(const URpSpatialGraphComponent* GraphComponent, const TArray<TPair<uint32, uint32>>& StartingPaths);
 
 	void StartSimulation();
 
@@ -57,6 +57,7 @@ private:
 	TArray<TPair<uint32, uint32>> Paths;
 	TArray<FVector> Accelerations;
 	TArray<ETrMotionState> States;
+	TArray<FColor> DebugColors;
 
 	FTrModelData ModelData;
 	FTimerHandle SimTimerHandle;

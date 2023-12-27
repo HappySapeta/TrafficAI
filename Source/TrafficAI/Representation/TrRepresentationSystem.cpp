@@ -199,7 +199,7 @@ void FTrVehicleStartCreator::CreateVehicleStartsOnGraph(const URpSpatialGraphCom
 			for (const FTransform& Transform : NewStartTransforms)
 			{
 				NewVehicleStarts.Push({Transform.GetLocation(), Transform.GetRotation(), Index});
-				NewStartingPaths.Push({Index, ConnectedIndex});
+				NewStartingPaths.Push({ConnectedIndex, Index});
 			}
 
 			OutVehicleStarts.Push(NewVehicleStarts);
