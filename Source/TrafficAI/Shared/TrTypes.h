@@ -73,7 +73,7 @@ public:
 };
 
 USTRUCT(BlueprintType)
-struct FTrModelData
+struct TRAFFICAI_API FTrModelData
 {
 	GENERATED_BODY()
 
@@ -94,4 +94,13 @@ struct FTrModelData
 
 	UPROPERTY(EditAnywhere)
 	float AccelerationExponent = 4.0f;
+};
+
+struct TRAFFICAI_API FTrPath
+{
+	FTrPath(uint32 Start, uint32 End)
+		:StartNodeIndex(Start), EndNodeIndex(End)
+	{}
+	uint32 StartNodeIndex = 0;
+	uint32 EndNodeIndex = 0;
 };

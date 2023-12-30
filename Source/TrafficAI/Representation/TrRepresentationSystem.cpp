@@ -80,7 +80,7 @@ bool UTrRepresentationSystem::ShouldCreateSubsystem(UObject* Outer) const
 	return true;
 }
 
-TArray<TPair<uint32, uint32>> UTrRepresentationSystem::GetStartingPaths()
+TArray<FTrPath> UTrRepresentationSystem::GetStartingPaths()
 {
 	return StartingPaths;
 }
@@ -164,7 +164,7 @@ void UTrRepresentationSystem::Deinitialize()
 void FTrVehicleStartCreator::CreateVehicleStartsOnGraph(const URpSpatialGraphComponent* GraphComponent,
                                                         const UTrSpawnConfiguration* SpawnConfiguration,
                                                         TArray<TArray<FTrVehicleStart>>& OutVehicleStarts,
-                                                        TArray<TPair<uint32, uint32>>& NewStartingPaths)
+                                                        TArray<FTrPath>& NewStartingPaths)
 {
 	check(SpawnConfiguration);
 

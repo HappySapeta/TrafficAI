@@ -11,7 +11,7 @@ constexpr float IntersectionRadius = 200.0f;
 void UTrSimulationSystem::Initialize
 	(
 		const URpSpatialGraphComponent* GraphComponent,
-		const TArray<TPair<uint32, uint32>>& StartingPaths,
+		const TArray<FTrPath>& StartingPaths,
 		TWeakPtr<TArray<FTrVehicleRepresentation>> TrafficEntities
 	)
 {
@@ -25,7 +25,6 @@ void UTrSimulationSystem::Initialize
 		for(int Index = 0; Index < NumEntities; ++Index)
 		{
 			const FTrVehicleRepresentation& Entity = (*TrafficEntities.Pin())[Index];
-			const TPair<uint32, uint32>& Pair = StartingPaths[Index];
 			
 			Positions.Push(Entity.Dummy->GetActorLocation());
 			Velocities.Push(Entity.Dummy->GetVelocity());
@@ -83,8 +82,8 @@ void UTrSimulationSystem::PathFollow()
 	const float LookAheadTime = FixedDeltaTime * 100.0f;
 	for(int Index = 0; Index < NumEntities; ++Index)
 	{
-		const FVector PathStart = Nodes[CurrentPaths[Index].Get<0>()].GetLocation();
-		const FVector PathEnd = Nodes[CurrentPaths[Index].Get<1>()].GetLocation();
+		const FVector PathStart = Nodes[CurrentPaths[Index].StartNodeIndex].GetLocation();
+		const FVector PathEnd = Nodes[CurrentPaths[Index].EndNodeIndex].GetLocation();
 		const FVector Path = PathEnd - PathStart;
 		
 		const FVector Future = Positions[Index] + Velocities[Index] * LookAheadTime;

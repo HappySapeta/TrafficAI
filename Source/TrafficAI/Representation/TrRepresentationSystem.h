@@ -44,7 +44,7 @@ public:
 		const URpSpatialGraphComponent* GraphComponent,
 		const UTrSpawnConfiguration* SpawnConfiguration,
 		TArray<TArray<FTrVehicleStart>>& OutVehicleStarts,
-		TArray<TPair<uint32, uint32>>& NewStartingPaths);
+		TArray<FTrPath>& NewStartingPaths);
 
 	// Create spawn points along an edge
 	void CreateStartTransformsOnEdge(const FVector& Start, const FVector& Destination, const UTrSpawnConfiguration* SpawnConfiguration, TArray<FTransform>& OutStartTransforms);
@@ -85,7 +85,7 @@ public:
 	// Create this Subsystem only if playing in PIE or in game.
 	virtual bool ShouldCreateSubsystem(UObject* Outer) const override;
 	
-	TArray<TPair<uint32, uint32>> GetStartingPaths();
+	TArray<FTrPath> GetStartingPaths();
 
 protected:
 	
@@ -136,5 +136,5 @@ private:
 
 	TArray<FTrafficAISpawnRequest> SpawnRequests;
 
-	TArray<TPair<uint32, uint32>> StartingPaths;
+	TArray<FTrPath> StartingPaths;
 };

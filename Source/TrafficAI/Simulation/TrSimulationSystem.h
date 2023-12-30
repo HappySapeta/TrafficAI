@@ -29,7 +29,7 @@ public:
 	void Initialize
 		(
 			const URpSpatialGraphComponent* GraphComponent,
-			const TArray<TPair<uint32, uint32>>& StartingPaths,
+			const TArray<FTrPath>& StartingPaths,
 			TWeakPtr<TArray<FTrVehicleRepresentation>> TrafficEntities
 		);
 	
@@ -57,11 +57,11 @@ private:
 	TArray<FVector> Positions;
 	TArray<FVector> Velocities;
 	TArray<FVector> Headings;
-	TArray<TPair<uint32, uint32>> CurrentPaths;
+	TArray<FTrPath> CurrentPaths;
 	TArray<FVector> Accelerations;
 	TArray<ETrMotionState> States;
 	TArray<FColor> DebugColors;
-
+	
 	FTrModelData ModelData;
 	FTimerHandle SimTimerHandle;
 	
