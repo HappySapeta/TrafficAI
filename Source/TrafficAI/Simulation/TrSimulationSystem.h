@@ -26,10 +26,13 @@ class TRAFFICAI_API UTrSimulationSystem : public UWorldSubsystem
 
 public:
 
-	void RegisterEntities(TWeakPtr<TArray<FTrVehicleRepresentation>> TrafficEntities);
-
-	void RegisterPath(const URpSpatialGraphComponent* GraphComponent, const TArray<TPair<uint32, uint32>>& StartingPaths);
-
+	void Initialize
+		(
+			const URpSpatialGraphComponent* GraphComponent,
+			const TArray<TPair<uint32, uint32>>& StartingPaths,
+			TWeakPtr<TArray<FTrVehicleRepresentation>> TrafficEntities
+		);
+	
 	void StartSimulation();
 
 	void StopSimulation();
@@ -54,7 +57,7 @@ private:
 	TArray<FVector> Positions;
 	TArray<FVector> Velocities;
 	TArray<FVector> Headings;
-	TArray<TPair<uint32, uint32>> Paths;
+	TArray<TPair<uint32, uint32>> CurrentPaths;
 	TArray<FVector> Accelerations;
 	TArray<ETrMotionState> States;
 	TArray<FColor> DebugColors;

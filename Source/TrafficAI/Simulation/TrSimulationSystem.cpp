@@ -6,33 +6,35 @@
 constexpr float MaxSpeed = 100.0f;
 constexpr float PathRadius = 100.0f;
 constexpr float FixedDeltaTime = 0.016f;
+constexpr float IntersectionRadius = 200.0f;
 
-void UTrSimulationSystem::RegisterEntities(TWeakPtr<TArray<FTrVehicleRepresentation>> TrafficEntities)
+void UTrSimulationSystem::Initialize
+	(
+		const URpSpatialGraphComponent* GraphComponent,
+		const TArray<TPair<uint32, uint32>>& StartingPaths,
+		TWeakPtr<TArray<FTrVehicleRepresentation>> TrafficEntities
+	)
 {
 	if(TrafficEntities.IsValid())
 	{
+		Nodes = *GraphComponent->GetNodes();
+		CurrentPaths = StartingPaths;
 		NumEntities = TrafficEntities.Pin()->Num();
-		for(const FTrVehicleRepresentation& Entity : *TrafficEntities.Pin())
+		check(StartingPaths.Num() == NumEntities);
+		
+		for(int Index = 0; Index < NumEntities; ++Index)
 		{
+			const FTrVehicleRepresentation& Entity = (*TrafficEntities.Pin())[Index];
+			const TPair<uint32, uint32>& Pair = StartingPaths[Index];
+			
 			Positions.Push(Entity.Dummy->GetActorLocation());
 			Velocities.Push(Entity.Dummy->GetVelocity());
-			Headings.Push(Entity.Dummy->GetActorForwardVector());
 			Accelerations.Push(FVector::Zero());
 			States.Push(ETrMotionState::Driving);
 			DebugColors.Push(FColor::MakeRandomColor());
 		}
-	}
-}
 
-void UTrSimulationSystem::RegisterPath(const URpSpatialGraphComponent* GraphComponent, const TArray<TPair<uint32, uint32>>& StartingPaths)
-{
-	Nodes = *GraphComponent->GetNodes();
-	Paths = StartingPaths;
-
-	for(int Index = 0; Index < StartingPaths.Num(); ++Index)
-	{
-		const TPair<uint32, uint32>& Pair = StartingPaths[Index]; 
-		Headings.Push((Positions[Index] - Nodes[Pair.Get<1>()].GetLocation()).GetSafeNormal());
+		Headings.Init(FVector(), NumEntities);
 	}
 	
 	const UWorld* World = GetWorld();
@@ -64,6 +66,7 @@ void UTrSimulationSystem::DebugVisualization()
 	for(int Index = 0; Index < NumEntities; ++Index)
 	{
 		DrawDebugPoint(World, Positions[Index], 10.0f, DebugColors[Index], false, FixedDeltaTime);
+		DrawDebugLine(World, Positions[Index], Positions[Index] + Headings[Index] * 100.0f, FColor::Red, false, FixedDeltaTime, 0, 10.0f);
 	}
 }
 
@@ -80,8 +83,8 @@ void UTrSimulationSystem::PathFollow()
 	const float LookAheadTime = FixedDeltaTime * 100.0f;
 	for(int Index = 0; Index < NumEntities; ++Index)
 	{
-		const FVector PathStart = Nodes[Paths[Index].Get<0>()].GetLocation();
-		const FVector PathEnd = Nodes[Paths[Index].Get<1>()].GetLocation();
+		const FVector PathStart = Nodes[CurrentPaths[Index].Get<0>()].GetLocation();
+		const FVector PathEnd = Nodes[CurrentPaths[Index].Get<1>()].GetLocation();
 		const FVector Path = PathEnd - PathStart;
 		
 		const FVector Future = Positions[Index] + Velocities[Index] * LookAheadTime;
