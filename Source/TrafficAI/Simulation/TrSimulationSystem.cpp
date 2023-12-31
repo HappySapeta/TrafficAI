@@ -2,9 +2,8 @@
 
 #include "TrSimulationSystem.h"
 #include "RpSpatialGraphComponent.h"
-#include "Kismet/KismetMathLibrary.h"
 
-constexpr float MaxSpeed = 100.0f;
+constexpr float MaxSpeed = 200.0f;
 constexpr float PathRadius = 100.0f;
 constexpr float FixedDeltaTime = 0.016f;
 constexpr float LookAheadTime = FixedDeltaTime * 100.0f;
@@ -27,6 +26,7 @@ void UTrSimulationSystem::Initialize(const URpSpatialGraphComponent* GraphCompon
 			Velocities.Push(Entity.Dummy->GetVelocity());
 			Accelerations.Push(0.0f);
 			Headings.Push(Entity.Dummy->GetActorForwardVector());
+			Goals.Push(Nodes[CurrentPaths[Index].EndNodeIndex].GetLocation());
 			DebugColors.Push(FColor::MakeRandomColor());
 		}
 	}
@@ -68,12 +68,12 @@ void UTrSimulationSystem::TickSimulation()
 {
 	DebugVisualization();
 
-	SetAccelerations();
-	SetHeadings();
+	SetAcceleration();
+	PathInsertion();
 	UpdateVehicle();
 }
 
-void UTrSimulationSystem::SetHeadings()
+void UTrSimulationSystem::PathInsertion()
 {
 	for(int Index = 0; Index < NumEntities; ++Index)
 	{
@@ -92,12 +92,12 @@ void UTrSimulationSystem::SetHeadings()
 
 		if(FVector::Distance(Positions[Index], Projection) > PathRadius)
 		{
-			Headings[Index] = Steer(Headings[Index], (Projection - Positions[Index]).GetSafeNormal());
+			Goals[Index] = Projection;
 		}
 	}
 }
 
-void UTrSimulationSystem::SetAccelerations()
+void UTrSimulationSystem::SetAcceleration()
 {
 	for(int Index = 0; Index < NumEntities; ++Index)
 	{
@@ -121,6 +121,10 @@ void UTrSimulationSystem::UpdateVehicle()
 	for(int Index = 0; Index < NumEntities; ++Index)
 	{
 		FVector NewVelocity = Velocities[Index] + Headings[Index].GetSafeNormal() * Accelerations[Index] * FixedDeltaTime;
+		if(NewVelocity.Length() > MaxSpeed)
+		{
+			NewVelocity = NewVelocity.GetSafeNormal() * MaxSpeed;
+		}
 		const FVector NewPosition = Positions[Index] + NewVelocity * FixedDeltaTime;
 		
 		Velocities[Index] = NewVelocity;

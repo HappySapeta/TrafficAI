@@ -42,9 +42,9 @@ private:
 	
 	void TickSimulation();
 
-	void SetHeadings();
+	void PathInsertion();
 	
-	void SetAccelerations();
+	void SetAcceleration();
 
 	void UpdateVehicle();
 
@@ -56,6 +56,7 @@ private:
 	TArray<FVector> Positions;
 	TArray<FVector> Velocities;
 	TArray<FVector> Headings;
+	TArray<FVector> Goals;
 	TArray<FTrPath> CurrentPaths;
 	TArray<float> Accelerations;
 	TArray<FColor> DebugColors;
