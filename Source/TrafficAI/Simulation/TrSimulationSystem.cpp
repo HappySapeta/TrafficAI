@@ -28,12 +28,11 @@ void UTrSimulationSystem::Initialize
 			
 			Positions.Push(Entity.Dummy->GetActorLocation());
 			Velocities.Push(Entity.Dummy->GetVelocity());
-			Accelerations.Push(FVector::Zero());
-			States.Push(ETrMotionState::Driving);
+			Forces.Push(FVector::Zero());
+			States.Push(ETrMotionState::PathFollowing);
+			Headings.Push(FVector::Zero());
 			DebugColors.Push(FColor::MakeRandomColor());
 		}
-
-		Headings.Init(FVector(), NumEntities);
 	}
 	
 	const UWorld* World = GetWorld();
@@ -65,7 +64,6 @@ void UTrSimulationSystem::DebugVisualization()
 	for(int Index = 0; Index < NumEntities; ++Index)
 	{
 		DrawDebugPoint(World, Positions[Index], 10.0f, DebugColors[Index], false, FixedDeltaTime);
-		DrawDebugLine(World, Positions[Index], Positions[Index] + Headings[Index] * 100.0f, FColor::Red, false, FixedDeltaTime, 0, 10.0f);
 	}
 }
 
@@ -74,7 +72,7 @@ void UTrSimulationSystem::TickSimulation()
 	DebugVisualization();
 
 	PathFollow();
-	UpdatePhsyics();
+	ApplyForces();
 }
 
 void UTrSimulationSystem::PathFollow()
@@ -96,30 +94,27 @@ void UTrSimulationSystem::PathFollow()
 		const float Distance = FVector::Distance(Future, Projection);
 		if(Distance > PathRadius)
 		{
-			Velocities[Index] += Seek(Positions[Index], Projection, Velocities[Index]);
+			Forces[Index] += Seek(Positions[Index], Projection, Velocities[Index]);
 		}
-		else
-		{
-			Velocities[Index] = Headings[Index] * MaxSpeed;
-		}
-	}
-}
-
-void UTrSimulationSystem::UpdatePhsyics()
-{
-	for(int Index = 0; Index < NumEntities; ++Index)
-	{
-		const FVector NewVelocity = Velocities[Index] + Accelerations[Index] * FixedDeltaTime;
-		const FVector NewPosition = Positions[Index] + NewVelocity * FixedDeltaTime;
-
-		Velocities[Index] = NewVelocity;
-		Positions[Index] = NewPosition;
 	}
 }
 
 FVector UTrSimulationSystem::Seek(const FVector& CurrentPosition, const FVector& TargetLocation, const FVector& CurrentVelocity)
 {
 	const FVector& DesiredVelocity = (TargetLocation - CurrentPosition).GetSafeNormal() * MaxSpeed;
+	return (DesiredVelocity - CurrentVelocity) / FixedDeltaTime;
+}
 
-	return DesiredVelocity - CurrentVelocity;
+void UTrSimulationSystem::ApplyForces()
+{
+	for(int Index = 0; Index < NumEntities; ++Index)
+	{
+		const FVector NewVelocity = Velocities[Index] + Forces[Index] * FixedDeltaTime;
+		const FVector NewPosition = Positions[Index] + NewVelocity * FixedDeltaTime;
+
+		Forces[Index] = FVector::Zero();
+
+		Velocities[Index] = NewVelocity;
+		Positions[Index] = NewPosition;
+	}
 }

@@ -9,9 +9,8 @@
 
 enum class ETrMotionState
 {
-	LaneInsertion,
-	Driving,
-	Parked,
+	PathFollowing,
+	Idle,
 	Intersection,
 	Turning
 };
@@ -49,7 +48,7 @@ private:
 
 	void PathFollow();
 
-	void UpdatePhsyics();
+	void ApplyForces();
 
 private:
 
@@ -58,7 +57,7 @@ private:
 	TArray<FVector> Velocities;
 	TArray<FVector> Headings;
 	TArray<FTrPath> CurrentPaths;
-	TArray<FVector> Accelerations;
+	TArray<FVector> Forces;
 	TArray<ETrMotionState> States;
 	TArray<FColor> DebugColors;
 	
