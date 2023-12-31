@@ -40,11 +40,14 @@ public:
 	FTrVehicleStartCreator() = default;
 	
 	// Traverse the edges of the Graph
-	void CreateVehicleStartsOnGraph(
+	void CreateVehicleStartsOnGraph
+	(
 		const URpSpatialGraphComponent* GraphComponent,
 		const UTrSpawnConfiguration* SpawnConfiguration,
+		const int MaxInstances,
 		TArray<TArray<FTrVehicleStart>>& OutVehicleStarts,
-		TArray<FTrPath>& NewStartingPaths);
+		TArray<FTrPath>& NewStartingPaths
+	);
 
 	// Create spawn points along an edge
 	void CreateStartTransformsOnEdge(const FVector& Start, const FVector& Destination, const UTrSpawnConfiguration* SpawnConfiguration, TArray<FTransform>& OutStartTransforms);

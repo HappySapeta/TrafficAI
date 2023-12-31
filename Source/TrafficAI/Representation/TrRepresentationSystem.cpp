@@ -27,7 +27,7 @@ void UTrRepresentationSystem::Spawn(const URpSpatialGraphComponent* NewGraphComp
 	if (IsValid(NewGraphComponent))
 	{
 		TArray<TArray<FTrVehicleStart>> VehicleStarts;
-		VehicleStartCreator.CreateVehicleStartsOnGraph(NewGraphComponent, NewSpawnConfiguration, VehicleStarts, StartingPaths);
+		VehicleStartCreator.CreateVehicleStartsOnGraph(NewGraphComponent, NewSpawnConfiguration, MaxInstances, VehicleStarts, StartingPaths);
 
 		for (const TArray<FTrVehicleStart>& EdgeStarts : VehicleStarts)
 		{
@@ -54,6 +54,11 @@ void UTrRepresentationSystem::SpawnDeferred(const FTrafficAISpawnRequest& SpawnR
 	{
 		BatchProcessor->QueueCommand("SpawnProcessor", [this, SpawnRequest]()
 		{
+			if(Entities->Num() >= MaxInstances)
+			{
+				return;
+			}
+			
 			static FActorSpawnParameters SpawnParameters;
 #if UE_EDITOR
 			SpawnParameters.bHideFromSceneOutliner = true;
@@ -163,6 +168,7 @@ void UTrRepresentationSystem::Deinitialize()
 
 void FTrVehicleStartCreator::CreateVehicleStartsOnGraph(const URpSpatialGraphComponent* GraphComponent,
                                                         const UTrSpawnConfiguration* SpawnConfiguration,
+                                                        const int MaxInstances,
                                                         TArray<TArray<FTrVehicleStart>>& OutVehicleStarts,
                                                         TArray<FTrPath>& NewStartingPaths)
 {
@@ -190,6 +196,11 @@ void FTrVehicleStartCreator::CreateVehicleStartsOnGraph(const URpSpatialGraphCom
 			CreateStartTransformsOnEdge(Node1Location, Node2Location, SpawnConfiguration, NewStartTransforms);
 			for (const FTransform& Transform : NewStartTransforms)
 			{
+				if(NewStartingPaths.Num() >= MaxInstances)
+				{
+					break;
+				}
+				
 				NewVehicleStarts.Push({Transform.GetLocation(), Transform.GetRotation(), ConnectedIndex});
 				NewStartingPaths.Push({Index, ConnectedIndex});
 			}
@@ -198,6 +209,11 @@ void FTrVehicleStartCreator::CreateVehicleStartsOnGraph(const URpSpatialGraphCom
 			CreateStartTransformsOnEdge(Node2Location, Node1Location, SpawnConfiguration, NewStartTransforms);
 			for (const FTransform& Transform : NewStartTransforms)
 			{
+				if(NewStartingPaths.Num() >= MaxInstances)
+				{
+					break;
+				}
+				
 				NewVehicleStarts.Push({Transform.GetLocation(), Transform.GetRotation(), Index});
 				NewStartingPaths.Push({ConnectedIndex, Index});
 			}

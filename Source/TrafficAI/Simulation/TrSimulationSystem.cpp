@@ -8,12 +8,7 @@ constexpr float PathRadius = 100.0f;
 constexpr float FixedDeltaTime = 0.016f;
 constexpr float IntersectionRadius = 100.0f;
 
-void UTrSimulationSystem::Initialize
-	(
-		const URpSpatialGraphComponent* GraphComponent,
-		const TArray<FTrPath>& StartingPaths,
-		TWeakPtr<TArray<FTrVehicleRepresentation>> TrafficEntities
-	)
+void UTrSimulationSystem::Initialize(const URpSpatialGraphComponent* GraphComponent, const TArray<FTrPath>& StartingPaths, TWeakPtr<TArray<FTrVehicleRepresentation>> TrafficEntities)
 {
 	if(TrafficEntities.IsValid())
 	{
@@ -105,14 +100,12 @@ void UTrSimulationSystem::PathInsertion()
 		FVector Projection = (Temp.Dot(Path)/Path.Size()) * Path.GetSafeNormal() + PathStart;
 		FVector PathLeft = Path.GetSafeNormal().RotateAngleAxis(-90.0, FVector::UpVector);
 		Projection = Projection + PathLeft * PathRadius;
-		
-		//DrawDebugBox(GetWorld(), Future, FVector(50.0f), DebugColors[Index], false, FixedDeltaTime);
-		//DrawDebugSphere(GetWorld(), Projection, 50.0f, 6, DebugColors[Index], false, FixedDeltaTime);
 
-		const float Distance = FVector::Distance(Future, Projection);
-		if(Distance > PathRadius)
+		if(FVector::Distance(Future, Projection) > 10.0f)
 		{
 			Accelerations[Index] += Seek(Positions[Index], Projection, Velocities[Index]);
+			DrawDebugBox(GetWorld(), Future, FVector(50.0f), DebugColors[Index], false, FixedDeltaTime);
+			//DrawDebugSphere(GetWorld(), Projection, 50.0f, 6, DebugColors[Index], false, FixedDeltaTime);
 		}
 	}
 }
