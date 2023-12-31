@@ -4,7 +4,7 @@
 #include "RpSpatialGraphComponent.h"
 
 constexpr float MaxSpeed = 100.0f;
-constexpr float PathRadius = 100.0f;
+constexpr float PathRadius = 200.0f;
 constexpr float FixedDeltaTime = 0.016f;
 constexpr float IntersectionRadius = 200.0f;
 
@@ -28,7 +28,7 @@ void UTrSimulationSystem::Initialize
 			
 			Positions.Push(Entity.Dummy->GetActorLocation());
 			Velocities.Push(Entity.Dummy->GetVelocity());
-			Forces.Push(FVector::Zero());
+			Acceleration.Push(FVector::Zero());
 			Headings.Push(FVector::Zero());
 			DebugColors.Push(FColor::MakeRandomColor());
 		}
@@ -71,7 +71,7 @@ void UTrSimulationSystem::TickSimulation()
 	DebugVisualization();
 
 	PathFollow();
-	ApplyForces();
+	UpdateKinematics();
 }
 
 void UTrSimulationSystem::PathFollow()
@@ -85,15 +85,17 @@ void UTrSimulationSystem::PathFollow()
 		
 		const FVector Future = Positions[Index] + Velocities[Index] * LookAheadTime;
 		const FVector Temp = Future - PathStart;
-		const FVector Projection = (Temp.Dot(Path)/Path.Size()) * Path.GetSafeNormal() + PathStart;
-
+		FVector Projection = (Temp.Dot(Path)/Path.Size()) * Path.GetSafeNormal() + PathStart;
+		FVector PathLeft = Path.GetSafeNormal().RotateAngleAxis(-90.0, FVector::UpVector);
+		Projection = Projection + PathLeft * PathRadius;
+		
 		DrawDebugBox(GetWorld(), Future, FVector(50.0f), DebugColors[Index], false, FixedDeltaTime);
 		DrawDebugSphere(GetWorld(), Projection, 50.0f, 6, DebugColors[Index], false, FixedDeltaTime);
 
 		const float Distance = FVector::Distance(Future, Projection);
 		if(Distance > PathRadius)
 		{
-			Forces[Index] += Seek(Positions[Index], Projection, Velocities[Index]);
+			Acceleration[Index] += Seek(Positions[Index], Projection, Velocities[Index]);
 		}
 	}
 }
@@ -104,14 +106,14 @@ FVector UTrSimulationSystem::Seek(const FVector& CurrentPosition, const FVector&
 	return (DesiredVelocity - CurrentVelocity) / FixedDeltaTime;
 }
 
-void UTrSimulationSystem::ApplyForces()
+void UTrSimulationSystem::UpdateKinematics()
 {
 	for(int Index = 0; Index < NumEntities; ++Index)
 	{
-		const FVector NewVelocity = Velocities[Index] + Forces[Index] * FixedDeltaTime;
+		const FVector NewVelocity = Velocities[Index] + Acceleration[Index] * FixedDeltaTime;
 		const FVector NewPosition = Positions[Index] + NewVelocity * FixedDeltaTime;
 
-		Forces[Index] = FVector::Zero();
+		Acceleration[Index] = FVector::Zero();
 
 		Velocities[Index] = NewVelocity;
 		Positions[Index] = NewPosition;

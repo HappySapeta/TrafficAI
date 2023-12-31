@@ -48,7 +48,7 @@ private:
 
 	void PathFollow();
 
-	void ApplyForces();
+	void UpdateKinematics();
 
 private:
 
@@ -57,7 +57,7 @@ private:
 	TArray<FVector> Velocities;
 	TArray<FVector> Headings;
 	TArray<FTrPath> CurrentPaths;
-	TArray<FVector> Forces;
+	TArray<FVector> Acceleration;
 	TArray<FColor> DebugColors;
 	
 	FTrModelData ModelData;
