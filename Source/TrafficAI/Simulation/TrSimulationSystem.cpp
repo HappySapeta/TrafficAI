@@ -4,9 +4,9 @@
 #include "RpSpatialGraphComponent.h"
 
 constexpr float MaxSpeed = 100.0f;
-constexpr float PathRadius = 200.0f;
+constexpr float PathRadius = 100.0f;
 constexpr float FixedDeltaTime = 0.016f;
-constexpr float IntersectionRadius = 200.0f;
+constexpr float IntersectionRadius = 100.0f;
 
 void UTrSimulationSystem::Initialize
 	(
@@ -69,12 +69,29 @@ void UTrSimulationSystem::DebugVisualization()
 void UTrSimulationSystem::TickSimulation()
 {
 	DebugVisualization();
-
+	
+	PathInsertion();
 	PathFollow();
+	IntersectionHandling();
 	UpdateKinematics();
 }
 
 void UTrSimulationSystem::PathFollow()
+{
+	for(int Index = 0; Index < NumEntities; ++Index)
+	{
+		const FVector PathStart = Nodes[CurrentPaths[Index].StartNodeIndex].GetLocation();
+		const FVector PathEnd = Nodes[CurrentPaths[Index].EndNodeIndex].GetLocation();
+		const FVector Path = PathEnd - PathStart;
+		const FVector PathLeft = Path.GetSafeNormal().RotateAngleAxis(-90.0, FVector::UpVector);
+
+		const FVector Target = PathEnd + PathLeft * PathRadius;
+
+		Accelerations[Index] += Seek(Positions[Index], Target, Velocities[Index]);
+	}
+}
+
+void UTrSimulationSystem::PathInsertion()
 {
 	const float LookAheadTime = FixedDeltaTime * 100.0f;
 	for(int Index = 0; Index < NumEntities; ++Index)
@@ -89,13 +106,39 @@ void UTrSimulationSystem::PathFollow()
 		FVector PathLeft = Path.GetSafeNormal().RotateAngleAxis(-90.0, FVector::UpVector);
 		Projection = Projection + PathLeft * PathRadius;
 		
-		DrawDebugBox(GetWorld(), Future, FVector(50.0f), DebugColors[Index], false, FixedDeltaTime);
-		DrawDebugSphere(GetWorld(), Projection, 50.0f, 6, DebugColors[Index], false, FixedDeltaTime);
+		//DrawDebugBox(GetWorld(), Future, FVector(50.0f), DebugColors[Index], false, FixedDeltaTime);
+		//DrawDebugSphere(GetWorld(), Projection, 50.0f, 6, DebugColors[Index], false, FixedDeltaTime);
 
 		const float Distance = FVector::Distance(Future, Projection);
 		if(Distance > PathRadius)
 		{
 			Accelerations[Index] += Seek(Positions[Index], Projection, Velocities[Index]);
+		}
+	}
+}
+
+void UTrSimulationSystem::IntersectionHandling()
+{
+	for(int Index = 0; Index < NumEntities; ++Index)
+	{
+		const FVector PathStart = Nodes[CurrentPaths[Index].StartNodeIndex].GetLocation();
+		const FVector PathEnd = Nodes[CurrentPaths[Index].EndNodeIndex].GetLocation();
+		const FVector Path = PathEnd - PathStart;
+		const FVector PathLeft = Path.GetSafeNormal().RotateAngleAxis(-90.0, FVector::UpVector);
+
+		const FVector Target = PathEnd + PathLeft * PathRadius;
+		if(FVector::Distance(Positions[Index], Target) < IntersectionRadius)
+		{
+			CurrentPaths[Index].StartNodeIndex = CurrentPaths[Index].EndNodeIndex;
+
+			for(const uint32 ConnectionIndex : Nodes[CurrentPaths[Index].EndNodeIndex].GetConnections())
+			{
+				if(ConnectionIndex != CurrentPaths[Index].EndNodeIndex)
+				{
+					CurrentPaths[Index].EndNodeIndex = ConnectionIndex;
+					break;
+				}
+			}
 		}
 	}
 }

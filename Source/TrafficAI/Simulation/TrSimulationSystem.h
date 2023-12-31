@@ -45,8 +45,12 @@ private:
 	void DebugVisualization();
 	
 	void TickSimulation();
-
+	
 	void PathFollow();
+
+	void PathInsertion();
+
+	void IntersectionHandling();
 
 	void UpdateKinematics();
 
