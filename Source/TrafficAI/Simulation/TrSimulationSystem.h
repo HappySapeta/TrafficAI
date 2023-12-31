@@ -35,24 +35,20 @@ public:
 	void StartSimulation();
 
 	void StopSimulation();
-
-protected:
-
-	FVector Seek(const FVector& CurrentPosition, const FVector& TargetLocation, const FVector& CurrentVelocity);
 	
 private:
 
 	void DebugVisualization();
 	
 	void TickSimulation();
+
+	void SetHeadings();
 	
-	void PathFollow();
+	void SetAccelerations();
 
-	void PathInsertion();
+	void UpdateVehicle();
 
-	void IntersectionHandling();
-
-	void UpdateKinematics();
+	FVector Steer(const FVector& CurrentHeading, const FVector& TargetHeading);
 
 private:
 
@@ -61,7 +57,7 @@ private:
 	TArray<FVector> Velocities;
 	TArray<FVector> Headings;
 	TArray<FTrPath> CurrentPaths;
-	TArray<FVector> Accelerations;
+	TArray<float> Accelerations;
 	TArray<FColor> DebugColors;
 	
 	FTrModelData ModelData;
