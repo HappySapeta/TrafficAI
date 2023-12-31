@@ -57,7 +57,7 @@ private:
 	TArray<FVector> Velocities;
 	TArray<FVector> Headings;
 	TArray<FTrPath> CurrentPaths;
-	TArray<FVector> Acceleration;
+	TArray<FVector> Accelerations;
 	TArray<FColor> DebugColors;
 	
 	FTrModelData ModelData;

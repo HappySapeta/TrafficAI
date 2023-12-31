@@ -28,7 +28,7 @@ void UTrSimulationSystem::Initialize
 			
 			Positions.Push(Entity.Dummy->GetActorLocation());
 			Velocities.Push(Entity.Dummy->GetVelocity());
-			Acceleration.Push(FVector::Zero());
+			Accelerations.Push(FVector::Zero());
 			Headings.Push(FVector::Zero());
 			DebugColors.Push(FColor::MakeRandomColor());
 		}
@@ -95,7 +95,7 @@ void UTrSimulationSystem::PathFollow()
 		const float Distance = FVector::Distance(Future, Projection);
 		if(Distance > PathRadius)
 		{
-			Acceleration[Index] += Seek(Positions[Index], Projection, Velocities[Index]);
+			Accelerations[Index] += Seek(Positions[Index], Projection, Velocities[Index]);
 		}
 	}
 }
@@ -110,10 +110,10 @@ void UTrSimulationSystem::UpdateKinematics()
 {
 	for(int Index = 0; Index < NumEntities; ++Index)
 	{
-		const FVector NewVelocity = Velocities[Index] + Acceleration[Index] * FixedDeltaTime;
+		const FVector NewVelocity = Velocities[Index] + Accelerations[Index] * FixedDeltaTime;
 		const FVector NewPosition = Positions[Index] + NewVelocity * FixedDeltaTime;
 
-		Acceleration[Index] = FVector::Zero();
+		Accelerations[Index] = FVector::Zero();
 
 		Velocities[Index] = NewVelocity;
 		Positions[Index] = NewPosition;
