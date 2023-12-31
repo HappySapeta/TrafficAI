@@ -129,12 +129,11 @@ void UTrSimulationSystem::IntersectionHandling()
 		const FVector Target = PathEnd + PathLeft * PathRadius;
 		if(FVector::Distance(Positions[Index], Target) < IntersectionRadius)
 		{
-			CurrentPaths[Index].StartNodeIndex = CurrentPaths[Index].EndNodeIndex;
-
 			for(const uint32 ConnectionIndex : Nodes[CurrentPaths[Index].EndNodeIndex].GetConnections())
 			{
-				if(ConnectionIndex != CurrentPaths[Index].EndNodeIndex)
+				if(ConnectionIndex != CurrentPaths[Index].StartNodeIndex)
 				{
+					CurrentPaths[Index].StartNodeIndex = CurrentPaths[Index].EndNodeIndex;
 					CurrentPaths[Index].EndNodeIndex = ConnectionIndex;
 					break;
 				}
