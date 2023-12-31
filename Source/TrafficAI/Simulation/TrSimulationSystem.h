@@ -58,7 +58,6 @@ private:
 	TArray<FVector> Headings;
 	TArray<FTrPath> CurrentPaths;
 	TArray<FVector> Forces;
-	TArray<ETrMotionState> States;
 	TArray<FColor> DebugColors;
 	
 	FTrModelData ModelData;

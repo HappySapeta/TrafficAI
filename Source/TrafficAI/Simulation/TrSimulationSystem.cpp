@@ -29,7 +29,6 @@ void UTrSimulationSystem::Initialize
 			Positions.Push(Entity.Dummy->GetActorLocation());
 			Velocities.Push(Entity.Dummy->GetVelocity());
 			Forces.Push(FVector::Zero());
-			States.Push(ETrMotionState::PathFollowing);
 			Headings.Push(FVector::Zero());
 			DebugColors.Push(FColor::MakeRandomColor());
 		}
