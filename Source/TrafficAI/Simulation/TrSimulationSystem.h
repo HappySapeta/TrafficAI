@@ -48,7 +48,7 @@ private:
 
 	void UpdateVehicle();
 
-	FVector Steer(const FVector& CurrentHeading, const FVector& TargetHeading);
+	void Steer();
 
 private:
 

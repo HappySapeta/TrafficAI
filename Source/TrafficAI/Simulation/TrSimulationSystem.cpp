@@ -2,12 +2,15 @@
 
 #include "TrSimulationSystem.h"
 #include "RpSpatialGraphComponent.h"
+#include "Kismet/KismetMathLibrary.h"
 
-constexpr float MaxSpeed = 200.0f;
+constexpr float MaxSpeed = 100.0f;
 constexpr float PathRadius = 100.0f;
 constexpr float FixedDeltaTime = 0.016f;
 constexpr float LookAheadTime = FixedDeltaTime * 100.0f;
 constexpr float IntersectionRadius = 100.0f;
+constexpr float SteeringSpeed = 0.75f;
+constexpr float DebugAccelerationScale = 2.0f;
 
 void UTrSimulationSystem::Initialize(const URpSpatialGraphComponent* GraphComponent, const TArray<FTrPath>& StartingPaths, TWeakPtr<TArray<FTrVehicleRepresentation>> TrafficEntities)
 {
@@ -60,7 +63,8 @@ void UTrSimulationSystem::DebugVisualization()
 	for(int Index = 0; Index < NumEntities; ++Index)
 	{
 		DrawDebugBox(World, Positions[Index], FVector(100.0f, 50.0f, 25.0f), Headings[Index].ToOrientationQuat(), DebugColors[Index], false, FixedDeltaTime);
-		DrawDebugDirectionalArrow(World, Positions[Index], Positions[Index] + Velocities[Index].GetSafeNormal() * 200.0f, 20.0f, FColor::Blue, false, FixedDeltaTime);
+		DrawDebugDirectionalArrow(World, Positions[Index], Positions[Index] + Headings[Index].GetSafeNormal() * 200.0f, 20.0f, FColor::Red, false, FixedDeltaTime);
+		DrawDebugPoint(World, Goals[Index], 5.0f, DebugColors[Index], false, FixedDeltaTime);
 	}
 }
 
@@ -68,8 +72,9 @@ void UTrSimulationSystem::TickSimulation()
 {
 	DebugVisualization();
 
-	SetAcceleration();
 	PathInsertion();
+	SetAcceleration();
+	Steer();
 	UpdateVehicle();
 }
 
@@ -84,15 +89,14 @@ void UTrSimulationSystem::PathInsertion()
 		const FVector Future = Positions[Index] + Velocities[Index] * LookAheadTime;
 		const FVector Temp = Future - PathStart;
 		FVector Projection = (Temp.Dot(Path)/Path.Size()) * Path.GetSafeNormal() + PathStart;
-		FVector PathLeft = Path.GetSafeNormal().RotateAngleAxis(-90.0, FVector::UpVector);
-		Projection = Projection + PathLeft * PathRadius;
-
-		DrawDebugBox(GetWorld(), Future, FVector::One() * 10.0f, DebugColors[Index], false, FixedDeltaTime);
-		DrawDebugSphere(GetWorld(), Projection, 10.0f, 6, DebugColors[Index], false, FixedDeltaTime);
-
-		if(FVector::Distance(Positions[Index], Projection) > PathRadius)
+		
+		if(FVector::Distance(Future, Projection) > PathRadius)
 		{
 			Goals[Index] = Projection;
+		}
+		else
+		{
+			Goals[Index] = PathEnd;
 		}
 	}
 }
@@ -112,7 +116,8 @@ void UTrSimulationSystem::SetAcceleration()
 		const float GapTerm = (ModelData.MinimumGap + ModelData.DesiredTimeHeadWay * CurrentSpeed + DecelerationTerm) / CurrentGap;
 		const float InteractionTerm = -ModelData.MaximumAcceleration * FMath::Square(GapTerm);
 
-		Accelerations[Index] = FreeRoadTerm + InteractionTerm; 
+		Accelerations[Index] = FreeRoadTerm + InteractionTerm;
+		Accelerations[Index] *= DebugAccelerationScale;
 	}
 }
 
@@ -132,7 +137,12 @@ void UTrSimulationSystem::UpdateVehicle()
 	}
 }
 
-FVector UTrSimulationSystem::Steer(const FVector& CurrentHeading, const FVector& TargetHeading)
+void UTrSimulationSystem::Steer()
 {
-	return FMath::Lerp(CurrentHeading, TargetHeading, 0.75f);
+	for(int Index = 0; Index < NumEntities; ++Index)
+	{
+		FVector& CurrentHeading = Headings[Index];
+		const FVector TargetHeading = Goals[Index] - Positions[Index];
+		CurrentHeading = FMath::Lerp(CurrentHeading, TargetHeading, SteeringSpeed);
+	}
 }
