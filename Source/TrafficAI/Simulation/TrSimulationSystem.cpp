@@ -9,7 +9,7 @@ constexpr float PathRadius = 100.0f;
 constexpr float FixedDeltaTime = 0.016f;
 constexpr float LookAheadTime = FixedDeltaTime * 100.0f;
 constexpr float IntersectionRadius = 100.0f;
-constexpr float SteeringSpeed = 0.75f;
+constexpr float SteeringSpeed = FixedDeltaTime;
 constexpr float DebugAccelerationScale = 2.0f;
 
 void UTrSimulationSystem::Initialize(const URpSpatialGraphComponent* GraphComponent, const TArray<FTrPath>& StartingPaths, TWeakPtr<TArray<FTrVehicleRepresentation>> TrafficEntities)
@@ -89,6 +89,10 @@ void UTrSimulationSystem::PathInsertion()
 		const FVector Future = Positions[Index] + Velocities[Index] * LookAheadTime;
 		const FVector Temp = Future - PathStart;
 		FVector Projection = (Temp.Dot(Path)/Path.Size()) * Path.GetSafeNormal() + PathStart;
+
+		float Alpha = (Projection - PathStart).Length() / Path.Length();
+		Alpha = FMath::Clamp(Alpha, 0.0f, 1.0f);
+		Projection = PathStart * (1 - Alpha) + PathEnd * Alpha;
 		
 		if(FVector::Distance(Future, Projection) > PathRadius)
 		{
@@ -124,7 +128,7 @@ void UTrSimulationSystem::SetAcceleration()
 void UTrSimulationSystem::UpdateVehicle()
 {
 	for(int Index = 0; Index < NumEntities; ++Index)
-	{
+	{ 
 		FVector NewVelocity = Velocities[Index] + Headings[Index].GetSafeNormal() * Accelerations[Index] * FixedDeltaTime;
 		if(NewVelocity.Length() > MaxSpeed)
 		{
