@@ -82,16 +82,15 @@ void UTrSimulationSystem::PathInsertion()
 {
 	for(int Index = 0; Index < NumEntities; ++Index)
 	{
-		const FVector PathStart = Nodes[CurrentPaths[Index].StartNodeIndex].GetLocation();
-		const FVector PathEnd = Nodes[CurrentPaths[Index].EndNodeIndex].GetLocation();
+		const FVector& PathStart = Nodes[CurrentPaths[Index].StartNodeIndex].GetLocation();
+		const FVector& PathEnd = Nodes[CurrentPaths[Index].EndNodeIndex].GetLocation();
 		const FVector Path = PathEnd - PathStart;
 		
 		const FVector Future = Positions[Index] + Velocities[Index] * LookAheadTime;
 		const FVector Temp = Future - PathStart;
 		FVector Projection = (Temp.Dot(Path)/Path.Size()) * Path.GetSafeNormal() + PathStart;
 
-		float Alpha = (Projection - PathStart).Length() / Path.Length();
-		Alpha = FMath::Clamp(Alpha, 0.0f, 1.0f);
+		const float Alpha = FMath::Clamp((Projection - PathStart).Length() / Path.Length(), 0.0f, 1.0f);
 		Projection = PathStart * (1 - Alpha) + PathEnd * Alpha;
 		
 		if(FVector::Distance(Future, Projection) > PathRadius)
