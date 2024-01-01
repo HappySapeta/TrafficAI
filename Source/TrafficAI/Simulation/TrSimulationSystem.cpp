@@ -9,7 +9,7 @@ constexpr float PathRadius = 100.0f;
 constexpr float FixedDeltaTime = 0.016f;
 constexpr float LookAheadTime = FixedDeltaTime * 100.0f;
 constexpr float IntersectionRadius = 100.0f;
-constexpr float SteeringSpeed = FixedDeltaTime;
+constexpr float SteeringSpeed = 0.5f;
 constexpr float DebugAccelerationScale = 2.0f;
 
 void UTrSimulationSystem::Initialize(const URpSpatialGraphComponent* GraphComponent, const TArray<FTrPath>& StartingPaths, TWeakPtr<TArray<FTrVehicleRepresentation>> TrafficEntities)
@@ -145,7 +145,13 @@ void UTrSimulationSystem::Steer()
 	for(int Index = 0; Index < NumEntities; ++Index)
 	{
 		FVector& CurrentHeading = Headings[Index];
-		const FVector TargetHeading = Goals[Index] - Positions[Index];
-		CurrentHeading = FMath::Lerp(CurrentHeading, TargetHeading, SteeringSpeed);
+		const FVector TargetHeading = (Goals[Index] - Positions[Index]).GetSafeNormal();
+		float Delta = FMath::Atan2(CurrentHeading.X * TargetHeading.Y - CurrentHeading.Y * TargetHeading.X, CurrentHeading.X * TargetHeading.X + CurrentHeading.Y * TargetHeading.Y);
+
+		GEngine->AddOnScreenDebugMessage(-1, FixedDeltaTime, FColor::Red, FString::Printf(TEXT("%f"), Delta));
+		
+		Delta = FMath::Clamp(Delta, -PI/4, PI/4);
+
+		CurrentHeading = CurrentHeading.RotateAngleAxis(Delta * SteeringSpeed, FVector::UpVector);
 	}
 }
