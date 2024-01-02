@@ -127,8 +127,13 @@ void UTrSimulationSystem::SetAcceleration()
 void UTrSimulationSystem::UpdateVehicle()
 {
 	for(int Index = 0; Index < NumEntities; ++Index)
-	{ 
-		FVector NewVelocity = Velocities[Index] + Headings[Index].GetSafeNormal() * Accelerations[Index] * FixedDeltaTime;
+	{
+		const FVector& Heading = Headings[Index].GetSafeNormal();
+		FVector NewVelocity = Velocities[Index] + Heading * Accelerations[Index] * FixedDeltaTime;
+
+		const float HeadingVelocityDot = FMath::Clamp(NewVelocity.GetSafeNormal().Dot(Heading), 0.0f, 1.0f);
+		NewVelocity = HeadingVelocityDot * NewVelocity.Size() * Heading;
+		
 		if(NewVelocity.Length() > MaxSpeed)
 		{
 			NewVelocity = NewVelocity.GetSafeNormal() * MaxSpeed;
