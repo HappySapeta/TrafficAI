@@ -152,8 +152,6 @@ void UTrSimulationSystem::Steer()
 		FVector& CurrentHeading = Headings[Index];
 		const FVector TargetHeading = (Goals[Index] - Positions[Index]).GetSafeNormal();
 		float Delta = FMath::Atan2(CurrentHeading.X * TargetHeading.Y - CurrentHeading.Y * TargetHeading.X, CurrentHeading.X * TargetHeading.X + CurrentHeading.Y * TargetHeading.Y);
-
-		GEngine->AddOnScreenDebugMessage(-1, FixedDeltaTime, FColor::Red, FString::Printf(TEXT("%f"), Delta));
 		
 		Delta = FMath::Clamp(Delta, -PI/4, PI/4);
 
