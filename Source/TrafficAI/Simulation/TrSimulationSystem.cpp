@@ -2,7 +2,6 @@
 
 #include "TrSimulationSystem.h"
 #include "RpSpatialGraphComponent.h"
-#include "Kismet/KismetMathLibrary.h"
 
 constexpr float MaxSpeed = 100.0f;
 constexpr float PathRadius = 100.0f;
@@ -10,6 +9,7 @@ constexpr float FixedDeltaTime = 0.016f;
 constexpr float LookAheadTime = FixedDeltaTime * 100.0f;
 constexpr float IntersectionRadius = 100.0f;
 constexpr float SteeringSpeed = 0.5f;
+constexpr float ArrivalDistance = 300.0f;
 constexpr float DebugAccelerationScale = 2.0f;
 
 void UTrSimulationSystem::Initialize(const URpSpatialGraphComponent* GraphComponent, const TArray<FTrPath>& StartingPaths, TWeakPtr<TArray<FTrVehicleRepresentation>> TrafficEntities)
@@ -119,8 +119,17 @@ void UTrSimulationSystem::SetAcceleration()
 		const float GapTerm = (ModelData.MinimumGap + ModelData.DesiredTimeHeadWay * CurrentSpeed + DecelerationTerm) / CurrentGap;
 		const float InteractionTerm = -ModelData.MaximumAcceleration * FMath::Square(GapTerm);
 
-		Accelerations[Index] = FreeRoadTerm + InteractionTerm;
-		Accelerations[Index] *= DebugAccelerationScale;
+		const float DistanceToGoal = FVector::Distance(Positions[Index], Goals[Index]);
+
+		float& Acceleration = Accelerations[Index]; 
+		
+		Acceleration = FreeRoadTerm + InteractionTerm;
+		if(DistanceToGoal <= ArrivalDistance && Acceleration > 0.0f)
+		{
+			const float ArrivalFactor = DistanceToGoal / ArrivalDistance;
+			Acceleration *= ArrivalFactor;
+		}
+		Acceleration *= DebugAccelerationScale;
 	}
 }
 
