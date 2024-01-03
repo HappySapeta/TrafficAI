@@ -8,7 +8,6 @@ constexpr float PathRadius = 100.0f;
 constexpr float FixedDeltaTime = 0.016f;
 constexpr float LookAheadTime = FixedDeltaTime * 100.0f;
 constexpr float IntersectionRadius = 100.0f;
-constexpr float ArrivalDistance = 300.0f;
 constexpr float DebugAccelerationScale = 2.0f;
 
 void UTrSimulationSystem::Initialize(const URpSpatialGraphComponent* GraphComponent, const TArray<FTrPath>& StartingPaths, TWeakPtr<TArray<FTrVehicleRepresentation>> TrafficEntities)
@@ -121,11 +120,13 @@ void UTrSimulationSystem::SetAcceleration()
 		const float DistanceToGoal = FVector::Distance(Positions[Index], Goals[Index]);
 
 		float& Acceleration = Accelerations[Index]; 
-		
+
+		constexpr float ArrivalDistance = 100.0f;
+
 		Acceleration = FreeRoadTerm + InteractionTerm;
 		if(DistanceToGoal <= ArrivalDistance && Acceleration > 0.0f)
 		{
-			const float ArrivalFactor = DistanceToGoal / ArrivalDistance;
+			const float ArrivalFactor = DistanceToGoal / ArrivalDistance - 1.0f;
 			Acceleration *= ArrivalFactor;
 		}
 		Acceleration *= DebugAccelerationScale;
