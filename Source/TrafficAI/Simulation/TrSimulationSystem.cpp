@@ -8,7 +8,6 @@ constexpr float PathRadius = 100.0f;
 constexpr float FixedDeltaTime = 0.016f;
 constexpr float LookAheadTime = FixedDeltaTime * 100.0f;
 constexpr float IntersectionRadius = 100.0f;
-constexpr float SteeringSpeed = 0.5f;
 constexpr float ArrivalDistance = 300.0f;
 constexpr float DebugAccelerationScale = 2.0f;
 
@@ -30,6 +29,7 @@ void UTrSimulationSystem::Initialize(const URpSpatialGraphComponent* GraphCompon
 			Accelerations.Push(0.0f);
 			Headings.Push(Entity.Dummy->GetActorForwardVector());
 			Goals.Push(Nodes[CurrentPaths[Index].EndNodeIndex].GetLocation());
+			SteerAngles.Push(0.0f);
 			DebugColors.Push(FColor::MakeRandomColor());
 		}
 	}
@@ -63,7 +63,7 @@ void UTrSimulationSystem::DebugVisualization()
 	for(int Index = 0; Index < NumEntities; ++Index)
 	{
 		DrawDebugBox(World, Positions[Index], FVector(100.0f, 50.0f, 25.0f), Headings[Index].ToOrientationQuat(), DebugColors[Index], false, FixedDeltaTime);
-		DrawDebugDirectionalArrow(World, Positions[Index], Positions[Index] + Headings[Index].GetSafeNormal() * 200.0f, 20.0f, FColor::Red, false, FixedDeltaTime);
+		DrawDebugDirectionalArrow(World, Positions[Index], Positions[Index] + Headings[Index] * 150.0f, 200.0f, FColor::Red, false, FixedDeltaTime);
 		DrawDebugPoint(World, Goals[Index], 5.0f, DebugColors[Index], false, FixedDeltaTime);
 	}
 }
@@ -74,7 +74,6 @@ void UTrSimulationSystem::TickSimulation()
 
 	PathInsertion();
 	SetAcceleration();
-	Steer();
 	UpdateVehicle();
 }
 
@@ -137,33 +136,54 @@ void UTrSimulationSystem::UpdateVehicle()
 {
 	for(int Index = 0; Index < NumEntities; ++Index)
 	{
-		const FVector& Heading = Headings[Index].GetSafeNormal();
-		FVector NewVelocity = Velocities[Index] + Heading * Accelerations[Index] * FixedDeltaTime;
+		FVector CurrentHeading = Headings[Index];
+		float& SteerAngle = SteerAngles[Index];
 
-		const float HeadingVelocityDot = FMath::Clamp(NewVelocity.GetSafeNormal().Dot(Heading), 0.0f, 1.0f);
-		NewVelocity = HeadingVelocityDot * NewVelocity.Size() * Heading;
+		//------KINEMATICS--------------------------------
 		
+		FVector NewVelocity = Velocities[Index] + CurrentHeading * Accelerations[Index] * FixedDeltaTime;
+
+		const float HeadingVelocityDot = FMath::Clamp(NewVelocity.GetSafeNormal().Dot(CurrentHeading), 0.0f, 1.0f);
+		NewVelocity = HeadingVelocityDot * NewVelocity.Size() * CurrentHeading;
+
+		// Limit Speed
 		if(NewVelocity.Length() > MaxSpeed)
 		{
 			NewVelocity = NewVelocity.GetSafeNormal() * MaxSpeed;
 		}
-		const FVector NewPosition = Positions[Index] + NewVelocity * FixedDeltaTime;
+		
+		FVector NewPosition = Positions[Index] + NewVelocity * FixedDeltaTime;
+
+		//------KINEMATICS--------------------------------
+
+		//----STEER---------------------------------------
+
+		constexpr float WheelBase = 100.0f;
+		
+		FVector RearWheel = NewPosition - CurrentHeading * WheelBase * 0.5f;
+		FVector FrontWheel = NewPosition + CurrentHeading * WheelBase * 0.5f;
+
+		const FVector TargetHeading = (Goals[Index] - Positions[Index]).GetSafeNormal();
+		float Delta = FMath::Atan2(CurrentHeading.X * TargetHeading.Y - CurrentHeading.Y * TargetHeading.X, CurrentHeading.X * TargetHeading.X + CurrentHeading.Y * TargetHeading.Y);
+
+		const float MaxSteeringAngle = FMath::DegreesToRadians(40.0f);
+		Delta = FMath::Clamp(Delta, -MaxSteeringAngle, +MaxSteeringAngle);
+
+		constexpr float SteeringSpeed = 2.0f;
+		SteerAngle += FMath::Clamp(Delta - SteerAngle, -SteeringSpeed, SteeringSpeed);
+		
+		RearWheel += NewVelocity * FixedDeltaTime;
+		FrontWheel += NewVelocity.RotateAngleAxis(FMath::RadiansToDegrees(SteerAngle), FVector::UpVector) * FixedDeltaTime;
+
+		const FVector NewHeading = (FrontWheel - RearWheel).GetSafeNormal();
+
+		NewPosition = (FrontWheel + RearWheel) * 0.5f;
+		NewVelocity = NewHeading * NewVelocity.Length();
+		
+		//----STEER---------------------------------------
 		
 		Velocities[Index] = NewVelocity;
 		Positions[Index] = NewPosition;
-	}
-}
-
-void UTrSimulationSystem::Steer()
-{
-	for(int Index = 0; Index < NumEntities; ++Index)
-	{
-		FVector& CurrentHeading = Headings[Index];
-		const FVector TargetHeading = (Goals[Index] - Positions[Index]).GetSafeNormal();
-		float Delta = FMath::Atan2(CurrentHeading.X * TargetHeading.Y - CurrentHeading.Y * TargetHeading.X, CurrentHeading.X * TargetHeading.X + CurrentHeading.Y * TargetHeading.Y);
-		
-		Delta = FMath::Clamp(Delta, -PI/4, PI/4);
-
-		CurrentHeading = CurrentHeading.RotateAngleAxis(Delta * SteeringSpeed, FVector::UpVector);
+		Headings[Index] = NewHeading;
 	}
 }

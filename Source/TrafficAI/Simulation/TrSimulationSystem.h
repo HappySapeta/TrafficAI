@@ -48,8 +48,6 @@ private:
 
 	void UpdateVehicle();
 
-	void Steer();
-
 private:
 
 	int NumEntities;
@@ -59,6 +57,7 @@ private:
 	TArray<FVector> Goals;
 	TArray<FTrPath> CurrentPaths;
 	TArray<float> Accelerations;
+	TArray<float> SteerAngles;
 	TArray<FColor> DebugColors;
 	
 	FTrModelData ModelData;
