@@ -4,16 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "..\Shared\TrTypes.h"
+#include "Ripple/Public/RpSpatialGraphComponent.h"
 #include "TrSimulationSystem.generated.h"
-
-enum class ETrMotionState
-{
-	LaneInsertion,
-	Driving,
-	Parked,
-	Intersection,
-	Turning
-};
 
 /**
  * 
@@ -25,13 +17,22 @@ class TRAFFICAI_API UTrSimulationSystem : public UWorldSubsystem
 
 public:
 
-	void RegisterEntities(TWeakPtr<TArray<FTrVehicleRepresentation>> TrafficEntities);
-
-	void RegisterPath(const class URpSpatialGraphComponent* GraphComponent);
-
+	void Initialize
+		(
+			const URpSpatialGraphComponent* GraphComponent,
+			const TArray<FTrPath>& StartingPaths,
+			TWeakPtr<TArray<FTrVehicleRepresentation>> TrafficEntities
+		);
+	
 	void StartSimulation();
 
 	void StopSimulation();
+
+protected:
+	
+	FVector ProjectEntityOnPath(int Index, const FTrPath& Path) const;
+
+	int FindNearestPath(int EntityIndex, FVector& NearestProjection);
 	
 private:
 
@@ -39,23 +40,14 @@ private:
 	
 	void TickSimulation();
 
-	virtual void PathFollow();
+	void PathFollow();
 
-	virtual void LaneInsertion();
-
-	virtual void Drive();
+	void HandleGoal();
 	
-	virtual void IntersectionHandling();
+	void SetAcceleration();
+
+	void UpdateVehicle();
 	
-	virtual void Separation();
-
-	void ApplyAcceleration();
-
-	void GenerateRoutes();
-
-	void AssignRoutes();
-	
-	float CalculateAcceleration(float CurrentSpeed, float RelativeSpeed, float CurrentGap) const;
 
 private:
 
@@ -63,14 +55,15 @@ private:
 	TArray<FVector> Positions;
 	TArray<FVector> Velocities;
 	TArray<FVector> Headings;
-	TArray<FVector> Accelerations;
-	TArray<ETrMotionState> States;
-	TArray<TPair<int, int>> RouteIndices;
-
+	TArray<FVector> Goals;
+	TArray<float> Accelerations;
+	TArray<float> SteerAngles;
+	TArray<uint32> CurrentPaths; 
+	TArray<FColor> DebugColors;
+	
 	FTrModelData ModelData;
 	FTimerHandle SimTimerHandle;
-
-	TArray<TArray<FVector>> Routes;
-
-	float SimTickRate = 0.016f;
+	
+	TArray<FTrPath> Paths;
+	TArray<FRpSpatialGraphNode> Nodes;
 };
