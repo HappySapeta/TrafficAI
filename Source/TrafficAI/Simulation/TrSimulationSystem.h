@@ -35,6 +35,12 @@ public:
 	void StartSimulation();
 
 	void StopSimulation();
+
+protected:
+	
+	FVector ProjectEntityOnPath(int Index, const FTrPath& Path) const;
+
+	int FindNearestPath(int EntityIndex, FVector& NearestProjection);
 	
 private:
 
@@ -42,11 +48,12 @@ private:
 	
 	void TickSimulation();
 
-	void PathInsertion();
+	void PathFollow();
 	
 	void SetAcceleration();
 
 	void UpdateVehicle();
+	
 
 private:
 
@@ -55,13 +62,14 @@ private:
 	TArray<FVector> Velocities;
 	TArray<FVector> Headings;
 	TArray<FVector> Goals;
-	TArray<FTrPath> CurrentPaths;
 	TArray<float> Accelerations;
 	TArray<float> SteerAngles;
+	TArray<uint32> NearestPathIndices; 
 	TArray<FColor> DebugColors;
 	
 	FTrModelData ModelData;
 	FTimerHandle SimTimerHandle;
 	
+	TArray<FTrPath> Paths;
 	TArray<FRpSpatialGraphNode> Nodes;
 };

@@ -4,20 +4,21 @@
 #include "RpSpatialGraphComponent.h"
 
 constexpr float MaxSpeed = 100.0f;
-constexpr float PathRadius = 100.0f;
 constexpr float FixedDeltaTime = 0.016f;
 constexpr float LookAheadTime = FixedDeltaTime * 100.0f;
-constexpr float IntersectionRadius = 100.0f;
 constexpr float DebugAccelerationScale = 2.0f;
 
 void UTrSimulationSystem::Initialize(const URpSpatialGraphComponent* GraphComponent, const TArray<FTrPath>& StartingPaths, TWeakPtr<TArray<FTrVehicleRepresentation>> TrafficEntities)
 {
 	if(TrafficEntities.IsValid())
 	{
-		Nodes = *GraphComponent->GetNodes();
-		CurrentPaths = StartingPaths;
 		NumEntities = TrafficEntities.Pin()->Num();
-		check(StartingPaths.Num() == NumEntities);
+		
+		Paths = StartingPaths;
+		check(Paths.Num() > 0);
+
+		Nodes = *GraphComponent->GetNodes();
+		check(Nodes.Num() > 0);
 		
 		for(int Index = 0; Index < NumEntities; ++Index)
 		{
@@ -27,19 +28,20 @@ void UTrSimulationSystem::Initialize(const URpSpatialGraphComponent* GraphCompon
 			Velocities.Push(Entity.Dummy->GetVelocity());
 			Accelerations.Push(0.0f);
 			Headings.Push(Entity.Dummy->GetActorForwardVector());
-			Goals.Push(Nodes[CurrentPaths[Index].EndNodeIndex].GetLocation());
 			SteerAngles.Push(0.0f);
 			DebugColors.Push(FColor::MakeRandomColor());
+
+			FVector NearestProjectionPoint;
+			NearestPathIndices.Push(FindNearestPath(Index, NearestProjectionPoint));
+
+			Goals.Push(NearestProjectionPoint);
 		}
 	}
 	
 	const UWorld* World = GetWorld();
-	for(const FRpSpatialGraphNode& Node : Nodes)
+	for(const FTrPath& Path : Paths)
 	{
-		for(const uint32 Connection : Node.GetConnections())
-		{
-			DrawDebugLine(World, Node.GetLocation(), Nodes[Connection].GetLocation(), FColor::White, true);
-		}
+		DrawDebugLine(World, Path.Start, Path.End, FColor::White, true, -1);
 	}
 }
 
@@ -64,6 +66,7 @@ void UTrSimulationSystem::DebugVisualization()
 		DrawDebugBox(World, Positions[Index], FVector(100.0f, 50.0f, 25.0f), Headings[Index].ToOrientationQuat(), DebugColors[Index], false, FixedDeltaTime);
 		DrawDebugDirectionalArrow(World, Positions[Index], Positions[Index] + Headings[Index] * 150.0f, 200.0f, FColor::Red, false, FixedDeltaTime);
 		DrawDebugPoint(World, Goals[Index], 5.0f, DebugColors[Index], false, FixedDeltaTime);
+		DrawDebugLine(World, Positions[Index], Goals[Index], DebugColors[Index], false, FixedDeltaTime);
 	}
 }
 
@@ -71,33 +74,41 @@ void UTrSimulationSystem::TickSimulation()
 {
 	DebugVisualization();
 
-	PathInsertion();
+	PathFollow();
 	SetAcceleration();
 	UpdateVehicle();
 }
 
-void UTrSimulationSystem::PathInsertion()
+void UTrSimulationSystem::PathFollow()
 {
+	TRACE_CPUPROFILER_EVENT_SCOPE(UTrSimulationSystem::PathInsertion)
+
+	constexpr float PathRadius = 100.0f;
+	constexpr float PathFindMaxDistance = 400.0f;
+	
+	TArray<FVector> ProjectionPoints;
+	ProjectionPoints.Reserve(Paths.Num());
+	
 	for(int Index = 0; Index < NumEntities; ++Index)
 	{
-		const FVector& PathStart = Nodes[CurrentPaths[Index].StartNodeIndex].GetLocation();
-		const FVector& PathEnd = Nodes[CurrentPaths[Index].EndNodeIndex].GetLocation();
-		const FVector Path = PathEnd - PathStart;
-		
-		const FVector Future = Positions[Index] + Velocities[Index] * LookAheadTime;
-		const FVector Temp = Future - PathStart;
-		FVector Projection = (Temp.Dot(Path)/Path.Size()) * Path.GetSafeNormal() + PathStart;
+		const uint32 NearestPathIndex = NearestPathIndices[Index];
+		FVector NearestProjection = ProjectEntityOnPath(Index, Paths[NearestPathIndex]);
+		const FVector Future = Positions[Index] + Velocities[Index] * FixedDeltaTime;
 
-		const float Alpha = FMath::Clamp((Projection - PathStart).Length() / Path.Length(), 0.0f, 1.0f);
-		Projection = PathStart * (1 - Alpha) + PathEnd * Alpha;
-		
-		if(FVector::Distance(Future, Projection) > PathRadius)
+		const float Distance = FVector::Distance(Future, NearestProjection);
+		if(Distance < PathRadius)
 		{
-			Goals[Index] = Projection;
+			Goals[Index] = Paths[NearestPathIndex].End;
+		}
+		else if(Distance >= PathRadius && Distance < PathFindMaxDistance)
+		{
+			Goals[Index] = NearestProjection;
 		}
 		else
 		{
-			Goals[Index] = PathEnd;
+			const int NewNearestPathIndex = FindNearestPath(Index, NearestProjection);
+			NearestPathIndices[Index] = NewNearestPathIndex;
+			Goals[Index] = NearestProjection;
 		}
 	}
 }
@@ -170,7 +181,7 @@ void UTrSimulationSystem::UpdateVehicle()
 		const float MaxSteeringAngle = FMath::DegreesToRadians(40.0f);
 		Delta = FMath::Clamp(Delta, -MaxSteeringAngle, +MaxSteeringAngle);
 
-		constexpr float SteeringSpeed = 2.0f;
+		constexpr float SteeringSpeed = 5.0f;
 		SteerAngle += FMath::Clamp(Delta - SteerAngle, -SteeringSpeed, SteeringSpeed);
 		
 		RearWheel += NewVelocity * FixedDeltaTime;
@@ -187,4 +198,42 @@ void UTrSimulationSystem::UpdateVehicle()
 		Positions[Index] = NewPosition;
 		Headings[Index] = NewHeading;
 	}
+}
+
+FVector UTrSimulationSystem::ProjectEntityOnPath(const int Index, const FTrPath& Path) const
+{
+	const FVector PathStart = Path.Start;
+	const FVector PathEnd = Path.End;
+	const FVector PathVector = PathEnd - PathStart;
+		
+	const FVector Future = Positions[Index] + Velocities[Index] * LookAheadTime;
+	const FVector Temp = Future - PathStart;
+	FVector Projection = (Temp.Dot(PathVector)/PathVector.Size()) * PathVector.GetSafeNormal() + PathStart;
+
+	const float Alpha = FMath::Clamp((Projection - PathStart).Length() / PathVector.Length(), 0.0f, 1.0f);
+	Projection = PathStart * (1 - Alpha) + PathEnd * Alpha;
+
+	return Projection;
+}
+
+int UTrSimulationSystem::FindNearestPath(int EntityIndex, FVector& NearestProjection)
+{
+	NearestProjection = Positions[EntityIndex];
+	int NearestPathIndex = 0;
+	float SmallestDistance = TNumericLimits<float>::Max();
+	
+	for(int PathIndex = 0; PathIndex < Paths.Num(); ++PathIndex)
+	{
+		const FVector& ProjectionPoint = ProjectEntityOnPath(EntityIndex, Paths[PathIndex]);
+		const float Distance = FVector::Distance(ProjectionPoint, Positions[EntityIndex]);
+		
+		if(Distance < SmallestDistance)
+		{
+			NearestProjection = ProjectionPoint;
+			SmallestDistance = Distance;
+			NearestPathIndex = PathIndex;
+		}
+	}
+
+	return NearestPathIndex;
 }

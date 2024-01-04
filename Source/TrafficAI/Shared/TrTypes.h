@@ -98,9 +98,8 @@ struct TRAFFICAI_API FTrModelData
 
 struct TRAFFICAI_API FTrPath
 {
-	FTrPath(uint32 Start, uint32 End)
-		:StartNodeIndex(Start), EndNodeIndex(End)
-	{}
+	FVector Start = FVector::Zero();
+	FVector End = FVector::Zero();
 	uint32 StartNodeIndex = 0;
 	uint32 EndNodeIndex = 0;
 };

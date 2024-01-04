@@ -202,8 +202,8 @@ void FTrVehicleStartCreator::CreateVehicleStartsOnGraph(const URpSpatialGraphCom
 				}
 				
 				NewVehicleStarts.Push({Transform.GetLocation(), Transform.GetRotation(), ConnectedIndex});
-				NewStartingPaths.Push({Index, ConnectedIndex});
 			}
+			NewStartingPaths.Push({Node1Location, Node2Location, Index, ConnectedIndex});
 
 			NewStartTransforms.Reset();
 			CreateStartTransformsOnEdge(Node2Location, Node1Location, SpawnConfiguration, NewStartTransforms);
@@ -215,8 +215,8 @@ void FTrVehicleStartCreator::CreateVehicleStartsOnGraph(const URpSpatialGraphCom
 				}
 				
 				NewVehicleStarts.Push({Transform.GetLocation(), Transform.GetRotation(), Index});
-				NewStartingPaths.Push({ConnectedIndex, Index});
 			}
+			NewStartingPaths.Push({Node2Location, Node1Location, ConnectedIndex, Index});
 
 			OutVehicleStarts.Push(NewVehicleStarts);
 
