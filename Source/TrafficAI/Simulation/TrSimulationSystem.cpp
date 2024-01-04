@@ -3,7 +3,7 @@
 #include "TrSimulationSystem.h"
 #include "RpSpatialGraphComponent.h"
 
-constexpr float MaxSpeed = 100.0f;
+constexpr float MaxSpeed = 500.0f;
 constexpr float FixedDeltaTime = 0.016f;
 constexpr float LookAheadTime = FixedDeltaTime * 100.0f;
 constexpr float DebugAccelerationScale = 2.0f;
@@ -32,7 +32,7 @@ void UTrSimulationSystem::Initialize(const URpSpatialGraphComponent* GraphCompon
 			DebugColors.Push(FColor::MakeRandomColor());
 
 			FVector NearestProjectionPoint;
-			NearestPathIndices.Push(FindNearestPath(Index, NearestProjectionPoint));
+			CurrentPaths.Push(FindNearestPath(Index, NearestProjectionPoint));
 
 			Goals.Push(NearestProjectionPoint);
 		}
@@ -65,8 +65,9 @@ void UTrSimulationSystem::DebugVisualization()
 	{
 		DrawDebugBox(World, Positions[Index], FVector(100.0f, 50.0f, 25.0f), Headings[Index].ToOrientationQuat(), DebugColors[Index], false, FixedDeltaTime);
 		DrawDebugDirectionalArrow(World, Positions[Index], Positions[Index] + Headings[Index] * 150.0f, 200.0f, FColor::Red, false, FixedDeltaTime);
-		DrawDebugPoint(World, Goals[Index], 5.0f, DebugColors[Index], false, FixedDeltaTime);
-		DrawDebugLine(World, Positions[Index], Goals[Index], DebugColors[Index], false, FixedDeltaTime);
+		DrawDebugPoint(World, Goals[Index], 2.0f, DebugColors[Index], false, FixedDeltaTime);
+		DrawDebugPoint(World, Positions[Index], 2.5f, DebugColors[Index], false, FixedDeltaTime * 500.0f);
+		//DrawDebugLine(World, Positions[Index], Goals[Index], DebugColors[Index], false, FixedDeltaTime);
 	}
 }
 
@@ -75,6 +76,7 @@ void UTrSimulationSystem::TickSimulation()
 	DebugVisualization();
 
 	PathFollow();
+	HandleGoal();
 	SetAcceleration();
 	UpdateVehicle();
 }
@@ -91,7 +93,7 @@ void UTrSimulationSystem::PathFollow()
 	
 	for(int Index = 0; Index < NumEntities; ++Index)
 	{
-		const uint32 NearestPathIndex = NearestPathIndices[Index];
+		const uint32 NearestPathIndex = CurrentPaths[Index];
 		FVector NearestProjection = ProjectEntityOnPath(Index, Paths[NearestPathIndex]);
 		const FVector Future = Positions[Index] + Velocities[Index] * FixedDeltaTime;
 
@@ -104,11 +106,37 @@ void UTrSimulationSystem::PathFollow()
 		{
 			Goals[Index] = NearestProjection;
 		}
-		else
+		//else
+		//{
+		//	const int NewNearestPathIndex = FindNearestPath(Index, NearestProjection);
+		//	CurrentPaths[Index] = NewNearestPathIndex;
+		//	Goals[Index] = NearestProjection;
+		//}
+	}
+}
+
+void UTrSimulationSystem::HandleGoal()
+{
+	constexpr float GoalReachedDistance = 75.0f;
+	for(int Index = 0; Index < NumEntities; ++Index)
+	{
+		FTrPath& CurrentPath = Paths[CurrentPaths[Index]];
+		if(FVector::PointsAreNear(Goals[Index], Positions[Index], GoalReachedDistance) && FVector::PointsAreNear(Goals[Index], CurrentPath.End, 1.0f))
 		{
-			const int NewNearestPathIndex = FindNearestPath(Index, NearestProjection);
-			NearestPathIndices[Index] = NewNearestPathIndex;
-			Goals[Index] = NearestProjection;
+			const TArray<uint32>& Connections = Nodes[CurrentPath.EndNodeIndex].GetConnections().Array();
+
+			uint32 NewStartNodeIndex = CurrentPath.EndNodeIndex;
+			uint32 NewEndNodeIndex;
+			do
+			{
+				NewEndNodeIndex = Connections[FMath::RandRange(0, Connections.Num() - 1)];
+			}
+			while (NewEndNodeIndex == CurrentPath.StartNodeIndex);
+
+			CurrentPath.Start = Nodes[NewStartNodeIndex].GetLocation();
+			CurrentPath.End = Nodes[NewEndNodeIndex].GetLocation();
+			CurrentPath.StartNodeIndex = NewStartNodeIndex;
+			CurrentPath.EndNodeIndex = NewEndNodeIndex;
 		}
 	}
 }
@@ -234,6 +262,5 @@ int UTrSimulationSystem::FindNearestPath(int EntityIndex, FVector& NearestProjec
 			NearestPathIndex = PathIndex;
 		}
 	}
-
 	return NearestPathIndex;
 }

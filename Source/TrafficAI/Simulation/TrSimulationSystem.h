@@ -49,6 +49,8 @@ private:
 	void TickSimulation();
 
 	void PathFollow();
+
+	void HandleGoal();
 	
 	void SetAcceleration();
 
@@ -64,7 +66,7 @@ private:
 	TArray<FVector> Goals;
 	TArray<float> Accelerations;
 	TArray<float> SteerAngles;
-	TArray<uint32> NearestPathIndices; 
+	TArray<uint32> CurrentPaths; 
 	TArray<FColor> DebugColors;
 	
 	FTrModelData ModelData;
