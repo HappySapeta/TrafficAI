@@ -3,7 +3,7 @@
 #include "TrSimulationSystem.h"
 #include "RpSpatialGraphComponent.h"
 
-constexpr float MaxSpeed = 500.0f;
+constexpr float MaxSpeed = 100.0f;
 constexpr float FixedDeltaTime = 0.016f;
 constexpr float LookAheadTime = FixedDeltaTime * 100.0f;
 constexpr float DebugAccelerationScale = 2.0f;
@@ -66,13 +66,13 @@ void UTrSimulationSystem::DebugVisualization()
 		DrawDebugBox(World, Positions[Index], FVector(100.0f, 50.0f, 25.0f), Headings[Index].ToOrientationQuat(), DebugColors[Index], false, FixedDeltaTime);
 		DrawDebugDirectionalArrow(World, Positions[Index], Positions[Index] + Headings[Index] * 150.0f, 200.0f, FColor::Red, false, FixedDeltaTime);
 		DrawDebugPoint(World, Goals[Index], 2.0f, DebugColors[Index], false, FixedDeltaTime);
-		DrawDebugPoint(World, Positions[Index], 2.5f, DebugColors[Index], false, FixedDeltaTime * 500.0f);
-		//DrawDebugLine(World, Positions[Index], Goals[Index], DebugColors[Index], false, FixedDeltaTime);
+		DrawDebugLine(World, Positions[Index], Goals[Index], DebugColors[Index], false, FixedDeltaTime);
 	}
 }
 
 void UTrSimulationSystem::TickSimulation()
 {
+	TRACE_CPUPROFILER_EVENT_SCOPE(UTrSimulationSystem::TickSimulation)
 	DebugVisualization();
 
 	PathFollow();
@@ -117,6 +117,8 @@ void UTrSimulationSystem::PathFollow()
 
 void UTrSimulationSystem::HandleGoal()
 {
+	TRACE_CPUPROFILER_EVENT_SCOPE(UTrSimulationSystem::HandleGoal)
+	
 	constexpr float GoalReachedDistance = 75.0f;
 	for(int Index = 0; Index < NumEntities; ++Index)
 	{
@@ -143,6 +145,8 @@ void UTrSimulationSystem::HandleGoal()
 
 void UTrSimulationSystem::SetAcceleration()
 {
+	TRACE_CPUPROFILER_EVENT_SCOPE(UTrSimulationSystem::SetAcceleration)
+	
 	for(int Index = 0; Index < NumEntities; ++Index)
 	{
 		int LeadingVehicleIndex = -1;
@@ -174,6 +178,8 @@ void UTrSimulationSystem::SetAcceleration()
 
 void UTrSimulationSystem::UpdateVehicle()
 {
+	TRACE_CPUPROFILER_EVENT_SCOPE(UTrSimulationSystem::UpdateVehicle)
+	
 	for(int Index = 0; Index < NumEntities; ++Index)
 	{
 		FVector CurrentHeading = Headings[Index];
@@ -194,7 +200,7 @@ void UTrSimulationSystem::UpdateVehicle()
 		
 		FVector NewPosition = Positions[Index] + NewVelocity * FixedDeltaTime;
 
-		//------KINEMATICS--------------------------------
+		//------------------------------------------------
 
 		//----STEER---------------------------------------
 
@@ -209,7 +215,7 @@ void UTrSimulationSystem::UpdateVehicle()
 		const float MaxSteeringAngle = FMath::DegreesToRadians(40.0f);
 		Delta = FMath::Clamp(Delta, -MaxSteeringAngle, +MaxSteeringAngle);
 
-		constexpr float SteeringSpeed = 5.0f;
+		constexpr float SteeringSpeed = 2.0f;
 		SteerAngle += FMath::Clamp(Delta - SteerAngle, -SteeringSpeed, SteeringSpeed);
 		
 		RearWheel += NewVelocity * FixedDeltaTime;
@@ -220,7 +226,7 @@ void UTrSimulationSystem::UpdateVehicle()
 		NewPosition = (FrontWheel + RearWheel) * 0.5f;
 		NewVelocity = NewHeading * NewVelocity.Length();
 		
-		//----STEER---------------------------------------
+		//-------------------------------------------------
 		
 		Velocities[Index] = NewVelocity;
 		Positions[Index] = NewPosition;

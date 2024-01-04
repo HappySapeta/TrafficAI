@@ -7,14 +7,6 @@
 #include "Ripple/Public/RpSpatialGraphComponent.h"
 #include "TrSimulationSystem.generated.h"
 
-enum class ETrMotionState
-{
-	PathFollowing,
-	Idle,
-	Intersection,
-	Turning
-};
-
 /**
  * 
  */
