@@ -6,9 +6,14 @@
 constexpr float MaxSpeed = 100.0f;
 constexpr float FixedDeltaTime = 0.016f;
 constexpr float LookAheadTime = FixedDeltaTime * 100.0f;
-constexpr float DebugAccelerationScale = 2.0f;
+constexpr float PathRadius = 100.0f;
+constexpr float GoalReachedDistance = 75.0f;
+constexpr float ArrivalDistance = 100.0f;
+constexpr float WheelBase = 100.0f;
+constexpr float SteeringSpeed = 2.0f;
+constexpr float DebugAccelerationScale = 1.0f;
 
-static bool GTrSimDebug = false;
+static bool GTrSimDebug = true;
 
 FAutoConsoleCommand CComRenderDebug
 (
@@ -85,9 +90,6 @@ void UTrSimulationSystem::TickSimulation()
 void UTrSimulationSystem::PathFollow()
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(UTrSimulationSystem::PathInsertion)
-
-	constexpr float PathRadius = 100.0f;
-	constexpr float PathFindMaxDistance = 400.0f;
 	
 	TArray<FVector> ProjectionPoints;
 	ProjectionPoints.Reserve(Paths.Num());
@@ -96,23 +98,17 @@ void UTrSimulationSystem::PathFollow()
 	{
 		const uint32 NearestPathIndex = CurrentPaths[Index];
 		FVector NearestProjection = ProjectEntityOnPath(Index, Paths[NearestPathIndex]);
-		const FVector Future = Positions[Index] + Velocities[Index] * FixedDeltaTime;
+		const FVector Future = Positions[Index] + Velocities[Index] * LookAheadTime;
 
 		const float Distance = FVector::Distance(Future, NearestProjection);
 		if(Distance < PathRadius)
 		{
 			Goals[Index] = Paths[NearestPathIndex].End;
 		}
-		else if(Distance >= PathRadius && Distance < PathFindMaxDistance)
+		else if(Distance >= PathRadius)
 		{
 			Goals[Index] = NearestProjection;
 		}
-		//else
-		//{
-		//	const int NewNearestPathIndex = FindNearestPath(Index, NearestProjection);
-		//	CurrentPaths[Index] = NewNearestPathIndex;
-		//	Goals[Index] = NearestProjection;
-		//}
 	}
 }
 
@@ -120,7 +116,6 @@ void UTrSimulationSystem::HandleGoal()
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(UTrSimulationSystem::HandleGoal)
 	
-	constexpr float GoalReachedDistance = 75.0f;
 	for(int Index = 0; Index < NumEntities; ++Index)
 	{
 		FTrPath& CurrentPath = Paths[CurrentPaths[Index]];
@@ -164,9 +159,7 @@ void UTrSimulationSystem::SetAcceleration()
 		const float DistanceToGoal = FVector::Distance(Positions[Index], Goals[Index]);
 
 		float& Acceleration = Accelerations[Index]; 
-
-		constexpr float ArrivalDistance = 100.0f;
-
+		
 		Acceleration = FreeRoadTerm + InteractionTerm;
 		if(DistanceToGoal <= ArrivalDistance && Acceleration > 0.0f)
 		{
@@ -205,7 +198,6 @@ void UTrSimulationSystem::UpdateVehicle()
 
 		//----STEER---------------------------------------
 
-		constexpr float WheelBase = 100.0f;
 		
 		FVector RearWheel = NewPosition - CurrentHeading * WheelBase * 0.5f;
 		FVector FrontWheel = NewPosition + CurrentHeading * WheelBase * 0.5f;
@@ -216,7 +208,6 @@ void UTrSimulationSystem::UpdateVehicle()
 		const float MaxSteeringAngle = FMath::DegreesToRadians(40.0f);
 		Delta = FMath::Clamp(Delta, -MaxSteeringAngle, +MaxSteeringAngle);
 
-		constexpr float SteeringSpeed = 2.0f;
 		SteerAngle += FMath::Clamp(Delta - SteerAngle, -SteeringSpeed, SteeringSpeed);
 		
 		RearWheel += NewVelocity * FixedDeltaTime;
