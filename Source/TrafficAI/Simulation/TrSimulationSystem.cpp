@@ -76,10 +76,7 @@ void UTrSimulationSystem::TickSimulation()
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(UTrSimulationSystem::TickSimulation)
 
-	if(GTrSimDebug)
-	{
-		DebugVisualization();
-	}
+	DebugVisualization();
 
 	PathFollow();
 	HandleGoal();
@@ -265,6 +262,11 @@ int UTrSimulationSystem::FindNearestPath(int EntityIndex, FVector& NearestProjec
 
 void UTrSimulationSystem::DebugVisualization()
 {
+	if(!GTrSimDebug)
+	{
+		return;
+	}
+	
 	const UWorld* World = GetWorld();
 	for(int Index = 0; Index < NumEntities; ++Index)
 	{
