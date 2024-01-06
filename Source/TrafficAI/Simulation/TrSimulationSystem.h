@@ -16,7 +16,6 @@ class TRAFFICAI_API UTrSimulationSystem : public UWorldSubsystem
 	GENERATED_BODY()
 
 public:
-
 	void Initialize
 		(
 			const URpSpatialGraphComponent* GraphComponent,
@@ -35,6 +34,8 @@ protected:
 	int FindNearestPath(int EntityIndex, FVector& NearestProjection);
 	
 private:
+
+	void DrawInitialDebug();
 
 	void DebugVisualization();
 	

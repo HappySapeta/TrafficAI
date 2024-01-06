@@ -8,6 +8,21 @@ constexpr float FixedDeltaTime = 0.016f;
 constexpr float LookAheadTime = FixedDeltaTime * 100.0f;
 constexpr float DebugAccelerationScale = 2.0f;
 
+static bool GTrSimDebug = false;
+
+FAutoConsoleCommand CComRenderDebug
+(
+	TEXT("trafficai.Debug"),
+	TEXT("Draw traffic simulation debug information"),
+	FConsoleCommandDelegate::CreateLambda
+	(
+		[]()
+		{
+			GTrSimDebug = !GTrSimDebug;
+		}
+	)
+);
+
 void UTrSimulationSystem::Initialize(const URpSpatialGraphComponent* GraphComponent, const TArray<FTrPath>& StartingPaths, TWeakPtr<TArray<FTrVehicleRepresentation>> TrafficEntities)
 {
 	if(TrafficEntities.IsValid())
@@ -22,34 +37,28 @@ void UTrSimulationSystem::Initialize(const URpSpatialGraphComponent* GraphCompon
 		
 		for(int Index = 0; Index < NumEntities; ++Index)
 		{
-			const FTrVehicleRepresentation& Entity = (*TrafficEntities.Pin())[Index];
+			const AActor* EntityActor = (*TrafficEntities.Pin())[Index].Dummy;
 			
-			Positions.Push(Entity.Dummy->GetActorLocation());
-			Velocities.Push(Entity.Dummy->GetVelocity());
+			Positions.Push(EntityActor->GetActorLocation());
+			Velocities.Push(EntityActor->GetVelocity());
+			Headings.Push(EntityActor->GetActorForwardVector());
 			Accelerations.Push(0.0f);
-			Headings.Push(Entity.Dummy->GetActorForwardVector());
 			SteerAngles.Push(0.0f);
 			DebugColors.Push(FColor::MakeRandomColor());
 
 			FVector NearestProjectionPoint;
 			CurrentPaths.Push(FindNearestPath(Index, NearestProjectionPoint));
-
 			Goals.Push(NearestProjectionPoint);
 		}
 	}
 	
-	const UWorld* World = GetWorld();
-	for(const FTrPath& Path : Paths)
-	{
-		DrawDebugLine(World, Path.Start, Path.End, FColor::White, true, -1);
-	}
+	DrawInitialDebug();
 }
 
 void UTrSimulationSystem::StartSimulation()
 {
 	FTimerDelegate SimTimerDelegate;
 	SimTimerDelegate.BindUObject(this, &UTrSimulationSystem::TickSimulation);
-
 	GetWorld()->GetTimerManager().SetTimer(SimTimerHandle, SimTimerDelegate, FixedDeltaTime, true);
 }
 
@@ -58,22 +67,14 @@ void UTrSimulationSystem::StopSimulation()
 	GetWorld()->GetTimerManager().ClearTimer(SimTimerHandle);
 }
 
-void UTrSimulationSystem::DebugVisualization()
-{
-	const UWorld* World = GetWorld();
-	for(int Index = 0; Index < NumEntities; ++Index)
-	{
-		DrawDebugBox(World, Positions[Index], FVector(100.0f, 50.0f, 25.0f), Headings[Index].ToOrientationQuat(), DebugColors[Index], false, FixedDeltaTime);
-		DrawDebugDirectionalArrow(World, Positions[Index], Positions[Index] + Headings[Index] * 150.0f, 200.0f, FColor::Red, false, FixedDeltaTime);
-		DrawDebugPoint(World, Goals[Index], 2.0f, DebugColors[Index], false, FixedDeltaTime);
-		DrawDebugLine(World, Positions[Index], Goals[Index], DebugColors[Index], false, FixedDeltaTime);
-	}
-}
-
 void UTrSimulationSystem::TickSimulation()
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(UTrSimulationSystem::TickSimulation)
-	DebugVisualization();
+
+	if(GTrSimDebug)
+	{
+		DebugVisualization();
+	}
 
 	PathFollow();
 	HandleGoal();
@@ -269,4 +270,25 @@ int UTrSimulationSystem::FindNearestPath(int EntityIndex, FVector& NearestProjec
 		}
 	}
 	return NearestPathIndex;
+}
+
+void UTrSimulationSystem::DebugVisualization()
+{
+	const UWorld* World = GetWorld();
+	for(int Index = 0; Index < NumEntities; ++Index)
+	{
+		DrawDebugBox(World, Positions[Index], FVector(100.0f, 50.0f, 25.0f), Headings[Index].ToOrientationQuat(), DebugColors[Index], false, FixedDeltaTime);
+		DrawDebugDirectionalArrow(World, Positions[Index], Positions[Index] + Headings[Index] * 150.0f, 200.0f, FColor::Red, false, FixedDeltaTime);
+		DrawDebugPoint(World, Goals[Index], 2.0f, DebugColors[Index], false, FixedDeltaTime);
+		DrawDebugLine(World, Positions[Index], Goals[Index], DebugColors[Index], false, FixedDeltaTime);
+	}
+}
+
+void UTrSimulationSystem::DrawInitialDebug()
+{
+	const UWorld* World = GetWorld();
+	for(const FTrPath& Path : Paths)
+	{
+		DrawDebugLine(World, Path.Start, Path.End, FColor::White, true, -1);
+	}
 }
