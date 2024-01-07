@@ -16,12 +16,10 @@ class TRAFFICAI_API UTrSimulationSystem : public UWorldSubsystem
 	GENERATED_BODY()
 
 public:
-	void Initialize
-		(
-			const URpSpatialGraphComponent* GraphComponent,
-			const TArray<FTrPath>& StartingPaths,
-			TWeakPtr<TArray<FTrVehicleRepresentation>> TrafficEntities
-		);
+	
+	void Initialize(const URpSpatialGraphComponent* GraphComponent, const TArray<FTrPath>& StartingPaths, TWeakPtr<TArray<FTrVehicleRepresentation>> TrafficEntities);
+
+	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	
 	void StartSimulation();
 
@@ -49,6 +47,9 @@ private:
 
 	void UpdateVehicle();
 	
+	void UpdateVehicleKinematics(int Index);
+	
+	void UpdateVehicleSteer(int Index);
 
 private:
 
