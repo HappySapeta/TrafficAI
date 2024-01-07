@@ -180,10 +180,7 @@ void UTrSimulationSystem::UpdateVehicle()
 		//------KINEMATICS--------------------------------
 		
 		FVector NewVelocity = Velocities[Index] + CurrentHeading * Accelerations[Index] * FixedDeltaTime;
-
-		const float HeadingVelocityDot = FMath::Clamp(NewVelocity.GetSafeNormal().Dot(CurrentHeading), 0.0f, 1.0f);
-		NewVelocity = HeadingVelocityDot * NewVelocity.Size() * CurrentHeading;
-
+		
 		// Limit Speed
 		if(NewVelocity.Length() > MaxSpeed)
 		{
@@ -214,7 +211,7 @@ void UTrSimulationSystem::UpdateVehicle()
 		const FVector NewHeading = (FrontWheel - RearWheel).GetSafeNormal();
 
 		NewPosition = (FrontWheel + RearWheel) * 0.5f;
-		//NewVelocity = NewHeading * NewVelocity.Length();
+		NewVelocity = NewHeading * NewVelocity.Length();
 		
 		//-------------------------------------------------
 		
