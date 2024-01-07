@@ -3,13 +3,14 @@
 #include "TrSimulationSystem.h"
 #include "RpSpatialGraphComponent.h"
 
-constexpr float MaxSpeed = 100.0f;
+const FVector VehicleExtents(500, 180, 140);
+const float WheelBase = VehicleExtents.X;
+constexpr float MaxSpeed = 1000.0f;
 constexpr float FixedDeltaTime = 0.016f;
-constexpr float LookAheadTime = FixedDeltaTime * 100.0f;
-constexpr float PathRadius = 100.0f;
-constexpr float GoalReachedDistance = 75.0f;
-constexpr float ArrivalDistance = 100.0f;
-constexpr float WheelBase = 100.0f;
+constexpr float LookAheadTime = FixedDeltaTime * 400.0f;
+constexpr float PathRadius = 300.0f;
+constexpr float GoalReachedDistance = 500.0f;
+constexpr float ArrivalDistance = 1000.0f;
 constexpr float SteeringSpeed = 2.0f;
 constexpr float DebugAccelerationScale = 1.0f;
 
@@ -145,7 +146,7 @@ void UTrSimulationSystem::SetAcceleration()
 		int LeadingVehicleIndex = -1;
 		const float CurrentSpeed = Velocities[Index].Size();
 		const float RelativeSpeed = LeadingVehicleIndex != -1 ? Velocities[LeadingVehicleIndex].Size() : 0.0f;
-		const float CurrentGap = LeadingVehicleIndex != -1 ? FVector::Distance(Positions[LeadingVehicleIndex], Positions[Index]) : 10000.0f;
+		const float CurrentGap = LeadingVehicleIndex != -1 ? FVector::Distance(Positions[LeadingVehicleIndex], Positions[Index]) : TNumericLimits<float>::Max();
 		
 		const float FreeRoadTerm = ModelData.MaximumAcceleration * (1 - FMath::Pow(CurrentSpeed / ModelData.DesiredSpeed, ModelData.AccelerationExponent));
 
@@ -213,7 +214,7 @@ void UTrSimulationSystem::UpdateVehicle()
 		const FVector NewHeading = (FrontWheel - RearWheel).GetSafeNormal();
 
 		NewPosition = (FrontWheel + RearWheel) * 0.5f;
-		NewVelocity = NewHeading * NewVelocity.Length();
+		//NewVelocity = NewHeading * NewVelocity.Length();
 		
 		//-------------------------------------------------
 		
@@ -270,8 +271,8 @@ void UTrSimulationSystem::DebugVisualization()
 	const UWorld* World = GetWorld();
 	for(int Index = 0; Index < NumEntities; ++Index)
 	{
-		DrawDebugBox(World, Positions[Index], FVector(100.0f, 50.0f, 25.0f), Headings[Index].ToOrientationQuat(), DebugColors[Index], false, FixedDeltaTime);
-		DrawDebugDirectionalArrow(World, Positions[Index], Positions[Index] + Headings[Index] * 150.0f, 200.0f, FColor::Red, false, FixedDeltaTime);
+		DrawDebugBox(World, Positions[Index], VehicleExtents, Headings[Index].ToOrientationQuat(), DebugColors[Index], false, FixedDeltaTime);
+		DrawDebugDirectionalArrow(World, Positions[Index], Positions[Index] + Headings[Index] * VehicleExtents.X * 1.5f, 1000.0f, FColor::Red, false, FixedDeltaTime);
 		DrawDebugPoint(World, Goals[Index], 2.0f, DebugColors[Index], false, FixedDeltaTime);
 		DrawDebugLine(World, Positions[Index], Goals[Index], DebugColors[Index], false, FixedDeltaTime);
 	}
