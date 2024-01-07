@@ -7,9 +7,9 @@ const FVector VehicleExtents(500, 180, 140);
 const float WheelBase = VehicleExtents.X;
 constexpr float MaxSpeed = 1000.0f; // 1000 : 36 km/h
 constexpr float FixedDeltaTime = 0.016f;
-constexpr float LookAheadTime = FixedDeltaTime * 400.0f;
+constexpr float LookAheadTime = FixedDeltaTime * 200.0f;
 constexpr float PathRadius = 300.0f; // 300 : 3 m
-constexpr float GoalReachedDistance = 500.0f; // 500 : 5m
+constexpr float GoalRadius = 2000.0f; // 500 : 5m
 constexpr float ArrivalDistance = 1000.0f; // 1000 : 1m
 constexpr float SteeringSpeed = 0.1f;
 constexpr float MaxSteeringAngle = (UE_PI / 180.f) * 40.0f; // 40 degrees : 0.698132 radians
@@ -104,14 +104,18 @@ void UTrSimulationSystem::PathFollow()
 		FVector NearestProjection = ProjectEntityOnPath(Index, Paths[NearestPathIndex]);
 		const FVector Future = Positions[Index] + Velocities[Index] * LookAheadTime;
 
-		const float Distance = FVector::Distance(Future, NearestProjection);
+		const FVector PathDirection = (Paths[NearestPathIndex].End - Paths[NearestPathIndex].Start).GetSafeNormal();
+		const FVector PathRight = PathDirection.RotateAngleAxis(90.0f, FVector::UpVector);
+		const FVector PathOffset = -PathRight * PathRadius;
+		
+		const float Distance = FVector::Distance(Future, NearestProjection + PathOffset);
 		if(Distance < PathRadius)
 		{
-			Goals[Index] = Paths[NearestPathIndex].End;
+			Goals[Index] = Paths[NearestPathIndex].End + PathOffset;
 		}
 		else if(Distance >= PathRadius)
 		{
-			Goals[Index] = NearestProjection;
+			Goals[Index] = NearestProjection + PathOffset;
 		}
 	}
 }
@@ -123,7 +127,7 @@ void UTrSimulationSystem::HandleGoal()
 	for(int Index = 0; Index < NumEntities; ++Index)
 	{
 		FTrPath& CurrentPath = Paths[CurrentPaths[Index]];
-		if(FVector::PointsAreNear(Goals[Index], Positions[Index], GoalReachedDistance) && FVector::PointsAreNear(Goals[Index], CurrentPath.End, 1.0f))
+		if(FVector::Distance(Goals[Index], Positions[Index]) <= GoalRadius && FVector::PointsAreNear(Goals[Index], CurrentPath.End, PathRadius * 1.01f))
 		{
 			const TArray<uint32>& Connections = Nodes[CurrentPath.EndNodeIndex].GetConnections().Array();
 
