@@ -11,7 +11,7 @@ constexpr float LookAheadTime = FixedDeltaTime * 200.0f;
 constexpr float PathRadius = 300.0f; // 300 : 3 m
 constexpr float GoalRadius = 2000.0f; // 500 : 5m
 constexpr float ArrivalDistance = 1000.0f; // 1000 : 1m
-constexpr float SteeringSpeed = 0.1f;
+constexpr float SteeringSpeed = 0.5f;
 constexpr float MaxSteeringAngle = (UE_PI / 180.f) * 40.0f; // 40 degrees : 0.698132 radians
 constexpr float DebugAccelerationScale = 1.0f;
 
@@ -100,14 +100,26 @@ void UTrSimulationSystem::PathFollow()
 	
 	for(int Index = 0; Index < NumEntities; ++Index)
 	{
+		const FVector Future = Positions[Index] + Velocities[Index] * LookAheadTime;
 		const uint32 NearestPathIndex = CurrentPaths[Index];
-		FVector NearestProjection = ProjectEntityOnPath(Index, Paths[NearestPathIndex]);
+		
+		FVector NearestProjection = ProjectPointOnPath(Future, Paths[NearestPathIndex]);
 
 		const FVector PathDirection = (Paths[NearestPathIndex].End - Paths[NearestPathIndex].Start).GetSafeNormal();
 		const FVector PathRight = PathDirection.RotateAngleAxis(90.0f, FVector::UpVector);
 		const FVector PathOffset = -PathRight * PathRadius;
 
-		Goals[Index] = NearestProjection + PathOffset;
+		const FVector PositionProjection = ProjectPointOnPath(Positions[Index], Paths[NearestPathIndex]) + PathOffset;
+		
+		const float Distance = FVector::Distance(Positions[Index], PositionProjection);
+		if(Distance < PathRadius)
+		{
+			Goals[Index] = Paths[NearestPathIndex].End + PathOffset;
+		}
+		else if(Distance >= PathRadius)
+		{
+			Goals[Index] = NearestProjection + PathOffset;
+		}
 	}
 }
 
@@ -156,7 +168,6 @@ void UTrSimulationSystem::SetAcceleration()
 		const float DecelerationTerm = (CurrentSpeed * RelativeSpeed) / (2 * FMath::Sqrt(ModelData.MaximumAcceleration * ModelData.ComfortableBrakingDeceleration));
 		const float GapTerm = (ModelData.MinimumGap + ModelData.DesiredTimeHeadWay * CurrentSpeed + DecelerationTerm) / CurrentGap;
 		const float InteractionTerm = -ModelData.MaximumAcceleration * FMath::Square(GapTerm);
-
 
 		Acceleration = FreeRoadTerm + InteractionTerm;
 		Acceleration *= DebugAccelerationScale;
@@ -217,14 +228,13 @@ void UTrSimulationSystem::UpdateVehicleSteer(const int Index)
 	CurrentVelocity = CurrentHeading * CurrentVelocity.Length();
 }
 
-FVector UTrSimulationSystem::ProjectEntityOnPath(const int Index, const FTrPath& Path) const
+FVector UTrSimulationSystem::ProjectPointOnPath(const FVector& Point, const FTrPath& Path) const
 {
 	const FVector PathStart = Path.Start;
 	const FVector PathEnd = Path.End;
 	const FVector PathVector = PathEnd - PathStart;
 		
-	const FVector Future = Positions[Index] + Velocities[Index] * LookAheadTime;
-	const FVector Temp = Future - PathStart;
+	const FVector Temp = Point - PathStart;
 	FVector Projection = (Temp.Dot(PathVector)/PathVector.Size()) * PathVector.GetSafeNormal() + PathStart;
 
 	const float Alpha = FMath::Clamp((Projection - PathStart).Length() / PathVector.Length(), 0.0f, 1.0f);
@@ -241,7 +251,8 @@ int UTrSimulationSystem::FindNearestPath(int EntityIndex, FVector& NearestProjec
 	
 	for(int PathIndex = 0; PathIndex < Paths.Num(); ++PathIndex)
 	{
-		const FVector& ProjectionPoint = ProjectEntityOnPath(EntityIndex, Paths[PathIndex]);
+		const FVector Future = Positions[EntityIndex] + Velocities[EntityIndex] * LookAheadTime;
+		const FVector ProjectionPoint = ProjectPointOnPath(Future, Paths[PathIndex]);
 		const float Distance = FVector::Distance(ProjectionPoint, Positions[EntityIndex]);
 		
 		if(Distance < SmallestDistance)
