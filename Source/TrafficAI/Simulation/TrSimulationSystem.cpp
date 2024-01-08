@@ -212,14 +212,12 @@ void UTrSimulationSystem::UpdateVehicleSteer(const int Index)
 	FVector FrontWheel = CurrentPosition + CurrentHeading * WheelBase * 0.5f;
 
 	const FVector TargetHeading = (Goals[Index] - Positions[Index]).GetSafeNormal();
-	float SteeringAngleError = FMath::Atan2
+	CurrentSteerAngle = FMath::Atan2
 					(
 						CurrentHeading.X * TargetHeading.Y - CurrentHeading.Y * TargetHeading.X,
 						CurrentHeading.X * TargetHeading.X + CurrentHeading.Y * TargetHeading.Y
 					);
 	
-	SteeringAngleError = FMath::Clamp(SteeringAngleError, -MaxSteeringAngle, +MaxSteeringAngle);
-	CurrentSteerAngle += FMath::Clamp(SteeringAngleError - CurrentSteerAngle, -SteeringSpeed, SteeringSpeed);
 	RearWheel += CurrentVelocity * FixedDeltaTime;
 	FrontWheel += CurrentVelocity.RotateAngleAxis(FMath::RadiansToDegrees(CurrentSteerAngle), FVector::UpVector) * FixedDeltaTime;
 
