@@ -159,14 +159,6 @@ void UTrSimulationSystem::SetAcceleration()
 
 
 		Acceleration = FreeRoadTerm + InteractionTerm;
-		
-		//const float DistanceToGoal = FVector::Distance(Positions[Index], Goals[Index]);
-		//if(DistanceToGoal <= ArrivalDistance && Acceleration > 0.0f)
-		//{
-		//	const float ArrivalFactor = DistanceToGoal / ArrivalDistance - 1.0f;
-		//	Acceleration *= ArrivalFactor;
-		//}
-		
 		Acceleration *= DebugAccelerationScale;
 	}
 }
