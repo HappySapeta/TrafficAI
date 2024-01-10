@@ -208,8 +208,8 @@ void UTrSimulationSystem::UpdateVehicleSteer(const int Index)
 	FVector& CurrentVelocity = Velocities[Index];
 	float& CurrentSteerAngle = SteerAngles[Index];
 	
-	FVector RearWheel = CurrentPosition - CurrentHeading * WheelBase * 0.5f;
-	FVector FrontWheel = CurrentPosition + CurrentHeading * WheelBase * 0.5f;
+	FVector RearWheelPosition = CurrentPosition - CurrentHeading * WheelBase * 0.5f;
+	FVector FrontWheelPosition = CurrentPosition + CurrentHeading * WheelBase * 0.5f;
 
 	const FVector TargetHeading = (Goals[Index] - Positions[Index]).GetSafeNormal();
 	CurrentSteerAngle = FMath::Atan2
@@ -218,11 +218,11 @@ void UTrSimulationSystem::UpdateVehicleSteer(const int Index)
 						CurrentHeading.X * TargetHeading.X + CurrentHeading.Y * TargetHeading.Y
 					);
 	
-	RearWheel += CurrentVelocity * FixedDeltaTime;
-	FrontWheel += CurrentVelocity.RotateAngleAxis(FMath::RadiansToDegrees(CurrentSteerAngle), FVector::UpVector) * FixedDeltaTime;
+	RearWheelPosition += CurrentVelocity.Length() * CurrentHeading * FixedDeltaTime;
+	FrontWheelPosition += CurrentVelocity.Length() * CurrentHeading.RotateAngleAxis(FMath::RadiansToDegrees(CurrentSteerAngle), FVector::UpVector) * FixedDeltaTime;
 
-	CurrentHeading = (FrontWheel - RearWheel).GetSafeNormal();
-	CurrentPosition = (FrontWheel + RearWheel) * 0.5f;
+	CurrentHeading = (FrontWheelPosition - RearWheelPosition).GetSafeNormal();
+	CurrentPosition = (FrontWheelPosition + RearWheelPosition) * 0.5f;
 	CurrentVelocity = CurrentHeading * CurrentVelocity.Length();
 }
 
