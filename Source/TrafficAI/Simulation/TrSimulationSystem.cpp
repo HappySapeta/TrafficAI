@@ -3,13 +3,13 @@
 #include "TrSimulationSystem.h"
 #include "RpSpatialGraphComponent.h"
 
-const FVector VehicleExtents(500, 180, 140);
-const float WheelBase = VehicleExtents.X;
+const FVector VehicleExtents(465, 179, 143);
+const float WheelBase = 270;
 constexpr float MaxSpeed = 1000.0f; // 1000 : 36 km/h
 constexpr float FixedDeltaTime = 0.016f;
 constexpr float LookAheadTime = FixedDeltaTime * 200.0f;
 constexpr float PathRadius = 300.0f; // 300 : 3 m
-constexpr float GoalRadius = 2000.0f; // 500 : 5m
+constexpr float GoalRadius = 500.0f; // 500 : 5m
 constexpr float ArrivalDistance = 1000.0f; // 1000 : 1m
 constexpr float SteeringSpeed = 0.5f;
 constexpr float MaxSteeringAngle = (UE_PI / 180.f) * 40.0f; // 40 degrees : 0.698132 radians
