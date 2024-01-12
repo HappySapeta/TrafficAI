@@ -5,12 +5,13 @@
 
 const FVector VehicleExtents(465, 179, 143);
 const float WheelBase = 270;
-constexpr float MaxSpeed = 1000.0f; // 1000 : 36 km/h
+constexpr float MaxSpeed = 2000.0f; // 1000 : 36 km/h TODO : replace with ModelData.DesiredSpeed.
 constexpr float FixedDeltaTime = 0.016f;
-constexpr float LookAheadTime = FixedDeltaTime * 100.0f;
+constexpr float LookAheadTime = FixedDeltaTime;
 constexpr float PathRadius = 200.0f; // 300 : 3 m
 constexpr float GoalRadius = 500.0f; // 500 : 5m
-constexpr float ArrivalDistance = 1000.0f; // 1000 : 1m
+constexpr float ArrivalDistance = 2000.0f; // 1000 : 10 m
+constexpr float MinApproachSpeed = 100.0;
 constexpr float SteeringSpeed = 0.1f;
 constexpr float MaxSteeringAngle = (UE_PI / 180.f) * 40.0f; // 40 degrees : 0.698132 radians
 constexpr float DebugAccelerationScale = 1.0f;
@@ -158,12 +159,19 @@ void UTrSimulationSystem::SetAcceleration()
 	{
 		float& Acceleration = Accelerations[Index];
 		int LeadingVehicleIndex = -1;
+
+		float DesiredSpeed = MaxSpeed;
+		const float GoalDistance = FVector::Distance(Goals[Index], Positions[Index]);
+		if(GoalDistance < ArrivalDistance)
+		{
+			DesiredSpeed = FMath::Max((GoalDistance / ArrivalDistance) * MaxSpeed, MinApproachSpeed);
+		}
 		
 		const float CurrentSpeed = Velocities[Index].Size();
 		const float RelativeSpeed = LeadingVehicleIndex != -1 ? Velocities[LeadingVehicleIndex].Size() : 0.0f;
 		const float CurrentGap = LeadingVehicleIndex != -1 ? FVector::Distance(Positions[LeadingVehicleIndex], Positions[Index]) : TNumericLimits<float>::Max();
 		
-		const float FreeRoadTerm = ModelData.MaximumAcceleration * (1 - FMath::Pow(CurrentSpeed / ModelData.DesiredSpeed, ModelData.AccelerationExponent));
+		const float FreeRoadTerm = ModelData.MaximumAcceleration * (1 - FMath::Pow(CurrentSpeed / DesiredSpeed, ModelData.AccelerationExponent));
 
 		const float DecelerationTerm = (CurrentSpeed * RelativeSpeed) / (2 * FMath::Sqrt(ModelData.MaximumAcceleration * ModelData.ComfortableBrakingDeceleration));
 		const float GapTerm = (ModelData.MinimumGap + ModelData.DesiredTimeHeadWay * CurrentSpeed + DecelerationTerm) / CurrentGap;
@@ -282,6 +290,9 @@ void UTrSimulationSystem::DebugVisualization()
 		DrawDebugPoint(World, Goals[Index], 2.0f, DebugColors[Index], false, FixedDeltaTime);
 		DrawDebugLine(World, Positions[Index], Goals[Index], DebugColors[Index], false, FixedDeltaTime);
 	}
+
+	GEngine->AddOnScreenDebugMessage(-1, GetWorld()->GetDeltaSeconds(), FColor::Green, FString::Printf(TEXT("Speed : %.2f km/h"), Velocities[0].Length() * 0.036));
+	GEngine->AddOnScreenDebugMessage(-1, GetWorld()->GetDeltaSeconds(), FColor::White, FString::Printf(TEXT("Acceleration : %.2f"), Accelerations[0]));
 }
 
 void UTrSimulationSystem::DrawInitialDebug()
