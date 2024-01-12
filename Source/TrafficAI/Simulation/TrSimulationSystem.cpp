@@ -7,8 +7,8 @@ const FVector VehicleExtents(465, 179, 143);
 const float WheelBase = 270;
 constexpr float MaxSpeed = 1000.0f; // 1000 : 36 km/h
 constexpr float FixedDeltaTime = 0.016f;
-constexpr float LookAheadTime = FixedDeltaTime * 200.0f;
-constexpr float PathRadius = 300.0f; // 300 : 3 m
+constexpr float LookAheadTime = FixedDeltaTime * 100.0f;
+constexpr float PathRadius = 200.0f; // 300 : 3 m
 constexpr float GoalRadius = 500.0f; // 500 : 5m
 constexpr float ArrivalDistance = 1000.0f; // 1000 : 1m
 constexpr float SteeringSpeed = 0.1f;
