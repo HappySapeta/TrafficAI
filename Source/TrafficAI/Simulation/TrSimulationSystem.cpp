@@ -7,18 +7,20 @@
 const FVector VEHICLE_EXTENTS(465, 179, 143);
 constexpr float WHEEL_BASE = 270;
 
-// Time
+// Speed limits
+constexpr float MAX_SPEED = 1000.0f; // 1000 : 36 km/h TODO : replace with ModelData.DesiredSpeed.
+
+// Timing
 constexpr float FIXED_DELTA_TIME = 0.016f;
-constexpr float LOOK_AHEAD_TIME = FIXED_DELTA_TIME;
+constexpr float LOOK_AHEAD_TIME = FIXED_DELTA_TIME * 100;
 
 // Ranges
 constexpr float PATH_RADIUS = 200.0f; // 300 : 3 m
 constexpr float GOAL_RADIUS = 500.0f; // 500 : 5m
-constexpr float APPROACH_RADIUS = 3000.0f; // 1000 : 10 m
 
-// Speed limits
-constexpr float MAX_SPEED = 1000.0f; // 1000 : 36 km/h TODO : replace with ModelData.DesiredSpeed.
-constexpr float MAX_APPROACH_SPEED = 100.0;
+// Approach
+const TRange<float> APPROACH_SPEED_RANGE(277.778f, MAX_SPEED);
+constexpr float APPROACH_RADIUS = 2000.0f; // 1000 : 10 m
 
 // Steering Configuration
 constexpr float STEERING_SPEED = 0.1f;
@@ -172,7 +174,7 @@ void UTrSimulationSystem::SetAcceleration()
 		const float GoalDistance = FVector::Distance(Goals[Index], Positions[Index]);
 		if(GoalDistance < APPROACH_RADIUS)
 		{
-			DesiredSpeed = FMath::Max((GoalDistance / APPROACH_RADIUS) * MAX_SPEED, MAX_APPROACH_SPEED);
+			DesiredSpeed = FMath::Max((GoalDistance / APPROACH_RADIUS) * APPROACH_SPEED_RANGE.GetUpperBoundValue(), APPROACH_SPEED_RANGE.GetLowerBoundValue());
 		}
 		
 		const float CurrentSpeed = Velocities[Index].Size();
@@ -296,7 +298,6 @@ void UTrSimulationSystem::DebugVisualization()
 		DrawDebugDirectionalArrow(World, Positions[Index], Positions[Index] + Headings[Index] * VEHICLE_EXTENTS.X * 1.5f, 1000.0f, FColor::Red, false, FIXED_DELTA_TIME);
 		DrawDebugPoint(World, Goals[Index], 2.0f, DebugColors[Index], false, FIXED_DELTA_TIME);
 		DrawDebugLine(World, Positions[Index], Goals[Index], DebugColors[Index], false, FIXED_DELTA_TIME);
-		//DrawDebugSphere(World, Goals[Index], APPROACH_RADIUS, 16, FColor::White, false, FIXED_DELTA_TIME);
 	}
 
 	GEngine->AddOnScreenDebugMessage(-1, GetWorld()->GetDeltaSeconds(), FColor::Green, FString::Printf(TEXT("Speed : %.2f km/h"), Velocities[0].Length() * 0.036));
