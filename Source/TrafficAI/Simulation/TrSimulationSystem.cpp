@@ -41,14 +41,14 @@ FAutoConsoleCommand CComRenderDebug
 	)
 );
 
-void UTrSimulationSystem::Initialize(const URpSpatialGraphComponent* GraphComponent, const TArray<FTrPath>& StartingPaths, TWeakPtr<TArray<FTrVehicleRepresentation>> TrafficEntities)
+void UTrSimulationSystem::Initialize(const URpSpatialGraphComponent* GraphComponent, TWeakPtr<TArray<FTrVehicleRepresentation>> TrafficEntities, const TArray<FTrVehiclePathTransform>& TrafficVehicleStarts)
 {
 	if(TrafficEntities.IsValid())
 	{
 		NumEntities = TrafficEntities.Pin()->Num();
 		
-		Paths = StartingPaths;
-		check(Paths.Num() > 0);
+		PathTransforms = TrafficVehicleStarts;
+		check(PathTransforms.Num() > 0);
 
 		Nodes = *GraphComponent->GetNodes();
 		check(Nodes.Num() > 0);
@@ -65,7 +65,6 @@ void UTrSimulationSystem::Initialize(const URpSpatialGraphComponent* GraphCompon
 			DebugColors.Push(FColor::MakeRandomColor());
 
 			FVector NearestProjectionPoint;
-			CurrentPaths.Push(FindNearestPath(Index, NearestProjectionPoint));
 			Goals.Push(NearestProjectionPoint);
 		}
 	}
@@ -107,25 +106,24 @@ void UTrSimulationSystem::PathFollow()
 	TRACE_CPUPROFILER_EVENT_SCOPE(UTrSimulationSystem::PathInsertion)
 	
 	TArray<FVector> ProjectionPoints;
-	ProjectionPoints.Reserve(Paths.Num());
+	ProjectionPoints.Reserve(PathTransforms.Num());
 	
 	for(int Index = 0; Index < NumEntities; ++Index)
 	{
 		const FVector Future = Positions[Index] + Velocities[Index] * LOOK_AHEAD_TIME;
-		const uint32 NearestPathIndex = CurrentPaths[Index];
 		
-		FVector NearestProjection = ProjectPointOnPath(Future, Paths[NearestPathIndex]);
+		FVector NearestProjection = ProjectPointOnPath(Future, PathTransforms[Index].Path);
 
-		const FVector PathDirection = (Paths[NearestPathIndex].End - Paths[NearestPathIndex].Start).GetSafeNormal();
-		const FVector PathRight = PathDirection.RotateAngleAxis(90.0f, FVector::UpVector);
-		const FVector PathOffset = -PathRight * PATH_RADIUS;
+		const FVector PathDirection = (PathTransforms[Index].Path.End - PathTransforms[Index].Path.Start).GetSafeNormal();
+		const FVector PathLeft = PathDirection.RotateAngleAxis(-90.0f, FVector::UpVector);
+		const FVector PathOffset = PathLeft * PATH_RADIUS;
 
-		const FVector PositionProjection = ProjectPointOnPath(Positions[Index], Paths[NearestPathIndex]) + PathOffset;
+		const FVector PositionProjection = ProjectPointOnPath(Positions[Index], PathTransforms[Index].Path) + PathOffset;
 		
 		const float Distance = FVector::Distance(Positions[Index], PositionProjection);
 		if(Distance < PATH_RADIUS)
 		{
-			Goals[Index] = Paths[NearestPathIndex].End + PathOffset;
+			Goals[Index] = PathTransforms[Index].Path.End + PathOffset;
 		}
 		else if(Distance >= PATH_RADIUS)
 		{
@@ -140,7 +138,7 @@ void UTrSimulationSystem::HandleGoal()
 	
 	for(int Index = 0; Index < NumEntities; ++Index)
 	{
-		FTrPath& CurrentPath = Paths[CurrentPaths[Index]];
+		FTrPath& CurrentPath = PathTransforms[Index].Path;
 		if(FVector::Distance(Goals[Index], Positions[Index]) <= GOAL_RADIUS && FVector::PointsAreNear(Goals[Index], CurrentPath.End, PATH_RADIUS * 1.01f))
 		{
 			const TArray<uint32>& Connections = Nodes[CurrentPath.EndNodeIndex].GetConnections().Array();
@@ -268,10 +266,10 @@ int UTrSimulationSystem::FindNearestPath(int EntityIndex, FVector& NearestProjec
 	int NearestPathIndex = 0;
 	float SmallestDistance = TNumericLimits<float>::Max();
 	
-	for(int PathIndex = 0; PathIndex < Paths.Num(); ++PathIndex)
+	for(int PathIndex = 0; PathIndex < PathTransforms.Num(); ++PathIndex)
 	{
 		const FVector Future = Positions[EntityIndex] + Velocities[EntityIndex] * LOOK_AHEAD_TIME;
-		const FVector ProjectionPoint = ProjectPointOnPath(Future, Paths[PathIndex]);
+		const FVector ProjectionPoint = ProjectPointOnPath(Future, PathTransforms[PathIndex].Path);
 		const float Distance = FVector::Distance(ProjectionPoint, Positions[EntityIndex]);
 		
 		if(Distance < SmallestDistance)
@@ -307,8 +305,11 @@ void UTrSimulationSystem::DebugVisualization()
 void UTrSimulationSystem::DrawInitialDebug()
 {
 	const UWorld* World = GetWorld();
-	for(const FTrPath& Path : Paths)
+	for(const FRpSpatialGraphNode& Node : Nodes)
 	{
-		DrawDebugLine(World, Path.Start, Path.End, FColor::White, true, -1);
+		for(const uint32 ConnectedNodeIndex : Node.GetConnections())
+		{
+			DrawDebugLine(World, Node.GetLocation(), Nodes[ConnectedNodeIndex].GetLocation(), FColor::White, true, -1);
+		}
 	}
 }

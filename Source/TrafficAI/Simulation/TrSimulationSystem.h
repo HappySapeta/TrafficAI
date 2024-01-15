@@ -17,7 +17,8 @@ class TRAFFICAI_API UTrSimulationSystem : public UWorldSubsystem
 
 public:
 	
-	void Initialize(const URpSpatialGraphComponent* GraphComponent, const TArray<FTrPath>& StartingPaths, TWeakPtr<TArray<FTrVehicleRepresentation>> TrafficEntities);
+	void Initialize(const ::URpSpatialGraphComponent* GraphComponent, TWeakPtr<TArray<FTrVehicleRepresentation>> TrafficEntities, const
+	                TArray<FTrVehiclePathTransform>& TrafficVehicleStarts);
 
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	
@@ -60,12 +61,11 @@ private:
 	TArray<FVector> Goals;
 	TArray<float> Accelerations;
 	TArray<float> SteerAngles;
-	TArray<uint32> CurrentPaths; 
+	TArray<FTrVehiclePathTransform> PathTransforms;
 	TArray<FColor> DebugColors;
 	
 	FTrModelData ModelData;
 	FTimerHandle SimTimerHandle;
 	
-	TArray<FTrPath> Paths;
 	TArray<FRpSpatialGraphNode> Nodes;
 };

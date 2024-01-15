@@ -26,13 +26,6 @@ struct TRAFFICAI_API FTrafficAISpawnRequest
 	FTransform Transform;
 };
 
-struct FTrVehicleStart
-{
-	FVector Location;
-	FQuat Rotation;
-	uint32 StartingWaypoint;
-};
-
 class TRAFFICAI_API FTrVehicleStartCreator
 {
 public:
@@ -45,12 +38,12 @@ public:
 		const URpSpatialGraphComponent* GraphComponent,
 		const UTrSpawnConfiguration* SpawnConfiguration,
 		const int MaxInstances,
-		TArray<TArray<FTrVehicleStart>>& OutVehicleStarts,
-		TArray<FTrPath>& NewStartingPaths
+		TArray<FTrVehiclePathTransform>& OutVehicleStarts
 	);
 
 	// Create spawn points along an edge
-	void CreateStartTransformsOnEdge(const FVector& Start, const FVector& Destination, const UTrSpawnConfiguration* SpawnConfiguration, TArray<FTransform>& OutStartTransforms);
+	void CreateStartTransformsOnEdge(const FVector& Start, const FVector& Destination, const UTrSpawnConfiguration* SpawnConfiguration, TArray<
+	                                 FTrVehiclePathTransform>& OutStartData);
 };
 
 /**
@@ -87,8 +80,8 @@ public:
 
 	// Create this Subsystem only if playing in PIE or in game.
 	virtual bool ShouldCreateSubsystem(UObject* Outer) const override;
-	
-	TArray<FTrPath> GetStartingPaths();
+
+	TArray<FTrVehiclePathTransform> GetVehicleStarts();
 
 protected:
 	
@@ -139,5 +132,5 @@ private:
 
 	TArray<FTrafficAISpawnRequest> SpawnRequests;
 
-	TArray<FTrPath> StartingPaths;
+	TArray<FTrVehiclePathTransform> Starts;
 };

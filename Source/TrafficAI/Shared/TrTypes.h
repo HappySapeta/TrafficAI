@@ -103,3 +103,9 @@ struct TRAFFICAI_API FTrPath
 	uint32 StartNodeIndex = 0;
 	uint32 EndNodeIndex = 0;
 };
+
+struct TRAFFICAI_API FTrVehiclePathTransform
+{
+	FTransform Transform;
+	FTrPath Path;
+};
