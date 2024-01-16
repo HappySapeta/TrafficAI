@@ -111,23 +111,26 @@ void UTrSimulationSystem::PathFollow()
 	for(int Index = 0; Index < NumEntities; ++Index)
 	{
 		const FVector Future = Positions[Index] + Velocities[Index] * LOOK_AHEAD_TIME;
-		
-		FVector NearestProjection = ProjectPointOnPath(Future, PathTransforms[Index].Path);
 
 		const FVector PathDirection = (PathTransforms[Index].Path.End - PathTransforms[Index].Path.Start).GetSafeNormal();
 		const FVector PathLeft = PathDirection.RotateAngleAxis(-90.0f, FVector::UpVector);
 		const FVector PathOffset = PathLeft * PATH_RADIUS;
-
-		const FVector PositionProjection = ProjectPointOnPath(Positions[Index], PathTransforms[Index].Path) + PathOffset;
 		
-		const float Distance = FVector::Distance(Positions[Index], PositionProjection);
+		FTrPath OffsetPath = PathTransforms[Index].Path;
+		OffsetPath.Start += PathOffset;
+		OffsetPath.End += PathOffset;
+		
+		const FVector FutureOnPath = ProjectPointOnPath(Future, OffsetPath);
+		const FVector PositionOnPath = ProjectPointOnPath(Positions[Index], OffsetPath);
+		
+		const float Distance = FVector::Distance(Positions[Index], PositionOnPath);
 		if(Distance < PATH_RADIUS)
 		{
-			Goals[Index] = PathTransforms[Index].Path.End + PathOffset;
+			Goals[Index] = OffsetPath.End;
 		}
 		else if(Distance >= PATH_RADIUS)
 		{
-			Goals[Index] = NearestProjection + PathOffset;
+			Goals[Index] = FutureOnPath;
 		}
 	}
 }
