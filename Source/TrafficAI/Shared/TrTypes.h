@@ -102,6 +102,16 @@ struct TRAFFICAI_API FTrPath
 	FVector End = FVector::Zero();
 	uint32 StartNodeIndex = 0;
 	uint32 EndNodeIndex = 0;
+
+	FVector Direction() const
+	{
+		return (End - Start).GetSafeNormal();
+	}
+
+	float Length() const
+	{
+		return (End - Start).Length();
+	}
 };
 
 struct TRAFFICAI_API FTrVehiclePathTransform
