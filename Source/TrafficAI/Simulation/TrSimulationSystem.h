@@ -7,6 +7,13 @@
 #include "Ripple/Public/RpSpatialGraphComponent.h"
 #include "TrSimulationSystem.generated.h"
 
+enum class ETrState
+{
+	PathFollowing,
+	PathInserting,
+	None
+};
+
 /**
  * 
  */
@@ -41,6 +48,8 @@ private:
 	void TickSimulation();
 
 	void PathFollow();
+	
+	void UpdatePath(const uint32 Index);
 
 	void HandleGoal();
 	
@@ -62,6 +71,7 @@ private:
 	TArray<float> Accelerations;
 	TArray<float> SteerAngles;
 	TArray<FTrVehiclePathTransform> PathTransforms;
+	TArray<ETrState> States;
 	TArray<FColor> DebugColors;
 	
 	FTrModelData ModelData;

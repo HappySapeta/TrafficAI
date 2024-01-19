@@ -62,6 +62,7 @@ void UTrSimulationSystem::Initialize(const URpSpatialGraphComponent* GraphCompon
 			Headings.Push(EntityActor->GetActorForwardVector());
 			Accelerations.Push(0.0f);
 			SteerAngles.Push(0.0f);
+			States.Push(ETrState::None);
 			DebugColors.Push(FColor::MakeRandomColor());
 
 			FVector NearestProjectionPoint;
@@ -127,12 +128,33 @@ void UTrSimulationSystem::PathFollow()
 		if(Distance < PATH_RADIUS)
 		{
 			Goals[Index] = OffsetPath.End;
+			States[Index] = ETrState::PathFollowing;
 		}
 		else if(Distance >= PATH_RADIUS)
 		{
 			Goals[Index] = FutureOnPath;
+			States[Index] = ETrState::PathInserting;
 		}
 	}
+}
+
+void UTrSimulationSystem::UpdatePath(const uint32 Index)
+{
+	FTrPath& CurrentPath = PathTransforms[Index].Path;
+	const TArray<uint32>& Connections = Nodes[CurrentPath.EndNodeIndex].GetConnections().Array();
+
+	uint32 NewStartNodeIndex = CurrentPath.EndNodeIndex;
+	uint32 NewEndNodeIndex;
+	do
+	{
+		NewEndNodeIndex = Connections[FMath::RandRange(0, Connections.Num() - 1)];
+	}
+	while (NewEndNodeIndex == CurrentPath.StartNodeIndex);
+
+	CurrentPath.Start = Nodes[NewStartNodeIndex].GetLocation();
+	CurrentPath.End = Nodes[NewEndNodeIndex].GetLocation();
+	CurrentPath.StartNodeIndex = NewStartNodeIndex;
+	CurrentPath.EndNodeIndex = NewEndNodeIndex;
 }
 
 void UTrSimulationSystem::HandleGoal()
@@ -141,23 +163,22 @@ void UTrSimulationSystem::HandleGoal()
 	
 	for(int Index = 0; Index < NumEntities; ++Index)
 	{
-		FTrPath& CurrentPath = PathTransforms[Index].Path;
-		if(FVector::Distance(Goals[Index], Positions[Index]) <= GOAL_RADIUS && FVector::PointsAreNear(Goals[Index], CurrentPath.End, PATH_RADIUS * 1.01f))
+		ETrState CurrentState = States[Index];
+		
+		if(FVector::Distance(Goals[Index], Positions[Index]) <= GOAL_RADIUS)
 		{
-			const TArray<uint32>& Connections = Nodes[CurrentPath.EndNodeIndex].GetConnections().Array();
-
-			uint32 NewStartNodeIndex = CurrentPath.EndNodeIndex;
-			uint32 NewEndNodeIndex;
-			do
+			switch(CurrentState)
 			{
-				NewEndNodeIndex = Connections[FMath::RandRange(0, Connections.Num() - 1)];
+			case ETrState::PathFollowing :
+				{
+					UpdatePath(Index);
+					break;
+				}
+			default:
+				{
+					// Do nothing
+				}
 			}
-			while (NewEndNodeIndex == CurrentPath.StartNodeIndex);
-
-			CurrentPath.Start = Nodes[NewStartNodeIndex].GetLocation();
-			CurrentPath.End = Nodes[NewEndNodeIndex].GetLocation();
-			CurrentPath.StartNodeIndex = NewStartNodeIndex;
-			CurrentPath.EndNodeIndex = NewEndNodeIndex;
 		}
 	}
 }
