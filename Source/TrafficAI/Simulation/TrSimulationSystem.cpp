@@ -4,7 +4,7 @@
 #include "RpSpatialGraphComponent.h"
 
 // Vehicle Dimensions
-const FVector VEHICLE_EXTENTS(465, 179, 143);
+const FVector VEHICLE_EXTENTS(233, 90, 72);
 constexpr float WHEEL_BASE = 270;
 
 // Speed limits
