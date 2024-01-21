@@ -316,8 +316,8 @@ void UTrSimulationSystem::DebugVisualization()
 	{
 		DrawDebugBox(World, Positions[Index], VEHICLE_EXTENTS, Headings[Index].ToOrientationQuat(), DebugColors[Index], false, FIXED_DELTA_TIME);
 		DrawDebugDirectionalArrow(World, Positions[Index], Positions[Index] + Headings[Index] * VEHICLE_EXTENTS.X * 1.5f, 1000.0f, FColor::Red, false, FIXED_DELTA_TIME);
-		//DrawDebugPoint(World, Goals[Index], 2.0f, DebugColors[Index], false, FIXED_DELTA_TIME);
-		//DrawDebugLine(World, Positions[Index], Goals[Index], DebugColors[Index], false, FIXED_DELTA_TIME);
+		DrawDebugPoint(World, Goals[Index], 2.0f, DebugColors[Index], false, FIXED_DELTA_TIME);
+		DrawDebugLine(World, Positions[Index], Goals[Index], DebugColors[Index], false, FIXED_DELTA_TIME);
 	}
 
 	GEngine->AddOnScreenDebugMessage(-1, GetWorld()->GetDeltaSeconds(), FColor::Green, FString::Printf(TEXT("Speed : %.2f km/h"), Velocities[0].Length() * 0.036));
