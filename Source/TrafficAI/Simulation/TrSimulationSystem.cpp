@@ -12,11 +12,12 @@ constexpr float MAX_SPEED = 1000.0f; // 1000 : 36 km/h TODO : replace with Model
 
 // Timing
 constexpr float FIXED_DELTA_TIME = 0.016f;
-constexpr float LOOK_AHEAD_TIME = FIXED_DELTA_TIME * 100;
+constexpr float LOOK_AHEAD_TIME = FIXED_DELTA_TIME * 400;
 
 // Ranges
-constexpr float PATH_RADIUS = 200.0f; // 300 : 3 m
-constexpr float GOAL_RADIUS = 500.0f; // 500 : 5m
+constexpr float PATH_PROXIMITY = 200.0f;
+constexpr float PATH_OFFSET = 300.0f; // 300 : 3 m
+constexpr float GOAL_RADIUS = 1000.0f; // 500 : 5m
 
 // Approach
 const TRange<float> APPROACH_SPEED_RANGE(277.778f, MAX_SPEED);
@@ -115,7 +116,7 @@ void UTrSimulationSystem::PathFollow()
 
 		const FVector PathDirection = (PathTransforms[Index].Path.End - PathTransforms[Index].Path.Start).GetSafeNormal();
 		const FVector PathLeft = PathDirection.RotateAngleAxis(-90.0f, FVector::UpVector);
-		const FVector PathOffset = PathLeft * PATH_RADIUS;
+		const FVector PathOffset = PathLeft * PATH_OFFSET;
 		
 		FTrPath OffsetPath = PathTransforms[Index].Path;
 		OffsetPath.Start += PathOffset;
@@ -125,12 +126,12 @@ void UTrSimulationSystem::PathFollow()
 		const FVector PositionOnPath = ProjectPointOnPath(Positions[Index], OffsetPath);
 		
 		const float Distance = FVector::Distance(Positions[Index], PositionOnPath);
-		if(Distance < PATH_RADIUS)
+		if(Distance < PATH_PROXIMITY)
 		{
 			Goals[Index] = OffsetPath.End;
 			States[Index] = ETrState::PathFollowing;
 		}
-		else if(Distance >= PATH_RADIUS)
+		else if(Distance >= PATH_PROXIMITY)
 		{
 			Goals[Index] = FutureOnPath;
 			States[Index] = ETrState::PathInserting;
