@@ -12,7 +12,7 @@ constexpr float MAX_SPEED = 1000.0f; // 1000 : 36 km/h TODO : replace with Model
 
 // Timing
 constexpr float FIXED_DELTA_TIME = 0.016f;
-constexpr float LOOK_AHEAD_TIME = FIXED_DELTA_TIME * 400;
+constexpr float LOOK_AHEAD_TIME = FIXED_DELTA_TIME * 1000;
 
 // Ranges
 constexpr float PATH_PROXIMITY = 200.0f;
