@@ -26,23 +26,18 @@ void UTrRepresentationSystem::Spawn(const URpSpatialGraphComponent* NewGraphComp
 {
 	if (IsValid(NewGraphComponent))
 	{
-		TArray<TArray<FTrVehicleStart>> VehicleStarts;
-		VehicleStartCreator.CreateVehicleStartsOnGraph(NewGraphComponent, NewSpawnConfiguration, MaxInstances, VehicleStarts, StartingPaths);
+		VehicleStartCreator.CreateVehicleStartsOnGraph(NewGraphComponent, NewSpawnConfiguration, MaxInstances, Starts);
 
-		for (const TArray<FTrVehicleStart>& EdgeStarts : VehicleStarts)
+		for (const FTrVehiclePathTransform& StartData : Starts)
 		{
-			for (const FTrVehicleStart& VehicleStart : EdgeStarts)
-			{
-				FTrafficAISpawnRequest NewSpawnRequest;
-				NewSpawnRequest.Transform.SetLocation(VehicleStart.Location);
-				NewSpawnRequest.Transform.SetRotation(VehicleStart.Rotation);
+			FTrafficAISpawnRequest NewSpawnRequest;
+			NewSpawnRequest.Transform = StartData.Transform;
 
-				// TODO : support for multiple definitions
-				NewSpawnRequest.LOD1_Actor = NewSpawnConfiguration->TrafficDefinitions[0].ActorClass;
-				NewSpawnRequest.LOD2_Mesh = NewSpawnConfiguration->TrafficDefinitions[0].StaticMesh;
+			// TODO : support for multiple definitions
+			NewSpawnRequest.LOD1_Actor = NewSpawnConfiguration->TrafficDefinitions[0].ActorClass;
+			NewSpawnRequest.LOD2_Mesh = NewSpawnConfiguration->TrafficDefinitions[0].StaticMesh;
 
-				SpawnDeferred(NewSpawnRequest);
-			}
+			SpawnDeferred(NewSpawnRequest);
 		}
 	}
 }
@@ -85,9 +80,9 @@ bool UTrRepresentationSystem::ShouldCreateSubsystem(UObject* Outer) const
 	return true;
 }
 
-TArray<FTrPath> UTrRepresentationSystem::GetStartingPaths()
+TArray<FTrVehiclePathTransform> UTrRepresentationSystem::GetVehicleStarts()
 {
-	return StartingPaths;
+	return Starts;
 }
 
 void UTrRepresentationSystem::Initialize(FSubsystemCollectionBase& Collection)
@@ -166,24 +161,25 @@ void UTrRepresentationSystem::Deinitialize()
 	World->GetTimerManager().ClearTimer(MainTimer);
 }
 
-void FTrVehicleStartCreator::CreateVehicleStartsOnGraph(const URpSpatialGraphComponent* GraphComponent,
-                                                        const UTrSpawnConfiguration* SpawnConfiguration,
-                                                        const int MaxInstances,
-                                                        TArray<TArray<FTrVehicleStart>>& OutVehicleStarts,
-                                                        TArray<FTrPath>& NewStartingPaths)
+void FTrVehicleStartCreator::CreateVehicleStartsOnGraph
+(
+	const URpSpatialGraphComponent* GraphComponent,
+	const UTrSpawnConfiguration* SpawnConfiguration,
+	const int MaxInstances,
+	TArray<FTrVehiclePathTransform>& OutVehicleStarts
+)
 {
 	check(SpawnConfiguration);
 
 	const TArray<FRpSpatialGraphNode>* Nodes = GraphComponent->GetNodes();
-	TSet<TPair<uint32, uint32>> EdgeSet;
+	TSet<TPair<uint32, uint32>> SeenEdges;
 
 	uint32 NumNodes = static_cast<uint32>(Nodes->Num());
 	for (uint32 Index = 0; Index < NumNodes; ++Index)
 	{
-		TSet<uint32> ConnectedIndices = Nodes->operator[](Index).GetConnections();
-		for (uint32 ConnectedIndex : ConnectedIndices)
+		for (uint32 ConnectedIndex : Nodes->operator[](Index).GetConnections())
 		{
-			if (EdgeSet.Contains({Index, ConnectedIndex}) || EdgeSet.Contains({ConnectedIndex, Index}))
+			if (SeenEdges.Contains({Index, ConnectedIndex}) || SeenEdges.Contains({ConnectedIndex, Index}))
 			{
 				continue;
 			}
@@ -191,44 +187,48 @@ void FTrVehicleStartCreator::CreateVehicleStartsOnGraph(const URpSpatialGraphCom
 			const FVector& Node1Location = Nodes->operator[](Index).GetLocation();
 			const FVector& Node2Location = Nodes->operator[](ConnectedIndex).GetLocation();
 
-			TArray<FTransform> NewStartTransforms;
-			TArray<FTrVehicleStart> NewVehicleStarts;
-			CreateStartTransformsOnEdge(Node1Location, Node2Location, SpawnConfiguration, NewStartTransforms);
-			for (const FTransform& Transform : NewStartTransforms)
+			auto PushVehicleStartsLambda = [this, SpawnConfiguration, MaxInstances, &OutVehicleStarts]
+			(
+				const FVector& FirstLocation,
+				const FVector& SecondLocation,
+				const uint32 FirstIndex,
+				const uint32 SecondIndex
+			)
 			{
-				if(NewStartingPaths.Num() >= MaxInstances)
+				TArray<FTrVehiclePathTransform> TempVehicleStarts;
+				CreateStartTransformsOnEdge(FirstLocation, SecondLocation, SpawnConfiguration, TempVehicleStarts);
+				for(FTrVehiclePathTransform& StartData : TempVehicleStarts)
 				{
-					break;
-				}
+					if(OutVehicleStarts.Num() >= MaxInstances)
+					{
+						return;
+					}
 				
-				NewVehicleStarts.Push({Transform.GetLocation(), Transform.GetRotation(), ConnectedIndex});
-			}
-			NewStartingPaths.Push({Node1Location, Node2Location, Index, ConnectedIndex});
+					StartData.Path.StartNodeIndex = FirstIndex;
+					StartData.Path.EndNodeIndex = SecondIndex;
+					StartData.Path.Start = FirstLocation;
+					StartData.Path.End = SecondLocation;
 
-			NewStartTransforms.Reset();
-			CreateStartTransformsOnEdge(Node2Location, Node1Location, SpawnConfiguration, NewStartTransforms);
-			for (const FTransform& Transform : NewStartTransforms)
-			{
-				if(NewStartingPaths.Num() >= MaxInstances)
-				{
-					break;
+					OutVehicleStarts.Push(StartData);
 				}
-				
-				NewVehicleStarts.Push({Transform.GetLocation(), Transform.GetRotation(), Index});
-			}
-			NewStartingPaths.Push({Node2Location, Node1Location, ConnectedIndex, Index});
+			};
 
-			OutVehicleStarts.Push(NewVehicleStarts);
-
-			EdgeSet.Add({Index, ConnectedIndex});
-			EdgeSet.Add({ConnectedIndex, Index});
+			PushVehicleStartsLambda(Node1Location, Node2Location, Index, ConnectedIndex);
+			PushVehicleStartsLambda(Node2Location, Node1Location, ConnectedIndex, Index);
+			
+			SeenEdges.Add({Index, ConnectedIndex});
+			SeenEdges.Add({ConnectedIndex, Index});
 		}
 	}
 }
 
-void FTrVehicleStartCreator::CreateStartTransformsOnEdge(const FVector& Start, const FVector& Destination,
-                                                         const UTrSpawnConfiguration* SpawnConfiguration,
-                                                         TArray<FTransform>& OutStartTransforms)
+void FTrVehicleStartCreator::CreateStartTransformsOnEdge
+(
+	const FVector& Start,
+	const FVector& Destination,
+	const UTrSpawnConfiguration* SpawnConfiguration,
+	TArray<FTrVehiclePathTransform>& OutStartData
+)
 {
 	const float EdgeLength = FVector::Distance(Start, Destination);
 	const float NormalizedMinimumSeparation = (SpawnConfiguration->MinimumSeparation) / EdgeLength;
@@ -246,6 +246,6 @@ void FTrVehicleStartCreator::CreateStartTransformsOnEdge(const FVector& Start, c
 		const FVector NewRightVector = NewForwardVector.Cross(FVector::UpVector);
 		const FVector NewLocation = FMath::Lerp(Start, Destination, T) + NewRightVector * SpawnConfiguration->LaneWidth;
 
-		OutStartTransforms.Push(FTransform(NewRotation, NewLocation, FVector::One()));
+		OutStartData.Push({FTransform(NewRotation, NewLocation, FVector::One()), FTrPath()});
 	}
 }

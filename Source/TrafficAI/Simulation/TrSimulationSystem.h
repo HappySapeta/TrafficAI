@@ -7,6 +7,13 @@
 #include "Ripple/Public/RpSpatialGraphComponent.h"
 #include "TrSimulationSystem.generated.h"
 
+enum class ETrState
+{
+	PathFollowing,
+	PathInserting,
+	None
+};
+
 /**
  * 
  */
@@ -17,7 +24,8 @@ class TRAFFICAI_API UTrSimulationSystem : public UWorldSubsystem
 
 public:
 	
-	void Initialize(const URpSpatialGraphComponent* GraphComponent, const TArray<FTrPath>& StartingPaths, TWeakPtr<TArray<FTrVehicleRepresentation>> TrafficEntities);
+	void Initialize(const ::URpSpatialGraphComponent* GraphComponent, TWeakPtr<TArray<FTrVehicleRepresentation>> TrafficEntities, const
+	                TArray<FTrVehiclePathTransform>& TrafficVehicleStarts);
 
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 	
@@ -40,6 +48,8 @@ private:
 	void TickSimulation();
 
 	void PathFollow();
+	
+	void UpdatePath(const uint32 Index);
 
 	void HandleGoal();
 	
@@ -60,12 +70,12 @@ private:
 	TArray<FVector> Goals;
 	TArray<float> Accelerations;
 	TArray<float> SteerAngles;
-	TArray<uint32> CurrentPaths; 
+	TArray<FTrVehiclePathTransform> PathTransforms;
+	TArray<ETrState> States;
 	TArray<FColor> DebugColors;
 	
 	FTrModelData ModelData;
 	FTimerHandle SimTimerHandle;
 	
-	TArray<FTrPath> Paths;
 	TArray<FRpSpatialGraphNode> Nodes;
 };

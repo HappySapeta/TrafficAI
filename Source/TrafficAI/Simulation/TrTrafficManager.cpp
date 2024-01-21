@@ -21,7 +21,7 @@ void ATrTrafficManager::SpawnVehicles()
 
 void ATrTrafficManager::InitializeSimulator()
 {
-	SimulationSystem->Initialize(SpatialGraphComponent, RepresentationSystem->GetStartingPaths(), RepresentationSystem->GetEntities());
+	SimulationSystem->Initialize(SpatialGraphComponent, RepresentationSystem->GetEntities(), RepresentationSystem->GetVehicleStarts());
 }
 
 void ATrTrafficManager::StartSimulation()

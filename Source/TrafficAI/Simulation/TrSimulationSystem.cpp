@@ -4,7 +4,7 @@
 #include "RpSpatialGraphComponent.h"
 
 // Vehicle Dimensions
-const FVector VEHICLE_EXTENTS(465, 179, 143);
+const FVector VEHICLE_EXTENTS(233, 90, 72);
 constexpr float WHEEL_BASE = 270;
 
 // Speed limits
@@ -41,14 +41,14 @@ FAutoConsoleCommand CComRenderDebug
 	)
 );
 
-void UTrSimulationSystem::Initialize(const URpSpatialGraphComponent* GraphComponent, const TArray<FTrPath>& StartingPaths, TWeakPtr<TArray<FTrVehicleRepresentation>> TrafficEntities)
+void UTrSimulationSystem::Initialize(const URpSpatialGraphComponent* GraphComponent, TWeakPtr<TArray<FTrVehicleRepresentation>> TrafficEntities, const TArray<FTrVehiclePathTransform>& TrafficVehicleStarts)
 {
 	if(TrafficEntities.IsValid())
 	{
 		NumEntities = TrafficEntities.Pin()->Num();
 		
-		Paths = StartingPaths;
-		check(Paths.Num() > 0);
+		PathTransforms = TrafficVehicleStarts;
+		check(PathTransforms.Num() > 0);
 
 		Nodes = *GraphComponent->GetNodes();
 		check(Nodes.Num() > 0);
@@ -62,10 +62,10 @@ void UTrSimulationSystem::Initialize(const URpSpatialGraphComponent* GraphCompon
 			Headings.Push(EntityActor->GetActorForwardVector());
 			Accelerations.Push(0.0f);
 			SteerAngles.Push(0.0f);
+			States.Push(ETrState::None);
 			DebugColors.Push(FColor::MakeRandomColor());
 
 			FVector NearestProjectionPoint;
-			CurrentPaths.Push(FindNearestPath(Index, NearestProjectionPoint));
 			Goals.Push(NearestProjectionPoint);
 		}
 	}
@@ -107,31 +107,54 @@ void UTrSimulationSystem::PathFollow()
 	TRACE_CPUPROFILER_EVENT_SCOPE(UTrSimulationSystem::PathInsertion)
 	
 	TArray<FVector> ProjectionPoints;
-	ProjectionPoints.Reserve(Paths.Num());
+	ProjectionPoints.Reserve(PathTransforms.Num());
 	
 	for(int Index = 0; Index < NumEntities; ++Index)
 	{
 		const FVector Future = Positions[Index] + Velocities[Index] * LOOK_AHEAD_TIME;
-		const uint32 NearestPathIndex = CurrentPaths[Index];
-		
-		FVector NearestProjection = ProjectPointOnPath(Future, Paths[NearestPathIndex]);
 
-		const FVector PathDirection = (Paths[NearestPathIndex].End - Paths[NearestPathIndex].Start).GetSafeNormal();
-		const FVector PathRight = PathDirection.RotateAngleAxis(90.0f, FVector::UpVector);
-		const FVector PathOffset = -PathRight * PATH_RADIUS;
-
-		const FVector PositionProjection = ProjectPointOnPath(Positions[Index], Paths[NearestPathIndex]) + PathOffset;
+		const FVector PathDirection = (PathTransforms[Index].Path.End - PathTransforms[Index].Path.Start).GetSafeNormal();
+		const FVector PathLeft = PathDirection.RotateAngleAxis(-90.0f, FVector::UpVector);
+		const FVector PathOffset = PathLeft * PATH_RADIUS;
 		
-		const float Distance = FVector::Distance(Positions[Index], PositionProjection);
+		FTrPath OffsetPath = PathTransforms[Index].Path;
+		OffsetPath.Start += PathOffset;
+		OffsetPath.End += PathOffset;
+		
+		const FVector FutureOnPath = ProjectPointOnPath(Future, OffsetPath);
+		const FVector PositionOnPath = ProjectPointOnPath(Positions[Index], OffsetPath);
+		
+		const float Distance = FVector::Distance(Positions[Index], PositionOnPath);
 		if(Distance < PATH_RADIUS)
 		{
-			Goals[Index] = Paths[NearestPathIndex].End + PathOffset;
+			Goals[Index] = OffsetPath.End;
+			States[Index] = ETrState::PathFollowing;
 		}
 		else if(Distance >= PATH_RADIUS)
 		{
-			Goals[Index] = NearestProjection + PathOffset;
+			Goals[Index] = FutureOnPath;
+			States[Index] = ETrState::PathInserting;
 		}
 	}
+}
+
+void UTrSimulationSystem::UpdatePath(const uint32 Index)
+{
+	FTrPath& CurrentPath = PathTransforms[Index].Path;
+	const TArray<uint32>& Connections = Nodes[CurrentPath.EndNodeIndex].GetConnections().Array();
+
+	uint32 NewStartNodeIndex = CurrentPath.EndNodeIndex;
+	uint32 NewEndNodeIndex;
+	do
+	{
+		NewEndNodeIndex = Connections[FMath::RandRange(0, Connections.Num() - 1)];
+	}
+	while (NewEndNodeIndex == CurrentPath.StartNodeIndex);
+
+	CurrentPath.Start = Nodes[NewStartNodeIndex].GetLocation();
+	CurrentPath.End = Nodes[NewEndNodeIndex].GetLocation();
+	CurrentPath.StartNodeIndex = NewStartNodeIndex;
+	CurrentPath.EndNodeIndex = NewEndNodeIndex;
 }
 
 void UTrSimulationSystem::HandleGoal()
@@ -140,23 +163,22 @@ void UTrSimulationSystem::HandleGoal()
 	
 	for(int Index = 0; Index < NumEntities; ++Index)
 	{
-		FTrPath& CurrentPath = Paths[CurrentPaths[Index]];
-		if(FVector::Distance(Goals[Index], Positions[Index]) <= GOAL_RADIUS && FVector::PointsAreNear(Goals[Index], CurrentPath.End, PATH_RADIUS * 1.01f))
+		ETrState CurrentState = States[Index];
+		
+		if(FVector::Distance(Goals[Index], Positions[Index]) <= GOAL_RADIUS)
 		{
-			const TArray<uint32>& Connections = Nodes[CurrentPath.EndNodeIndex].GetConnections().Array();
-
-			uint32 NewStartNodeIndex = CurrentPath.EndNodeIndex;
-			uint32 NewEndNodeIndex;
-			do
+			switch(CurrentState)
 			{
-				NewEndNodeIndex = Connections[FMath::RandRange(0, Connections.Num() - 1)];
+			case ETrState::PathFollowing :
+				{
+					UpdatePath(Index);
+					break;
+				}
+			default:
+				{
+					// Do nothing
+				}
 			}
-			while (NewEndNodeIndex == CurrentPath.StartNodeIndex);
-
-			CurrentPath.Start = Nodes[NewStartNodeIndex].GetLocation();
-			CurrentPath.End = Nodes[NewEndNodeIndex].GetLocation();
-			CurrentPath.StartNodeIndex = NewStartNodeIndex;
-			CurrentPath.EndNodeIndex = NewEndNodeIndex;
 		}
 	}
 }
@@ -224,9 +246,6 @@ void UTrSimulationSystem::UpdateVehicleSteer(const int Index)
 	FVector& CurrentPosition = Positions[Index];
 	FVector& CurrentVelocity = Velocities[Index];
 	float& CurrentSteerAngle = SteerAngles[Index];
-	
-	FVector RearWheelPosition = CurrentPosition - CurrentHeading * WHEEL_BASE * 0.5f;
-	FVector FrontWheelPosition = CurrentPosition + CurrentHeading * WHEEL_BASE * 0.5f;
 
 	const FVector TargetHeading = (Goals[Index] - Positions[Index]).GetSafeNormal();
 	const float TargetSteerAngle = FMath::Atan2
@@ -239,12 +258,12 @@ void UTrSimulationSystem::UpdateVehicleSteer(const int Index)
 	CurrentSteerAngle += Delta * STEERING_SPEED;
 	CurrentSteerAngle = FMath::Clamp(CurrentSteerAngle, -MAX_STEER_ANGLE, MAX_STEER_ANGLE);
 	
-	RearWheelPosition += CurrentVelocity.Length() * CurrentHeading * FIXED_DELTA_TIME;
-	FrontWheelPosition += CurrentVelocity.Length() * CurrentHeading.RotateAngleAxis(FMath::RadiansToDegrees(CurrentSteerAngle), FVector::UpVector) * FIXED_DELTA_TIME;
+	const float TurningRadius = WHEEL_BASE / FMath::Abs(FMath::Sin(CurrentSteerAngle));
+	const float AngularSpeed = CurrentVelocity.Length() * FMath::Sign(CurrentSteerAngle) / TurningRadius;
 
-	CurrentHeading = (FrontWheelPosition - RearWheelPosition).GetSafeNormal();
-	CurrentPosition = (FrontWheelPosition + RearWheelPosition) * 0.5f;
-	CurrentVelocity = CurrentHeading * CurrentVelocity.Length();
+	CurrentHeading = CurrentHeading.RotateAngleAxis(AngularSpeed, FVector::UpVector);
+	CurrentVelocity = CurrentVelocity.Length() * CurrentHeading;
+	CurrentPosition += CurrentVelocity * FIXED_DELTA_TIME;
 }
 
 FVector UTrSimulationSystem::ProjectPointOnPath(const FVector& Point, const FTrPath& Path) const
@@ -268,10 +287,10 @@ int UTrSimulationSystem::FindNearestPath(int EntityIndex, FVector& NearestProjec
 	int NearestPathIndex = 0;
 	float SmallestDistance = TNumericLimits<float>::Max();
 	
-	for(int PathIndex = 0; PathIndex < Paths.Num(); ++PathIndex)
+	for(int PathIndex = 0; PathIndex < PathTransforms.Num(); ++PathIndex)
 	{
 		const FVector Future = Positions[EntityIndex] + Velocities[EntityIndex] * LOOK_AHEAD_TIME;
-		const FVector ProjectionPoint = ProjectPointOnPath(Future, Paths[PathIndex]);
+		const FVector ProjectionPoint = ProjectPointOnPath(Future, PathTransforms[PathIndex].Path);
 		const float Distance = FVector::Distance(ProjectionPoint, Positions[EntityIndex]);
 		
 		if(Distance < SmallestDistance)
@@ -307,8 +326,11 @@ void UTrSimulationSystem::DebugVisualization()
 void UTrSimulationSystem::DrawInitialDebug()
 {
 	const UWorld* World = GetWorld();
-	for(const FTrPath& Path : Paths)
+	for(const FRpSpatialGraphNode& Node : Nodes)
 	{
-		DrawDebugLine(World, Path.Start, Path.End, FColor::White, true, -1);
+		for(const uint32 ConnectedNodeIndex : Node.GetConnections())
+		{
+			DrawDebugLine(World, Node.GetLocation(), Nodes[ConnectedNodeIndex].GetLocation(), FColor::White, true, -1);
+		}
 	}
 }
