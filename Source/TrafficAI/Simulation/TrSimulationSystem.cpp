@@ -16,7 +16,7 @@ constexpr float LOOK_AHEAD_TIME = FIXED_DELTA_TIME * 100;
 
 // Ranges
 constexpr float PATH_PROXIMITY = 200.0f;
-constexpr float PATH_OFFSET = 200.0f; // 300 : 3 m
+constexpr float PATH_OFFSET = 250.0f; // 300 : 3 m
 constexpr float GOAL_RADIUS = 500.0f; // 500 : 5m
 
 // Approach
