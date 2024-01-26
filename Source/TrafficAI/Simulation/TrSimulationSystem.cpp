@@ -15,7 +15,7 @@ constexpr float FIXED_DELTA_TIME = 0.016f;
 constexpr float LOOK_AHEAD_TIME = FIXED_DELTA_TIME * 100;
 
 // Ranges
-constexpr float PATH_PROXIMITY = 200.0f;
+constexpr float PATH_PROXIMITY = 100.0f;
 constexpr float PATH_OFFSET = 250.0f; // 300 : 3 m
 constexpr float GOAL_RADIUS = 500.0f; // 500 : 5m
 
@@ -254,12 +254,8 @@ void UTrSimulationSystem::UpdateVehicleSteer(const int Index)
 	FVector& CurrentVelocity = Velocities[Index];
 	float& CurrentSteerAngle = SteerAngles[Index];
 
-	const FVector Future = CurrentPosition + CurrentVelocity * LOOK_AHEAD_TIME;
-	
-	FVector RearWheelPosition = CurrentPosition - CurrentHeading * WHEEL_BASE * 0.5f;
-	FVector FrontWheelPosition = CurrentPosition + CurrentHeading * WHEEL_BASE * 0.5f;
-
-	const FVector TargetHeading = (Goals[Index] - Future).GetSafeNormal();
+	const FVector GoalHeading = (Goals[Index] - CurrentPosition).GetSafeNormal();
+	const FVector TargetHeading = GoalHeading - CurrentHeading * 0.9f;
 	const float TargetSteerAngle = FMath::Atan2
 					(
 						CurrentHeading.X * TargetHeading.Y - CurrentHeading.Y * TargetHeading.X,
@@ -270,12 +266,12 @@ void UTrSimulationSystem::UpdateVehicleSteer(const int Index)
 	CurrentSteerAngle += Delta * STEERING_SPEED;
 	CurrentSteerAngle = FMath::Clamp(CurrentSteerAngle, -MAX_STEER_ANGLE, MAX_STEER_ANGLE);
 	
-	RearWheelPosition += CurrentVelocity.Length() * CurrentHeading * FIXED_DELTA_TIME;
-	FrontWheelPosition += CurrentVelocity.Length() * CurrentHeading.RotateAngleAxis(FMath::RadiansToDegrees(CurrentSteerAngle), FVector::UpVector) * FIXED_DELTA_TIME;
-	
-	CurrentHeading = (FrontWheelPosition - RearWheelPosition).GetSafeNormal();
-	CurrentPosition = (FrontWheelPosition + RearWheelPosition) * 0.5f;
-	CurrentVelocity = CurrentHeading * CurrentVelocity.Length();
+	const float TurningRadius = WHEEL_BASE / FMath::Abs(FMath::Sin(CurrentSteerAngle));
+	const float AngularSpeed = CurrentVelocity.Length() * FMath::Sign(CurrentSteerAngle) / TurningRadius;
+
+	CurrentHeading = CurrentHeading.RotateAngleAxis(AngularSpeed, FVector::UpVector);
+	CurrentVelocity = CurrentVelocity.Length() * CurrentHeading;
+	CurrentPosition += CurrentVelocity * FIXED_DELTA_TIME;
 }
 
 FVector UTrSimulationSystem::ProjectPointOnPath(const FVector& Point, const FTrPath& Path) const
