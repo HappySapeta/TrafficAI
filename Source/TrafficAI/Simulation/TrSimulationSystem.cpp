@@ -12,10 +12,12 @@ constexpr float MAX_SPEED = 1000.0f; // 1000 : 36 km/h TODO : replace with Model
 
 // Timing
 constexpr float FIXED_DELTA_TIME = 0.016f;
-constexpr float JUNCTION_UPDATE_TIME = 10.0f; // 1s is too less, it should be more like 30s or 1min.
+constexpr float JUNCTION_UPDATE_TIME = 5.0f; // 1s is too less, it should be more like 30s or 1min.
 constexpr float LOOK_AHEAD_TIME = FIXED_DELTA_TIME * 100;
 
 // Ranges
+constexpr float PATH_TRIM = 500.0f;
+constexpr float JUNCTION_TRIM = 1250.0f;
 constexpr float PATH_PROXIMITY = 100.0f;
 constexpr float PATH_OFFSET = 250.0f; // 300 : 3 m
 constexpr float GOAL_RADIUS = 500.0f; // 500 : 5m
@@ -171,11 +173,13 @@ void UTrSimulationSystem::UpdatePath(const uint32 Index)
 	CurrentPath.StartNodeIndex = NewStartNodeIndex;
 	CurrentPath.EndNodeIndex = NewEndNodeIndex;
 
-	constexpr float PATH_TRIM = 0.1f;
 	const FVector Direction = CurrentPath.Direction();
-	const float Length = CurrentPath.Length();
-	CurrentPath.Start += Direction * Length * PATH_TRIM;
-	CurrentPath.End -= Direction * Length * PATH_TRIM;
+
+	const float StartTrim = PATH_TRIM;
+	const float EndTrim = Nodes[CurrentPath.EndNodeIndex].GetConnections().Num() > 2 ? JUNCTION_TRIM : PATH_TRIM;
+	
+	CurrentPath.Start += Direction * StartTrim;
+	CurrentPath.End -= Direction * EndTrim;
 }
 
 bool UTrSimulationSystem::ShouldWaitAtJunction(const uint32 Index)
@@ -382,6 +386,11 @@ void UTrSimulationSystem::InitializeJunctions()
 		{
 			Junctions.Add(NodeIndex, Connections[0]);
 		}
+	}
+
+	for(const auto& Junction : Junctions)
+	{
+		DrawDebugLine(GetWorld(), Nodes[Junction.Key].GetLocation(), Nodes[Junction.Value].GetLocation(), FColor::Green, false, JUNCTION_UPDATE_TIME, 0, 50.0f);
 	}
 }
 
