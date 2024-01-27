@@ -12,7 +12,7 @@ constexpr float MAX_SPEED = 1000.0f; // 1000 : 36 km/h TODO : replace with Model
 
 // Timing
 constexpr float FIXED_DELTA_TIME = 0.016f;
-constexpr float JUNCTION_UPDATE_TIME = 5.0f; // 1s is too less, it should be more like 30s or 1min.
+constexpr float JUNCTION_UPDATE_TIME = 2.0f; // 1s is too less, it should be more like 30s or 1min.
 constexpr float LOOK_AHEAD_TIME = FIXED_DELTA_TIME * 100;
 
 // Ranges
