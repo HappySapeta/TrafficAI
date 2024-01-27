@@ -12,6 +12,7 @@ constexpr float MAX_SPEED = 1000.0f; // 1000 : 36 km/h TODO : replace with Model
 
 // Timing
 constexpr float FIXED_DELTA_TIME = 0.016f;
+constexpr float JUNCTION_UPDATE_TIME = 10.0f; // 1s is too less, it should be more like 30s or 1min.
 constexpr float LOOK_AHEAD_TIME = FIXED_DELTA_TIME * 100;
 
 // Ranges
@@ -53,6 +54,8 @@ void UTrSimulationSystem::Initialize(const URpSpatialGraphComponent* GraphCompon
 
 		Nodes = *GraphComponent->GetNodes();
 		check(Nodes.Num() > 0);
+
+		InitializeJunctions();
 		
 		for(int Index = 0; Index < NumEntities; ++Index)
 		{
@@ -81,9 +84,15 @@ void UTrSimulationSystem::Initialize(FSubsystemCollectionBase& Collection)
 
 void UTrSimulationSystem::StartSimulation()
 {
+	const UWorld* World = GetWorld();
+	
 	FTimerDelegate SimTimerDelegate;
 	SimTimerDelegate.BindUObject(this, &UTrSimulationSystem::TickSimulation);
-	GetWorld()->GetTimerManager().SetTimer(SimTimerHandle, SimTimerDelegate, FIXED_DELTA_TIME, true);
+	World->GetTimerManager().SetTimer(SimTimerHandle, SimTimerDelegate, FIXED_DELTA_TIME, true);
+
+	FTimerDelegate JunctionTimerDelegate;
+	JunctionTimerDelegate.BindUObject(this, &UTrSimulationSystem::UpdateJunctions);
+	World->GetTimerManager().SetTimer(JunctionTimerHandle, JunctionTimerDelegate, JUNCTION_UPDATE_TIME, true);
 }
 
 void UTrSimulationSystem::StopSimulation()
@@ -141,6 +150,11 @@ void UTrSimulationSystem::PathFollow()
 
 void UTrSimulationSystem::UpdatePath(const uint32 Index)
 {
+	if(ShouldWaitAtJunction(Index))
+	{
+		return;
+	}
+	
 	FTrPath& CurrentPath = PathTransforms[Index].Path;
 	const TArray<uint32>& Connections = Nodes[CurrentPath.EndNodeIndex].GetConnections().Array();
 
@@ -162,6 +176,19 @@ void UTrSimulationSystem::UpdatePath(const uint32 Index)
 	const float Length = CurrentPath.Length();
 	CurrentPath.Start += Direction * Length * PATH_TRIM;
 	CurrentPath.End -= Direction * Length * PATH_TRIM;
+}
+
+bool UTrSimulationSystem::ShouldWaitAtJunction(const uint32 Index)
+{
+	const FTrPath& CurrentPath = PathTransforms[Index].Path;
+	const uint32 JunctionNodeIndex = CurrentPath.EndNodeIndex; 
+
+	if(Junctions.Contains(JunctionNodeIndex))
+	{
+		return Junctions[JunctionNodeIndex] != CurrentPath.StartNodeIndex;
+	}
+
+	return false;
 }
 
 void UTrSimulationSystem::HandleGoal()
@@ -343,4 +370,28 @@ void UTrSimulationSystem::DrawInitialDebug()
 	}
 
 	GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::White, FString::Printf(TEXT("Simulating %d vehicles"), NumEntities));
+}
+
+void UTrSimulationSystem::InitializeJunctions()
+{
+	for(uint32 NodeIndex = 0, NumNodes = Nodes.Num(); NodeIndex < NumNodes; ++NodeIndex)
+	{
+		const FRpSpatialGraphNode& Node = Nodes[NodeIndex];
+		const TArray<uint32> Connections = Node.GetConnections().Array();
+		if(Connections.Num() > 2)
+		{
+			Junctions.Add(NodeIndex, Connections[0]);
+		}
+	}
+}
+
+void UTrSimulationSystem::UpdateJunctions()
+{
+	for(auto& Junction : Junctions)
+	{
+		const TArray<uint32> Connections = Nodes[Junction.Key].GetConnections().Array();
+		Junction.Value = Connections[FMath::RandRange(0, Connections.Num() - 1)];
+
+		DrawDebugLine(GetWorld(), Nodes[Junction.Key].GetLocation(), Nodes[Junction.Value].GetLocation(), FColor::Green, false, JUNCTION_UPDATE_TIME, 0, 50.0f);
+	}
 }

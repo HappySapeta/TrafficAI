@@ -11,6 +11,7 @@ enum class ETrState
 {
 	PathFollowing,
 	PathInserting,
+	JunctionHandling,
 	None
 };
 
@@ -50,6 +51,8 @@ private:
 	void PathFollow();
 	
 	void UpdatePath(const uint32 Index);
+	
+	bool ShouldWaitAtJunction(uint32 Index);
 
 	void HandleGoal();
 	
@@ -60,6 +63,10 @@ private:
 	void UpdateVehicleKinematics(int Index);
 	
 	void UpdateVehicleSteer(int Index);
+
+	void InitializeJunctions();
+
+	void UpdateJunctions();
 
 private:
 
@@ -76,6 +83,9 @@ private:
 	
 	FTrModelData ModelData;
 	FTimerHandle SimTimerHandle;
+	FTimerHandle JunctionTimerHandle;
 	
 	TArray<FRpSpatialGraphNode> Nodes;
+
+	TMap<uint32, uint32> Junctions;
 };
