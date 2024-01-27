@@ -27,7 +27,7 @@ constexpr float MAX_APPROACH_SPEED = MAX_SPEED;
 constexpr float APPROACH_RADIUS = 2000.0f; // 1000 : 10 m
 
 // Steering Configuration
-constexpr float STEERING_SPEED = 0.1f;
+constexpr float STEERING_SPEED = 10 * FIXED_DELTA_TIME;
 constexpr float MAX_STEER_ANGLE = (UE_PI / 180.f) * 45.0f; // degree to radian conversion
 
 static bool GTrSimDebug = true;
@@ -285,16 +285,15 @@ void UTrSimulationSystem::UpdateVehicleSteer(const int Index)
 	FVector RearWheelPosition = CurrentPosition - CurrentHeading * WHEEL_BASE * 0.5f;
 	FVector FrontWheelPosition = CurrentPosition + CurrentHeading * WHEEL_BASE * 0.5f;
 
-	const FVector TargetHeading = GoalDirection - CurrentHeading * 0.9f;
-	
+	const FVector TargetHeading = (GoalDirection - CurrentHeading * 0.9f).GetSafeNormal();
 	const float TargetSteerAngle = FMath::Atan2
 					(
 						CurrentHeading.X * TargetHeading.Y - CurrentHeading.Y * TargetHeading.X,
 						CurrentHeading.X * TargetHeading.X + CurrentHeading.Y * TargetHeading.Y
 					);
 
-	const float Delta = TargetSteerAngle - CurrentSteerAngle;
-	CurrentSteerAngle += Delta * STEERING_SPEED;
+	const float Delta = FMath::Clamp(TargetSteerAngle - CurrentSteerAngle, -STEERING_SPEED, STEERING_SPEED);
+	CurrentSteerAngle += Delta;
 	CurrentSteerAngle = FMath::Clamp(CurrentSteerAngle, -MAX_STEER_ANGLE, MAX_STEER_ANGLE);
 	
 	RearWheelPosition += CurrentVelocity.Length() * CurrentHeading * FIXED_DELTA_TIME;
