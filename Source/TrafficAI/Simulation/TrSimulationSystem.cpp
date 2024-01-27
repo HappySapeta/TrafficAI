@@ -248,6 +248,7 @@ void UTrSimulationSystem::SetAcceleration()
 		const float InteractionTerm = -ModelData.MaximumAcceleration * FMath::Square(GapTerm);
 
 		Acceleration = FreeRoadTerm + InteractionTerm;
+		Acceleration = FMath::Clamp(Acceleration, -1000.0f, 1000.0f);
 	}
 }
 
@@ -269,12 +270,6 @@ void UTrSimulationSystem::UpdateVehicleKinematics(const int Index)
 	FVector& CurrentVelocity = Velocities[Index];
 
 	CurrentVelocity += CurrentHeading * Accelerations[Index] * FIXED_DELTA_TIME; // v = u + a * t
-
-	if(CurrentVelocity.Length() > MAX_SPEED)
-	{
-		CurrentVelocity = CurrentVelocity.GetSafeNormal() * MAX_SPEED;
-	}
-		
 	CurrentPosition += CurrentVelocity * FIXED_DELTA_TIME; // x1 = x0 + v * t
 }
 
