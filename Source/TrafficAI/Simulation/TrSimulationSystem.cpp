@@ -27,7 +27,7 @@ constexpr float MAX_APPROACH_SPEED = MAX_SPEED;
 constexpr float APPROACH_RADIUS = 2000.0f; // 1000 : 10 m
 
 // Steering Configuration
-constexpr float STEERING_SPEED = 10 * FIXED_DELTA_TIME;
+constexpr float STEERING_SPEED = 0.2f;
 constexpr float MAX_STEER_ANGLE = (UE_PI / 180.f) * 45.0f; // degree to radian conversion
 
 static bool GTrSimDebug = true;
@@ -389,7 +389,8 @@ void UTrSimulationSystem::InitializeJunctions()
 
 	for(const auto& Junction : Junctions)
 	{
-		DrawDebugLine(GetWorld(), Nodes[Junction.Key].GetLocation(), Nodes[Junction.Value].GetLocation(), FColor::Green, false, JUNCTION_UPDATE_TIME, 0, 50.0f);
+		const FVector Direction = (Nodes[Junction.Value].GetLocation() - Nodes[Junction.Key].GetLocation()).GetSafeNormal();
+		DrawDebugPoint(GetWorld(), Nodes[Junction.Key].GetLocation() + Direction * JUNCTION_TRIM, 3.0f, FColor::Green, false, JUNCTION_UPDATE_TIME);
 	}
 }
 
@@ -400,6 +401,7 @@ void UTrSimulationSystem::UpdateJunctions()
 		const TArray<uint32> Connections = Nodes[Junction.Key].GetConnections().Array();
 		Junction.Value = Connections[FMath::RandRange(0, Connections.Num() - 1)];
 
-		DrawDebugLine(GetWorld(), Nodes[Junction.Key].GetLocation(), Nodes[Junction.Value].GetLocation(), FColor::Green, false, JUNCTION_UPDATE_TIME, 0, 50.0f);
+		const FVector Direction = (Nodes[Junction.Value].GetLocation() - Nodes[Junction.Key].GetLocation()).GetSafeNormal();
+		DrawDebugPoint(GetWorld(), Nodes[Junction.Key].GetLocation() + Direction * JUNCTION_TRIM, 3.0f, FColor::Green, false, JUNCTION_UPDATE_TIME);
 	}
 }
