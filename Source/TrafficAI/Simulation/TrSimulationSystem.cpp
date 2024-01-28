@@ -4,6 +4,8 @@
 #include "TrSimulationData.h"
 #include "RpSpatialGraphComponent.h"
 
+#define USE_ANGULAR_VEL_STEERING
+
 static bool GTrSimDebug = true;
 
 FAutoConsoleCommand CComRenderDebug
@@ -248,6 +250,7 @@ void UTrSimulationSystem::UpdateVehicleKinematics(const int Index)
 	CurrentPosition += CurrentVelocity * TickRate; // x1 = x0 + v * t
 }
 
+#ifndef USE_ANGULAR_VEL_STEERING
 void UTrSimulationSystem::UpdateVehicleSteer(const int Index)
 {
 	FVector& CurrentHeading = Headings[Index];
@@ -279,6 +282,37 @@ void UTrSimulationSystem::UpdateVehicleSteer(const int Index)
 	CurrentPosition = (FrontWheelPosition + RearWheelPosition) * 0.5f;
 	CurrentVelocity = CurrentHeading * CurrentVelocity.Length();
 }
+#endif
+
+#ifdef USE_ANGULAR_VEL_STEERING
+void UTrSimulationSystem::UpdateVehicleSteer(const int Index)
+{
+	FVector& CurrentHeading = Headings[Index];
+	FVector& CurrentPosition = Positions[Index];
+	FVector& CurrentVelocity = Velocities[Index];
+	float& CurrentSteerAngle = SteerAngles[Index];
+
+	const FVector GoalDirection = (Goals[Index] - Positions[Index]).GetSafeNormal();
+
+	const FVector TargetHeading = (GoalDirection - CurrentHeading * 0.9f).GetSafeNormal();
+	const float TargetSteerAngle = FMath::Atan2
+	(
+		CurrentHeading.X * TargetHeading.Y - CurrentHeading.Y * TargetHeading.X,
+		CurrentHeading.X * TargetHeading.X + CurrentHeading.Y * TargetHeading.Y
+	);
+
+	const float Delta = FMath::Clamp(TargetSteerAngle - CurrentSteerAngle, -VehicleConfig.SteeringSpeed, VehicleConfig.SteeringSpeed);
+	CurrentSteerAngle += Delta;
+	CurrentSteerAngle = FMath::Clamp(CurrentSteerAngle, -VehicleConfig.MaxSteeringAngle, VehicleConfig.MaxSteeringAngle);
+
+	const float TurningRadius = VehicleConfig.WheelBaseLength / FMath::Abs(FMath::Sin(CurrentSteerAngle));
+	const float AngularSpeed = CurrentVelocity.Length() * FMath::Sign(CurrentSteerAngle) / TurningRadius;
+
+	CurrentHeading = CurrentHeading.RotateAngleAxis(AngularSpeed, FVector::UpVector);
+	CurrentVelocity = CurrentVelocity.Length() * CurrentHeading;
+	CurrentPosition += CurrentVelocity * TickRate;
+}
+#endif
 
 FVector UTrSimulationSystem::ProjectPointOnPath(const FVector& Point, const FTrPath& Path) const
 {
