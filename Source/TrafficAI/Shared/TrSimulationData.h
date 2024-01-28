@@ -69,10 +69,10 @@ struct TRAFFICAI_API FTrPathFollowingConfiguration
 	float PathFollowOffset = 250.0f; // 300 : 3 m
 
 	UPROPERTY(EditAnywhere, meta = (Units = "cm"))
-	float GoalUpdateDistance = 500.0f; // 500 : 5m
+	float LookAheadDistance = 500.0f; // 500 : 5m
 
 	UPROPERTY(EditAnywhere, meta = (Units = "cm"))
-	float ApproachDistance = 500.0f; // 500 : 5m
+	float GoalUpdateDistance = 500.0f; // 500 : 5m
 };
 
 /**

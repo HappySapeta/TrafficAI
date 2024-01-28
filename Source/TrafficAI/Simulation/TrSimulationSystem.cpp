@@ -102,7 +102,7 @@ void UTrSimulationSystem::PathFollow()
 
 	for (int Index = 0; Index < NumEntities; ++Index)
 	{
-		const FVector Future = Positions[Index] + Velocities[Index] * LookAheadTime;
+		const FVector Future = Positions[Index] + Velocities[Index].GetSafeNormal() * PathFollowingConfig.LookAheadDistance;
 
 		const FVector PathDirection = (PathTransforms[Index].Path.End - PathTransforms[Index].Path.Start).GetSafeNormal();
 		const FVector PathLeft = PathDirection.RotateAngleAxis(-90.0f, FVector::UpVector);
@@ -211,14 +211,10 @@ void UTrSimulationSystem::SetAcceleration()
 
 		float DesiredSpeed = VehicleConfig.DesiredSpeed;
 		const float GoalDistance = FVector::Distance(Goals[Index], Positions[Index]);
-		if (GoalDistance < PathFollowingConfig.ApproachDistance)
-		{
-			DesiredSpeed *= (GoalDistance / PathFollowingConfig.ApproachDistance);
-		}
 
 		const float CurrentSpeed = Velocities[Index].Size();
 		const float RelativeSpeed = LeadingVehicleIndex != -1 ? Velocities[LeadingVehicleIndex].Size() : 0.0f;
-		const float CurrentGap = LeadingVehicleIndex != -1 ? FVector::Distance(Positions[LeadingVehicleIndex], Positions[Index]) : TNumericLimits<float>::Max();
+		const float CurrentGap = LeadingVehicleIndex != -1 ? FVector::Distance(Positions[LeadingVehicleIndex], Positions[Index]) : GoalDistance;
 		
 		const float FreeRoadTerm = VehicleConfig.MaximumAcceleration * (1 - FMath::Pow(CurrentSpeed / DesiredSpeed, VehicleConfig.AccelerationExponent));
 
@@ -307,7 +303,7 @@ int UTrSimulationSystem::FindNearestPath(int EntityIndex, FVector& NearestProjec
 
 	for (int PathIndex = 0; PathIndex < PathTransforms.Num(); ++PathIndex)
 	{
-		const FVector Future = Positions[EntityIndex] + Velocities[EntityIndex] * LookAheadTime;
+		const FVector Future = Positions[EntityIndex] + Velocities[EntityIndex].GetSafeNormal() * PathFollowingConfig.LookAheadDistance;
 		const FVector ProjectionPoint = ProjectPointOnPath(Future, PathTransforms[PathIndex].Path);
 		const float Distance = FVector::Distance(ProjectionPoint, Positions[EntityIndex]);
 

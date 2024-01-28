@@ -89,7 +89,6 @@ private:
 protected:
 
 	float TickRate = 0.016f;
-	float LookAheadTime = 1.0f;
 	float JunctionUpdateRate = 1.0f;
 
 	FTrVehicleDynamics VehicleConfig;
