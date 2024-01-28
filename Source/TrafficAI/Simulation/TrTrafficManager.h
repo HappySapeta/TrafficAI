@@ -32,12 +32,15 @@ protected:
 	
 protected:
 
-	UPROPERTY(VisibleDefaultsOnly, Category = "Default")
+	UPROPERTY(VisibleDefaultsOnly, Category = "Configs")
 	TObjectPtr<class URpSpatialGraphComponent> SpatialGraphComponent;
 
-	UPROPERTY(EditAnywhere, Category = "Default")
+	UPROPERTY(EditAnywhere, Category = "Configs")
 	TObjectPtr<class UTrSpawnConfiguration> SpawnConfiguration;
 
+	UPROPERTY(EditAnywhere, Category = "Configs")
+	TObjectPtr<class UTrSimulationConfiguration> SimulationConfiguration;
+	
 	UPROPERTY()
 	TObjectPtr<class UTrRepresentationSystem> RepresentationSystem;
 

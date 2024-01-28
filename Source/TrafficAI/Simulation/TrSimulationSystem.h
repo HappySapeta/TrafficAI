@@ -3,9 +3,12 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "..\Shared\TrTypes.h"
+#include "TrSimulationData.h"
+#include "../Shared/TrTypes.h"
 #include "Ripple/Public/RpSpatialGraphComponent.h"
 #include "TrSimulationSystem.generated.h"
+
+class UTrSimulationConfiguration;
 
 enum class ETrState
 {
@@ -25,51 +28,75 @@ class TRAFFICAI_API UTrSimulationSystem : public UWorldSubsystem
 
 public:
 	
-	void Initialize(const ::URpSpatialGraphComponent* GraphComponent, TWeakPtr<TArray<FTrVehicleRepresentation>> TrafficEntities, const
-	                TArray<FTrVehiclePathTransform>& TrafficVehicleStarts);
-
-	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
+	void Initialize
+	(
+		const UTrSimulationConfiguration* SimData,
+		const URpSpatialGraphComponent* GraphComponent,
+	    TWeakPtr<TArray<FTrVehicleRepresentation>> TrafficEntities,
+	    const TArray<FTrVehiclePathTransform>& TrafficVehicleStarts
+	);
 	
 	void StartSimulation();
 
 	void StopSimulation();
 
 protected:
+
+#pragma region Utility
 	
 	FVector ProjectPointOnPath(const FVector& Point, const FTrPath& Path) const;
 
 	int FindNearestPath(int EntityIndex, FVector& NearestProjection);
 	
-private:
+#pragma endregion
 
+#pragma region Debug
+	
 	void DrawInitialDebug();
 
 	void DebugVisualization();
-	
-	void TickSimulation();
 
-	void PathFollow();
+#pragma endregion
 	
-	void UpdatePath(const uint32 Index);
-	
-	bool ShouldWaitAtJunction(uint32 Index);
+private:
 
-	void HandleGoal();
-	
-	void SetAcceleration();
+	virtual void TickSimulation();
 
-	void UpdateVehicle();
-	
-	void UpdateVehicleKinematics(int Index);
-	
-	void UpdateVehicleSteer(int Index);
+	virtual void PathFollow();
 
+	virtual void UpdatePath(const uint32 Index);
+
+	virtual bool ShouldWaitAtJunction(uint32 Index);
+
+	virtual void HandleGoal();
+
+	virtual void SetAcceleration();
+
+	virtual void UpdateVehicle();
+
+	virtual void UpdateVehicleKinematics(int Index);
+
+	virtual void UpdateVehicleSteer(int Index);
+
+#pragma region Junctions
+	
 	void InitializeJunctions();
 
 	void UpdateJunctions();
 
-private:
+#pragma endregion
 
+protected:
+
+	float TickRate = 0.016f;
+	float LookAheadTime = 1.0f;
+	float JunctionUpdateRate = 1.0f;
+
+	FTrVehicleDynamics VehicleConfig;
+	FTrPathFollowingConfiguration PathFollowingConfig;
+	
+private:
+	
 	int NumEntities;
 	TArray<FVector> Positions;
 	TArray<FVector> Velocities;
@@ -81,11 +108,9 @@ private:
 	TArray<ETrState> States;
 	TArray<FColor> DebugColors;
 	
-	FTrModelData ModelData;
+	TArray<FRpSpatialGraphNode> Nodes;
+	TMap<uint32, uint32> Junctions;
+
 	FTimerHandle SimTimerHandle;
 	FTimerHandle JunctionTimerHandle;
-	
-	TArray<FRpSpatialGraphNode> Nodes;
-
-	TMap<uint32, uint32> Junctions;
 };
