@@ -4,7 +4,7 @@
 #include "TrSimulationData.h"
 #include "RpSpatialGraphComponent.h"
 
-#define USE_ANGULAR_VEL_STEERING
+//#define USE_ANGULAR_VEL_STEERING
 
 static bool GTrSimDebug = true;
 
@@ -270,13 +270,10 @@ void UTrSimulationSystem::UpdateVehicleSteer(const int Index)
 		CurrentHeading.X * TargetHeading.X + CurrentHeading.Y * TargetHeading.Y
 	);
 
-	const float Delta = FMath::Clamp(TargetSteerAngle - CurrentSteerAngle, -VehicleConfig.SteeringSpeed, VehicleConfig.SteeringSpeed);
-	CurrentSteerAngle += Delta;
-	CurrentSteerAngle = FMath::Clamp(CurrentSteerAngle, -VehicleConfig.MaxSteeringAngle, VehicleConfig.MaxSteeringAngle);
+	CurrentSteerAngle = FMath::Atan((2 * VehicleConfig.WheelBaseLength * FMath::Sin(TargetSteerAngle))/ (PathFollowingConfig.LookAheadDistance));
 
 	RearWheelPosition += CurrentVelocity.Length() * CurrentHeading * TickRate;
-	FrontWheelPosition += CurrentVelocity.Length() * CurrentHeading.RotateAngleAxis(
-		FMath::RadiansToDegrees(CurrentSteerAngle), FVector::UpVector) * TickRate;
+	FrontWheelPosition += CurrentVelocity.Length() * CurrentHeading.RotateAngleAxis(FMath::RadiansToDegrees(CurrentSteerAngle), FVector::UpVector) * TickRate;
 
 	CurrentHeading = (FrontWheelPosition - RearWheelPosition).GetSafeNormal();
 	CurrentPosition = (FrontWheelPosition + RearWheelPosition) * 0.5f;
@@ -301,9 +298,7 @@ void UTrSimulationSystem::UpdateVehicleSteer(const int Index)
 		CurrentHeading.X * TargetHeading.X + CurrentHeading.Y * TargetHeading.Y
 	);
 
-	const float Delta = FMath::Clamp(TargetSteerAngle - CurrentSteerAngle, -VehicleConfig.SteeringSpeed, VehicleConfig.SteeringSpeed);
-	CurrentSteerAngle += Delta;
-	CurrentSteerAngle = FMath::Clamp(CurrentSteerAngle, -VehicleConfig.MaxSteeringAngle, VehicleConfig.MaxSteeringAngle);
+	CurrentSteerAngle = FMath::Atan((2 * VehicleConfig.WheelBaseLength * FMath::Sin(TargetSteerAngle))/ (PathFollowingConfig.LookAheadDistance));
 
 	const float TurningRadius = VehicleConfig.WheelBaseLength / FMath::Abs(FMath::Sin(CurrentSteerAngle));
 	const float AngularSpeed = CurrentVelocity.Length() * FMath::Sign(CurrentSteerAngle) / TurningRadius;
