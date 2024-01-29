@@ -271,6 +271,7 @@ void UTrSimulationSystem::UpdateVehicleSteer(const int Index)
 	);
 
 	CurrentSteerAngle = FMath::Atan((2 * VehicleConfig.WheelBaseLength * FMath::Sin(TargetSteerAngle))/ (PathFollowingConfig.LookAheadDistance));
+	CurrentSteerAngle = FMath::Clamp(CurrentSteerAngle * VehicleConfig.SteeringSpeed, -VehicleConfig.MaxSteeringAngle, VehicleConfig.MaxSteeringAngle);
 
 	RearWheelPosition += CurrentVelocity.Length() * CurrentHeading * TickRate;
 	FrontWheelPosition += CurrentVelocity.Length() * CurrentHeading.RotateAngleAxis(FMath::RadiansToDegrees(CurrentSteerAngle), FVector::UpVector) * TickRate;
@@ -299,6 +300,7 @@ void UTrSimulationSystem::UpdateVehicleSteer(const int Index)
 	);
 
 	CurrentSteerAngle = FMath::Atan((2 * VehicleConfig.WheelBaseLength * FMath::Sin(TargetSteerAngle))/ (PathFollowingConfig.LookAheadDistance));
+	CurrentSteerAngle = FMath::Clamp(CurrentSteerAngle * VehicleConfig.SteeringSpeed, -VehicleConfig.MaxSteeringAngle, VehicleConfig.MaxSteeringAngle);
 
 	const float TurningRadius = VehicleConfig.WheelBaseLength / FMath::Abs(FMath::Sin(CurrentSteerAngle));
 	const float AngularSpeed = CurrentVelocity.Length() * FMath::Sign(CurrentSteerAngle) / TurningRadius;
