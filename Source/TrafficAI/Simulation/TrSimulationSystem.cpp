@@ -36,6 +36,8 @@ void UTrSimulationSystem::Initialize
 		check(SimData)
 		VehicleConfig = SimData->VehicleConfig;
 		PathFollowingConfig = SimData->PathFollowingConfig;
+		TickRate = SimData->TickRate;
+		JunctionUpdateRate = SimData->JunctionUpdateRate;
 		
 		PathTransforms = TrafficVehicleStarts;
 		check(PathTransforms.Num() > 0);
