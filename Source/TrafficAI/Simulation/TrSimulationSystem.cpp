@@ -141,6 +141,11 @@ void UTrSimulationSystem::UpdatePath(const uint32 Index)
 	}
 
 	FTrPath& CurrentPath = PathTransforms[Index].Path;
+	if(Nodes[CurrentPath.EndNodeIndex].GetConnections().Num() == 1)
+	{
+		return;
+	}
+	
 	const TArray<uint32>& Connections = Nodes[CurrentPath.EndNodeIndex].GetConnections().Array();
 
 	uint32 NewStartNodeIndex = CurrentPath.EndNodeIndex;
