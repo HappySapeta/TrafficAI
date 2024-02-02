@@ -57,7 +57,14 @@ void UTrSimulationSystem::Initialize
 			Accelerations.Push(0.0f);
 			SteerAngles.Push(0.0f);
 			States.Push(ETrState::None);
+			LeadingVehicleIndices.Push(-1);
 			DebugColors.Push(FColor::MakeRandomColor());
+			FTrPath& Path = PathTransforms[Index].Path;
+			Path.Start += Path.Direction() * PathFollowingConfig.PathTrim;
+
+			const float EndTrim = Junctions.Contains(Path.EndNodeIndex) ? PathFollowingConfig.JunctionExtents : PathFollowingConfig.PathTrim;
+			Path.End -= Path.Direction() * EndTrim;
+			
 
 			FVector NearestProjectionPoint;
 			Goals.Push(NearestProjectionPoint);
@@ -75,6 +82,7 @@ void UTrSimulationSystem::StartSimulation()
 	SimTimerDelegate.BindUObject(this, &UTrSimulationSystem::TickSimulation);
 	World->GetTimerManager().SetTimer(SimTimerHandle, SimTimerDelegate, TickRate, true);
 
+	UpdateJunctions();
 	FTimerDelegate JunctionTimerDelegate;
 	JunctionTimerDelegate.BindUObject(this, &UTrSimulationSystem::UpdateJunctions);
 	World->GetTimerManager().SetTimer(JunctionTimerHandle, JunctionTimerDelegate, JunctionUpdateRate, true);
@@ -209,26 +217,42 @@ void UTrSimulationSystem::HandleGoal()
 	}
 }
 
+float ScalarProjection(const FVector& V1, const FVector& V2)
+{
+	return V1.Dot(V2) / V2.Length();
+}
+
 void UTrSimulationSystem::SetAcceleration()
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(UTrSimulationSystem::SetAcceleration)
-
+	
+	UpdateLeadingVehicles();
 	for (int Index = 0; Index < NumEntities; ++Index)
 	{
 		float& Acceleration = Accelerations[Index];
-		int LeadingVehicleIndex = -1;
+		int LeadingVehicleIndex = LeadingVehicleIndices[Index];
 
-		float DesiredSpeed = VehicleConfig.DesiredSpeed;
-		const float GoalDistance = FVector::Distance(Goals[Index], Positions[Index]);
-
+		const FVector& CurrentPosition = Positions[Index];
 		const float CurrentSpeed = Velocities[Index].Size();
-		const float RelativeSpeed = LeadingVehicleIndex != -1 ? Velocities[LeadingVehicleIndex].Size() : 0.0f;
-		const float CurrentGap = LeadingVehicleIndex != -1 ? FVector::Distance(Positions[LeadingVehicleIndex], Positions[Index]) : GoalDistance;
+		float RelativeSpeed = CurrentSpeed;
+		float CurrentGap = FVector::Distance(Goals[Index], CurrentPosition);
+		float MinimumGap = 0.0f;
+
+		if(LeadingVehicleIndex != -1)
+		{
+			const float DistanceToOther = FVector::Distance(CurrentPosition, Positions[LeadingVehicleIndex]);
+			if(DistanceToOther < CurrentGap)
+			{
+				MinimumGap = VehicleConfig.MinimumGap;
+				CurrentGap = DistanceToOther;
+				RelativeSpeed = ScalarProjection(Velocities[Index] - Velocities[LeadingVehicleIndex], Headings[Index]);
+			}
+		}
 		
-		const float FreeRoadTerm = VehicleConfig.MaximumAcceleration * (1 - FMath::Pow(CurrentSpeed / DesiredSpeed, VehicleConfig.AccelerationExponent));
+		const float FreeRoadTerm = VehicleConfig.MaximumAcceleration * (1 - FMath::Pow(CurrentSpeed / VehicleConfig.DesiredSpeed, VehicleConfig.AccelerationExponent));
 
 		const float DecelerationTerm = (CurrentSpeed * RelativeSpeed) / (2 * FMath::Sqrt(VehicleConfig.MaximumAcceleration * VehicleConfig.ComfortableBrakingDeceleration));
-		const float GapTerm = (VehicleConfig.MinimumGap + VehicleConfig.DesiredTimeHeadWay * CurrentSpeed + DecelerationTerm) /CurrentGap;
+		const float GapTerm = (MinimumGap + VehicleConfig.DesiredTimeHeadWay * CurrentSpeed + DecelerationTerm) / CurrentGap;
 		const float InteractionTerm = -VehicleConfig.MaximumAcceleration * FMath::Square(GapTerm);
 
 		Acceleration = FreeRoadTerm + InteractionTerm;
@@ -411,5 +435,41 @@ void UTrSimulationSystem::UpdateJunctions()
 
 		const FVector Direction = (Nodes[Junction.Value].GetLocation() - Nodes[Junction.Key].GetLocation()).GetSafeNormal();
 		DrawDebugPoint(GetWorld(), Nodes[Junction.Key].GetLocation() + Direction * PathFollowingConfig.JunctionExtents, 3.0f, FColor::Green, false, JunctionUpdateRate);
+	}
+}
+
+void UTrSimulationSystem::UpdateLeadingVehicles()
+{
+	const float Bound = VehicleConfig.Dimensions.Y / 1.75; 
+	for(int Index = 0; Index < NumEntities; ++Index)
+	{
+		LeadingVehicleIndices[Index] = -1;
+		float ClosestDistance = TNumericLimits<float>().Max();
+		FTransform CurrentTransform(Headings[Index].ToOrientationRotator(), Positions[Index]);
+		for(int OtherIndex = 0; OtherIndex < NumEntities; ++OtherIndex)
+		{
+			if(OtherIndex == Index)
+			{
+				continue;
+			}
+
+			const FVector OtherLocalVector = CurrentTransform.InverseTransformPosition(Positions[OtherIndex]);
+
+			if(OtherLocalVector.Y >= -Bound && OtherLocalVector.Y <= Bound)
+			{
+				const float Distance = OtherLocalVector.X;
+				if((Distance > VehicleConfig.Dimensions.X / 2) && Distance < ClosestDistance)
+				{
+					ClosestDistance = Distance;
+					LeadingVehicleIndices[Index] = OtherIndex;
+				}
+			}
+		}
+
+		const int LeadingVehicleIndex = LeadingVehicleIndices[Index];
+		if(LeadingVehicleIndex != -1)
+		{
+			DrawDebugLine(GetWorld(), Positions[Index], Positions[LeadingVehicleIndex], DebugColors[LeadingVehicleIndex], false, TickRate);
+		}
 	}
 }
