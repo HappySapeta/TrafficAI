@@ -230,22 +230,26 @@ void FTrVehicleStartCreator::CreateStartTransformsOnEdge
 	TArray<FTrVehiclePathTransform>& OutStartData
 )
 {
+	const FVector NewForwardVector = (Destination - Start).GetSafeNormal();
+	const FRotator NewRotation = UKismetMathLibrary::MakeRotFromX(NewForwardVector);
+	const FVector NewRightVector = NewForwardVector.Cross(FVector::UpVector);
+
+	
 	const float EdgeLength = FVector::Distance(Start, Destination);
-	const float NormalizedMinimumSeparation = (SpawnConfiguration->MinimumSeparation) / EdgeLength;
-
-	float TMin = SpawnConfiguration->IntersectionCutoff;
-	while (TMin < 1.0f - SpawnConfiguration->IntersectionCutoff)
+	const float NormMinSeparation = SpawnConfiguration->Separation.GetLowerBoundValue() /  EdgeLength;
+	const float NormMaxSeparation = SpawnConfiguration->Separation.GetUpperBoundValue() / EdgeLength;
+	const float NormCutOff = SpawnConfiguration->IntersectionCutoff / EdgeLength;
+	float Alpha = NormCutOff;
+	const float MaxAlpha = 1.0f - NormCutOff;
+	while (Alpha < MaxAlpha)
 	{
-		float TMax = TMin + (1 - FMath::Clamp(SpawnConfiguration->VariableSeparation, 0.0f, 1.0f));
-		float T = FMath::Clamp(FMath::RandRange(TMin, TMax), 0.0f, 1.0f);
-
-		TMin = T + NormalizedMinimumSeparation;
-
-		const FVector NewForwardVector = (Destination - Start).GetSafeNormal();
-		const FRotator NewRotation = UKismetMathLibrary::MakeRotFromX(NewForwardVector);
-		const FVector NewRightVector = NewForwardVector.Cross(FVector::UpVector);
-		const FVector NewLocation = FMath::Lerp(Start, Destination, T) + NewRightVector * SpawnConfiguration->LaneWidth;
-
+		Alpha = Alpha + FMath::RandRange(NormMinSeparation, NormMaxSeparation);
+		if(Alpha >= MaxAlpha)
+		{
+			break;
+		}
+		
+		const FVector NewLocation = FMath::Lerp(Start, Destination, Alpha) + NewRightVector * SpawnConfiguration->LaneWidth;
 		OutStartData.Push({FTransform(NewRotation, NewLocation, FVector::One()), FTrPath()});
 	}
 }

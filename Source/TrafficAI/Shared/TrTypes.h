@@ -53,19 +53,15 @@ public:
 	
 	// Absolute Minimum distance between two spawned vehicles
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawn Configuration")
-	float MinimumSeparation = 600.0f;
-
-	// Variable distance between two spawned vehicles relative to length of the lane 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawn Configuration", meta = (UIMin = 0.0, UIMax = 1.0, ClampMin = 0.0, ClampMax = 1.0))
-	float VariableSeparation = 0.25f;
+	FFloatRange Separation = FFloatRange(750, 900);
 
 	// Minimum distance from an intersection where vehicles can be spawned relative to length of the lane
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawn Configuration", meta = (UIMin = 0.0, UIMax = 1.0, ClampMin = 0.0, ClampMax = 1.0))
-	float IntersectionCutoff = 0.1f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawn Configuration")
+	float IntersectionCutoff = 500.0f;
 
 	// Absolute Width of a lane
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawn Configuration")
-	float LaneWidth = 200.0f;
+	float LaneWidth = 250.0f;
 
 	// Traffic Archetypes defined by their LODs
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawn Configuration")
