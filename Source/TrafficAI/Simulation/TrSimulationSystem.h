@@ -78,6 +78,8 @@ private:
 
 	virtual void UpdateVehicleSteer(int Index);
 
+	void UpdateLeadingVehicles();
+
 #pragma region Junctions
 	
 	void InitializeJunctions();
@@ -105,6 +107,7 @@ private:
 	TArray<float> SteerAngles;
 	TArray<FTrVehiclePathTransform> PathTransforms;
 	TArray<ETrState> States;
+	TArray<int> LeadingVehicleIndices;
 	TArray<FColor> DebugColors;
 	
 	TArray<FRpSpatialGraphNode> Nodes;
