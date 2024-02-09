@@ -440,7 +440,7 @@ void UTrSimulationSystem::UpdateJunctions()
 
 void UTrSimulationSystem::UpdateLeadingVehicles()
 {
-	const float Bound = VehicleConfig.Dimensions.Y / 1.75; 
+	const float Bound = VehicleConfig.Dimensions.Y; 
 	for(int Index = 0; Index < NumEntities; ++Index)
 	{
 		LeadingVehicleIndices[Index] = -1;
