@@ -47,6 +47,11 @@ protected:
 	FVector ProjectPointOnPath(const FVector& Point, const FTrPath& Path) const;
 
 	int FindNearestPath(int EntityIndex, FVector& NearestProjection);
+
+	float ScalarProjection(const FVector& V1, const FVector& V2)
+	{
+		return V1.Dot(V2) / V2.Length();
+	}
 	
 #pragma endregion
 
@@ -72,11 +77,7 @@ private:
 
 	virtual void SetAcceleration();
 
-	virtual void UpdateVehicle();
-
-	virtual void UpdateVehicleKinematics(int Index);
-
-	virtual void UpdateVehicleSteer(int Index);
+	virtual void UpdateVehicleSteer();
 
 	void UpdateLeadingVehicles();
 
@@ -103,8 +104,6 @@ private:
 	TArray<FVector> Velocities;
 	TArray<FVector> Headings;
 	TArray<FVector> Goals;
-	TArray<float> Accelerations;
-	TArray<float> SteerAngles;
 	TArray<FTrVehiclePathTransform> PathTransforms;
 	TArray<ETrState> States;
 	TArray<int> LeadingVehicleIndices;
