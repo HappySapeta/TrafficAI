@@ -152,7 +152,7 @@ void UTrSimulationSystem::UpdatePath(const uint32 Index)
 		return;
 	}
 	
-	const TArray<uint32>& Connections = Nodes[CurrentPath.EndNodeIndex].GetConnections().Array();
+	const TArray<uint32>& Connections = Nodes[CurrentPath.EndNodeIndex].GetConnections();
 
 	uint32 NewStartNodeIndex = CurrentPath.EndNodeIndex;
 	uint32 NewEndNodeIndex;
@@ -383,7 +383,8 @@ void UTrSimulationSystem::DrawInitialDebug()
 	const UWorld* World = GetWorld();
 	for (const FRpSpatialGraphNode& Node : Nodes)
 	{
-		for (const uint32 ConnectedNodeIndex : Node.GetConnections())
+		const TArray<uint32>& Connections = Node.GetConnections();
+		for (const uint32 ConnectedNodeIndex : Connections)
 		{
 			DrawDebugLine(World, Node.GetLocation(), Nodes[ConnectedNodeIndex].GetLocation(), FColor::White, true, -1);
 		}
@@ -397,7 +398,7 @@ void UTrSimulationSystem::InitializeJunctions()
 	for (uint32 NodeIndex = 0, NumNodes = Nodes.Num(); NodeIndex < NumNodes; ++NodeIndex)
 	{
 		const FRpSpatialGraphNode& Node = Nodes[NodeIndex];
-		const TArray<uint32> Connections = Node.GetConnections().Array();
+		const TArray<uint32>& Connections = Node.GetConnections();
 		if (Connections.Num() > 2)
 		{
 			Junctions.Add(NodeIndex, Connections[0]);
@@ -409,7 +410,7 @@ void UTrSimulationSystem::UpdateJunctions()
 {
 	for (auto& Junction : Junctions)
 	{
-		const TArray<uint32> Connections = Nodes[Junction.Key].GetConnections().Array();
+		const TArray<uint32>& Connections = Nodes[Junction.Key].GetConnections();
 		Junction.Value = Connections[FMath::RandRange(0, Connections.Num() - 1)];
 
 		const FVector Direction = (Nodes[Junction.Value].GetLocation() - Nodes[Junction.Key].GetLocation()).GetSafeNormal();
