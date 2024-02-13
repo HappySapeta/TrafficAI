@@ -156,26 +156,28 @@ void UTrSimulationSystem::UpdatePath(const uint32 Index)
 	{
 		NewEndNodeIndex = Connections[0] == CurrentPath.StartNodeIndex ? Connections[1] : Connections[0];	
 	}
-	
-	const FVector CurrentPathDirection = CurrentPath.Direction();
-
-	TArray<uint32> EligibleConnections;
-	for(uint32 Connection : Connections)
+	else
 	{
-		const FVector TargetPathDirection = (Nodes[Connection].GetLocation() - Nodes[NewStartNodeIndex].GetLocation()).GetSafeNormal();
-		const float Angle = FMath::Acos(CurrentPathDirection.Dot(TargetPathDirection));
+		const FVector CurrentPathDirection = CurrentPath.Direction();
 
-		if(Angle < PI / 2)
+		TArray<uint32> EligibleConnections;
+		for(uint32 Connection : Connections)
 		{
-			EligibleConnections.Push(Connection);
+			const FVector TargetPathDirection = (Nodes[Connection].GetLocation() - Nodes[NewStartNodeIndex].GetLocation()).GetSafeNormal();
+			const float Angle = FMath::Acos(CurrentPathDirection.Dot(TargetPathDirection));
+
+			if(Angle < PI / 2)
+			{
+				EligibleConnections.Push(Connection);
+			}
+		}
+
+		if(EligibleConnections.Num() > 0)
+		{
+			NewEndNodeIndex = EligibleConnections[FMath::RandRange(0, EligibleConnections.Num() - 1)];
 		}
 	}
-
-	if(EligibleConnections.Num() > 0)
-	{
-		NewEndNodeIndex = EligibleConnections[FMath::RandRange(0, EligibleConnections.Num() - 1)];
-	}
-
+	
 	CurrentPath.Start = Nodes[NewStartNodeIndex].GetLocation();
 	CurrentPath.End = Nodes[NewEndNodeIndex].GetLocation();
 	CurrentPath.StartNodeIndex = NewStartNodeIndex;
