@@ -141,39 +141,45 @@ void UTrSimulationSystem::PathFollow()
 
 void UTrSimulationSystem::UpdatePath(const uint32 Index)
 {
-	if (ShouldWaitAtJunction(Index))
-	{
-		return;
-	}
+	//if (ShouldWaitAtJunction(Index))
+	//{
+	//	return;
+	//}
 
 	FTrPath& CurrentPath = PathTransforms[Index].Path;
-	if(Nodes[CurrentPath.EndNodeIndex].GetConnections().Num() == 1)
-	{
-		return;
-	}
-	
 	const TArray<uint32>& Connections = Nodes[CurrentPath.EndNodeIndex].GetConnections();
 
 	uint32 NewStartNodeIndex = CurrentPath.EndNodeIndex;
-	uint32 NewEndNodeIndex;
-	do
+	uint32 NewEndNodeIndex = Connections[0];
+
+	if(Connections.Num() == 2)
 	{
-		NewEndNodeIndex = Connections[FMath::RandRange(0, Connections.Num() - 1)];
+		NewEndNodeIndex = Connections[0] == CurrentPath.StartNodeIndex ? Connections[1] : Connections[0];	
 	}
-	while (NewEndNodeIndex == CurrentPath.StartNodeIndex);
+	
+	const FVector CurrentPathDirection = CurrentPath.Direction();
+
+	TArray<uint32> EligibleConnections;
+	for(uint32 Connection : Connections)
+	{
+		const FVector TargetPathDirection = (Nodes[Connection].GetLocation() - Nodes[NewStartNodeIndex].GetLocation()).GetSafeNormal();
+		const float Angle = FMath::Acos(CurrentPathDirection.Dot(TargetPathDirection));
+
+		if(Angle < PI / 2)
+		{
+			EligibleConnections.Push(Connection);
+		}
+	}
+
+	if(EligibleConnections.Num() > 0)
+	{
+		NewEndNodeIndex = EligibleConnections[FMath::RandRange(0, EligibleConnections.Num() - 1)];
+	}
 
 	CurrentPath.Start = Nodes[NewStartNodeIndex].GetLocation();
 	CurrentPath.End = Nodes[NewEndNodeIndex].GetLocation();
 	CurrentPath.StartNodeIndex = NewStartNodeIndex;
 	CurrentPath.EndNodeIndex = NewEndNodeIndex;
-
-	const FVector Direction = CurrentPath.Direction();
-
-	const float StartTrim = PathFollowingConfig.PathTrim;
-	const float EndTrim = Nodes[CurrentPath.EndNodeIndex].GetConnections().Num() > 2 ? PathFollowingConfig.JunctionExtents : PathFollowingConfig.PathTrim;
-
-	CurrentPath.Start += Direction * StartTrim;
-	CurrentPath.End -= Direction * EndTrim;
 }
 
 bool UTrSimulationSystem::ShouldWaitAtJunction(const uint32 Index)
@@ -371,8 +377,8 @@ void UTrSimulationSystem::DebugVisualization()
 	{
 		DrawDebugBox(World, Positions[Index], VehicleConfig.Dimensions, Headings[Index].ToOrientationQuat(), DebugColors[Index], false, TickRate);
 		DrawDebugDirectionalArrow(World, Positions[Index], Positions[Index] + Headings[Index] * VehicleConfig.Dimensions.X * 1.5f, 1000.0f, FColor::Red, false, TickRate);
-		DrawDebugPoint(World, Goals[Index], 2.0f, DebugColors[Index], false, TickRate);
-		DrawDebugLine(World, Positions[Index], Goals[Index], DebugColors[Index], false, TickRate);
+		//DrawDebugPoint(World, Goals[Index], 2.0f, DebugColors[Index], false, TickRate);
+		//DrawDebugLine(World, Positions[Index], Goals[Index], DebugColors[Index], false, TickRate);
 	}
 
 	GEngine->AddOnScreenDebugMessage(-1, GetWorld()->GetDeltaSeconds(), FColor::Green, FString::Printf(TEXT("Speed : %.2f km/h"), Velocities[0].Length() * 0.036));
@@ -449,7 +455,7 @@ void UTrSimulationSystem::UpdateLeadingVehicles()
 		const int LeadingVehicleIndex = LeadingVehicleIndices[Index];
 		if(LeadingVehicleIndex != -1)
 		{
-			DrawDebugLine(GetWorld(), Positions[Index], Positions[LeadingVehicleIndex], DebugColors[LeadingVehicleIndex], false, TickRate);
+			//DrawDebugLine(GetWorld(), Positions[Index], Positions[LeadingVehicleIndex], DebugColors[LeadingVehicleIndex], false, TickRate);
 		}
 	}
 }
