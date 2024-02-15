@@ -4,7 +4,7 @@
 #include "TrSimulationData.h"
 #include "RpSpatialGraphComponent.h"
 
-//#define USE_ANGULAR_VEL_STEERING
+//#define USE_ANGULAR_VELOCITY_BASED_STEERING
 
 static bool GTrSimDebug = true;
 
@@ -37,16 +37,13 @@ void UTrSimulationSystem::Initialize
 		VehicleConfig = SimData->VehicleConfig;
 		PathFollowingConfig = SimData->PathFollowingConfig;
 		TickRate = SimData->TickRate;
-		JunctionUpdateRate = SimData->JunctionUpdateRate;
-		
+
 		PathTransforms = TrafficVehicleStarts;
 		check(PathTransforms.Num() > 0);
 
 		Nodes = *GraphComponent->GetNodes();
 		check(Nodes.Num() > 0);
-
-		InitializeJunctions();
-
+		
 		for (int Index = 0; Index < NumEntities; ++Index)
 		{
 			const AActor* EntityActor = (*TrafficEntities.Pin())[Index].Dummy;
@@ -54,24 +51,17 @@ void UTrSimulationSystem::Initialize
 			Positions.Push(EntityActor->GetActorLocation());
 			Velocities.Push(EntityActor->GetVelocity());
 			Headings.Push(EntityActor->GetActorForwardVector());
-			Accelerations.Push(0.0f);
-			SteerAngles.Push(0.0f);
 			States.Push(ETrState::None);
 			LeadingVehicleIndices.Push(-1);
 			DebugColors.Push(FColor::MakeRandomColor());
-			FTrPath& Path = PathTransforms[Index].Path;
-			Path.Start += Path.Direction() * PathFollowingConfig.PathTrim;
-
-			const float EndTrim = Junctions.Contains(Path.EndNodeIndex) ? PathFollowingConfig.JunctionExtents : PathFollowingConfig.PathTrim;
-			Path.End -= Path.Direction() * EndTrim;
-			
 
 			FVector NearestProjectionPoint;
+			FindNearestPath(Index, NearestProjectionPoint);
 			Goals.Push(NearestProjectionPoint);
 		}
 	}
 
-	DrawInitialDebug();
+	DrawFirstDebug();
 }
 
 void UTrSimulationSystem::StartSimulation()
@@ -81,11 +71,6 @@ void UTrSimulationSystem::StartSimulation()
 	FTimerDelegate SimTimerDelegate;
 	SimTimerDelegate.BindUObject(this, &UTrSimulationSystem::TickSimulation);
 	World->GetTimerManager().SetTimer(SimTimerHandle, SimTimerDelegate, TickRate, true);
-
-	UpdateJunctions();
-	FTimerDelegate JunctionTimerDelegate;
-	JunctionTimerDelegate.BindUObject(this, &UTrSimulationSystem::UpdateJunctions);
-	World->GetTimerManager().SetTimer(JunctionTimerHandle, JunctionTimerDelegate, JunctionUpdateRate, true);
 }
 
 void UTrSimulationSystem::StopSimulation()
@@ -97,17 +82,18 @@ void UTrSimulationSystem::TickSimulation()
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(UTrSimulationSystem::TickSimulation)
 
-	DebugVisualization();
+	DrawDebug();
 
-	PathFollow();
-	HandleGoal();
-	SetAcceleration();
-	UpdateVehicle();
+	SetGoals();
+	HandleGoals();
+	UpdateCollisionData();
+	UpdateKinematics();
+	UpdateOrientations();
 }
 
-void UTrSimulationSystem::PathFollow()
+void UTrSimulationSystem::SetGoals()
 {
-	TRACE_CPUPROFILER_EVENT_SCOPE(UTrSimulationSystem::PathInsertion)
+	TRACE_CPUPROFILER_EVENT_SCOPE(UTrSimulationSystem::SetGoals)
 
 	TArray<FVector> ProjectionPoints;
 	ProjectionPoints.Reserve(PathTransforms.Num());
@@ -141,98 +127,29 @@ void UTrSimulationSystem::PathFollow()
 	}
 }
 
-void UTrSimulationSystem::UpdatePath(const uint32 Index)
+void UTrSimulationSystem::HandleGoals()
 {
-	if (ShouldWaitAtJunction(Index))
-	{
-		return;
-	}
-
-	FTrPath& CurrentPath = PathTransforms[Index].Path;
-	if(Nodes[CurrentPath.EndNodeIndex].GetConnections().Num() == 1)
-	{
-		return;
-	}
-	
-	const TArray<uint32>& Connections = Nodes[CurrentPath.EndNodeIndex].GetConnections().Array();
-
-	uint32 NewStartNodeIndex = CurrentPath.EndNodeIndex;
-	uint32 NewEndNodeIndex;
-	do
-	{
-		NewEndNodeIndex = Connections[FMath::RandRange(0, Connections.Num() - 1)];
-	}
-	while (NewEndNodeIndex == CurrentPath.StartNodeIndex);
-
-	CurrentPath.Start = Nodes[NewStartNodeIndex].GetLocation();
-	CurrentPath.End = Nodes[NewEndNodeIndex].GetLocation();
-	CurrentPath.StartNodeIndex = NewStartNodeIndex;
-	CurrentPath.EndNodeIndex = NewEndNodeIndex;
-
-	const FVector Direction = CurrentPath.Direction();
-
-	const float StartTrim = PathFollowingConfig.PathTrim;
-	const float EndTrim = Nodes[CurrentPath.EndNodeIndex].GetConnections().Num() > 2 ? PathFollowingConfig.JunctionExtents : PathFollowingConfig.PathTrim;
-
-	CurrentPath.Start += Direction * StartTrim;
-	CurrentPath.End -= Direction * EndTrim;
-}
-
-bool UTrSimulationSystem::ShouldWaitAtJunction(const uint32 Index)
-{
-	const FTrPath& CurrentPath = PathTransforms[Index].Path;
-	const uint32 JunctionNodeIndex = CurrentPath.EndNodeIndex;
-
-	if (Junctions.Contains(JunctionNodeIndex))
-	{
-		return Junctions[JunctionNodeIndex] != CurrentPath.StartNodeIndex;
-	}
-
-	return false;
-}
-
-void UTrSimulationSystem::HandleGoal()
-{
-	TRACE_CPUPROFILER_EVENT_SCOPE(UTrSimulationSystem::HandleGoal)
-
 	for (int Index = 0; Index < NumEntities; ++Index)
 	{
 		ETrState CurrentState = States[Index];
 
-		if (FVector::Distance(Goals[Index], Positions[Index]) <= PathFollowingConfig.GoalUpdateDistance)
+		const float Distance = FVector::Distance(Goals[Index], Positions[Index]);
+		if (Distance <= PathFollowingConfig.GoalUpdateDistance && CurrentState == ETrState::PathFollowing)
 		{
-			switch (CurrentState)
-			{
-			case ETrState::PathFollowing:
-				{
-					UpdatePath(Index);
-					break;
-				}
-			default:
-				{
-					// Do nothing
-				}
-			}
+			UpdatePath(Index);
 		}
 	}
 }
 
-float ScalarProjection(const FVector& V1, const FVector& V2)
+void UTrSimulationSystem::UpdateKinematics()
 {
-	return V1.Dot(V2) / V2.Length();
-}
-
-void UTrSimulationSystem::SetAcceleration()
-{
-	TRACE_CPUPROFILER_EVENT_SCOPE(UTrSimulationSystem::SetAcceleration)
+	TRACE_CPUPROFILER_EVENT_SCOPE(UTrSimulationSystem::UpdateKinematics)
 	
-	UpdateLeadingVehicles();
 	for (int Index = 0; Index < NumEntities; ++Index)
 	{
-		float& Acceleration = Accelerations[Index];
 		int LeadingVehicleIndex = LeadingVehicleIndices[Index];
 
-		const FVector& CurrentPosition = Positions[Index];
+		FVector& CurrentPosition = Positions[Index];
 		const float CurrentSpeed = Velocities[Index].Size();
 		float RelativeSpeed = CurrentSpeed;
 		float CurrentGap = FVector::Distance(Goals[Index], CurrentPosition);
@@ -255,92 +172,103 @@ void UTrSimulationSystem::SetAcceleration()
 		const float GapTerm = (MinimumGap + VehicleConfig.DesiredTimeHeadWay * CurrentSpeed + DecelerationTerm) / CurrentGap;
 		const float InteractionTerm = -VehicleConfig.MaximumAcceleration * FMath::Square(GapTerm);
 
-		Acceleration = FreeRoadTerm + InteractionTerm;
+		float Acceleration = FreeRoadTerm + InteractionTerm;
 		Acceleration = FMath::Clamp(Acceleration, -10000.0f, VehicleConfig.MaximumAcceleration);
+
+		FVector& CurrentHeading = Headings[Index];
+		FVector& CurrentVelocity = Velocities[Index];
+
+		CurrentVelocity += CurrentHeading * Acceleration * TickRate; // v = u + a * t
+		CurrentPosition += CurrentVelocity * TickRate; // x1 = x0 + v * t
 	}
 }
 
-void UTrSimulationSystem::UpdateVehicle()
+void UTrSimulationSystem::UpdateOrientations()
 {
-	TRACE_CPUPROFILER_EVENT_SCOPE(UTrSimulationSystem::UpdateVehicle)
-
+	TRACE_CPUPROFILER_EVENT_SCOPE(UTrSimulationSystem::UpdateOrientations)
+	
 	for (int Index = 0; Index < NumEntities; ++Index)
 	{
-		UpdateVehicleKinematics(Index);
-		UpdateVehicleSteer(Index);
+		FVector& CurrentHeading = Headings[Index];
+		FVector& CurrentPosition = Positions[Index];
+		FVector& CurrentVelocity = Velocities[Index];
+
+		const FVector GoalDirection = (Goals[Index] - Positions[Index]).GetSafeNormal();
+
+		FVector RearWheelPosition = CurrentPosition - CurrentHeading * VehicleConfig.WheelBaseLength * 0.5f;
+		FVector FrontWheelPosition = CurrentPosition + CurrentHeading * VehicleConfig.WheelBaseLength * 0.5f;
+
+		const FVector TargetHeading = (GoalDirection - CurrentHeading * 0.9f).GetSafeNormal();
+		const float TargetSteerAngle = FMath::Atan2
+		(
+			CurrentHeading.X * TargetHeading.Y - CurrentHeading.Y * TargetHeading.X,
+			CurrentHeading.X * TargetHeading.X + CurrentHeading.Y * TargetHeading.Y
+		);
+
+#ifndef USE_ANGULAR_VELOCITY_BASED_STEERING
+		float SteerAngle = FMath::Clamp(TargetSteerAngle * VehicleConfig.SteeringSpeed, -VehicleConfig.MaxSteeringAngle, VehicleConfig.MaxSteeringAngle);
+
+		RearWheelPosition += CurrentVelocity.Length() * CurrentHeading * TickRate;
+		FrontWheelPosition += CurrentVelocity.Length() * CurrentHeading.RotateAngleAxis(FMath::RadiansToDegrees(SteerAngle), FVector::UpVector) * TickRate;
+
+		CurrentHeading = (FrontWheelPosition - RearWheelPosition).GetSafeNormal();
+		CurrentPosition = (FrontWheelPosition + RearWheelPosition) * 0.5f;
+		CurrentVelocity = CurrentHeading * CurrentVelocity.Length();
+#else 
+		float SteerAngle = FMath::Clamp(TargetSteerAngle * VehicleConfig.SteeringSpeed, -VehicleConfig.MaxSteeringAngle, VehicleConfig.MaxSteeringAngle);
+
+		const float TurningRadius = VehicleConfig.WheelBaseLength / FMath::Abs(FMath::Sin(SteerAngle));
+		const float AngularSpeed = CurrentVelocity.Length() * FMath::Sign(SteerAngle) / TurningRadius;
+
+		CurrentHeading = CurrentHeading.RotateAngleAxis(AngularSpeed, FVector::UpVector);
+		CurrentVelocity = CurrentVelocity.Length() * CurrentHeading;
+		CurrentPosition += CurrentVelocity * TickRate;
+#endif
+		
 	}
 }
 
-void UTrSimulationSystem::UpdateVehicleKinematics(const int Index)
+void UTrSimulationSystem::UpdatePath(const uint32 Index)
 {
-	FVector& CurrentHeading = Headings[Index];
-	FVector& CurrentPosition = Positions[Index];
-	FVector& CurrentVelocity = Velocities[Index];
+	TRACE_CPUPROFILER_EVENT_SCOPE(UTrSimulationSystem::UpdatePath)
+	
+	FTrPath& CurrentPath = PathTransforms[Index].Path;
+	const TArray<uint32>& Connections = Nodes[CurrentPath.EndNodeIndex].GetConnections();
 
-	CurrentVelocity += CurrentHeading * Accelerations[Index] * TickRate; // v = u + a * t
-	CurrentPosition += CurrentVelocity * TickRate; // x1 = x0 + v * t
+	uint32 NewStartNodeIndex = CurrentPath.EndNodeIndex;
+	uint32 NewEndNodeIndex = Connections[0];
+
+	if(Connections.Num() == 2)
+	{
+		NewEndNodeIndex = Connections[0] == CurrentPath.StartNodeIndex ? Connections[1] : Connections[0];	
+	}
+	else
+	{
+		const FVector CurrentPathDirection = CurrentPath.Direction();
+
+		TArray<uint32> EligibleConnections;
+		for(uint32 Connection : Connections)
+		{
+			const FVector TargetPathDirection = (Nodes[Connection].GetLocation() - Nodes[NewStartNodeIndex].GetLocation()).GetSafeNormal();
+			const float Angle = FMath::Acos(CurrentPathDirection.Dot(TargetPathDirection));
+
+			if(Angle < PI / 2)
+			{
+				EligibleConnections.Push(Connection);
+			}
+		}
+
+		if(EligibleConnections.Num() > 0)
+		{
+			NewEndNodeIndex = EligibleConnections[FMath::RandRange(0, EligibleConnections.Num() - 1)];
+		}
+	}
+	
+	CurrentPath.Start = Nodes[NewStartNodeIndex].GetLocation();
+	CurrentPath.End = Nodes[NewEndNodeIndex].GetLocation();
+	CurrentPath.StartNodeIndex = NewStartNodeIndex;
+	CurrentPath.EndNodeIndex = NewEndNodeIndex;
 }
-
-#ifndef USE_ANGULAR_VEL_STEERING
-void UTrSimulationSystem::UpdateVehicleSteer(const int Index)
-{
-	FVector& CurrentHeading = Headings[Index];
-	FVector& CurrentPosition = Positions[Index];
-	FVector& CurrentVelocity = Velocities[Index];
-	float& CurrentSteerAngle = SteerAngles[Index];
-
-	const FVector GoalDirection = (Goals[Index] - Positions[Index]).GetSafeNormal();
-
-	FVector RearWheelPosition = CurrentPosition - CurrentHeading * VehicleConfig.WheelBaseLength * 0.5f;
-	FVector FrontWheelPosition = CurrentPosition + CurrentHeading * VehicleConfig.WheelBaseLength * 0.5f;
-
-	const FVector TargetHeading = (GoalDirection - CurrentHeading * 0.9f).GetSafeNormal();
-	const float TargetSteerAngle = FMath::Atan2
-	(
-		CurrentHeading.X * TargetHeading.Y - CurrentHeading.Y * TargetHeading.X,
-		CurrentHeading.X * TargetHeading.X + CurrentHeading.Y * TargetHeading.Y
-	);
-
-	CurrentSteerAngle = FMath::Atan((2 * VehicleConfig.WheelBaseLength * FMath::Sin(TargetSteerAngle))/ (PathFollowingConfig.LookAheadDistance));
-	CurrentSteerAngle = FMath::Clamp(CurrentSteerAngle * VehicleConfig.SteeringSpeed, -VehicleConfig.MaxSteeringAngle, VehicleConfig.MaxSteeringAngle);
-
-	RearWheelPosition += CurrentVelocity.Length() * CurrentHeading * TickRate;
-	FrontWheelPosition += CurrentVelocity.Length() * CurrentHeading.RotateAngleAxis(FMath::RadiansToDegrees(CurrentSteerAngle), FVector::UpVector) * TickRate;
-
-	CurrentHeading = (FrontWheelPosition - RearWheelPosition).GetSafeNormal();
-	CurrentPosition = (FrontWheelPosition + RearWheelPosition) * 0.5f;
-	CurrentVelocity = CurrentHeading * CurrentVelocity.Length();
-}
-#endif
-
-#ifdef USE_ANGULAR_VEL_STEERING
-void UTrSimulationSystem::UpdateVehicleSteer(const int Index)
-{
-	FVector& CurrentHeading = Headings[Index];
-	FVector& CurrentPosition = Positions[Index];
-	FVector& CurrentVelocity = Velocities[Index];
-	float& CurrentSteerAngle = SteerAngles[Index];
-
-	const FVector GoalDirection = (Goals[Index] - Positions[Index]).GetSafeNormal();
-
-	const FVector TargetHeading = (GoalDirection - CurrentHeading * 0.9f).GetSafeNormal();
-	const float TargetSteerAngle = FMath::Atan2
-	(
-		CurrentHeading.X * TargetHeading.Y - CurrentHeading.Y * TargetHeading.X,
-		CurrentHeading.X * TargetHeading.X + CurrentHeading.Y * TargetHeading.Y
-	);
-
-	CurrentSteerAngle = FMath::Atan((2 * VehicleConfig.WheelBaseLength * FMath::Sin(TargetSteerAngle))/ (PathFollowingConfig.LookAheadDistance));
-	CurrentSteerAngle = FMath::Clamp(CurrentSteerAngle * VehicleConfig.SteeringSpeed, -VehicleConfig.MaxSteeringAngle, VehicleConfig.MaxSteeringAngle);
-
-	const float TurningRadius = VehicleConfig.WheelBaseLength / FMath::Abs(FMath::Sin(CurrentSteerAngle));
-	const float AngularSpeed = CurrentVelocity.Length() * FMath::Sign(CurrentSteerAngle) / TurningRadius;
-
-	CurrentHeading = CurrentHeading.RotateAngleAxis(AngularSpeed, FVector::UpVector);
-	CurrentVelocity = CurrentVelocity.Length() * CurrentHeading;
-	CurrentPosition += CurrentVelocity * TickRate;
-}
-#endif
 
 FVector UTrSimulationSystem::ProjectPointOnPath(const FVector& Point, const FTrPath& Path) const
 {
@@ -357,7 +285,7 @@ FVector UTrSimulationSystem::ProjectPointOnPath(const FVector& Point, const FTrP
 	return Projection;
 }
 
-int UTrSimulationSystem::FindNearestPath(int EntityIndex, FVector& NearestProjection)
+int UTrSimulationSystem::FindNearestPath(int EntityIndex, FVector& NearestProjection) const
 {
 	NearestProjection = Positions[EntityIndex];
 	int NearestPathIndex = 0;
@@ -379,8 +307,10 @@ int UTrSimulationSystem::FindNearestPath(int EntityIndex, FVector& NearestProjec
 	return NearestPathIndex;
 }
 
-void UTrSimulationSystem::DebugVisualization()
+void UTrSimulationSystem::DrawDebug()
 {
+	TRACE_CPUPROFILER_EVENT_SCOPE(UTrSimulationSystem::DrawDebug)
+	
 	if (!GTrSimDebug)
 	{
 		return;
@@ -396,15 +326,15 @@ void UTrSimulationSystem::DebugVisualization()
 	}
 
 	GEngine->AddOnScreenDebugMessage(-1, GetWorld()->GetDeltaSeconds(), FColor::Green, FString::Printf(TEXT("Speed : %.2f km/h"), Velocities[0].Length() * 0.036));
-	GEngine->AddOnScreenDebugMessage(-1, GetWorld()->GetDeltaSeconds(), FColor::White, FString::Printf(TEXT("Acceleration : %.2f"), Accelerations[0]));
 }
 
-void UTrSimulationSystem::DrawInitialDebug()
+void UTrSimulationSystem::DrawFirstDebug()
 {
 	const UWorld* World = GetWorld();
 	for (const FRpSpatialGraphNode& Node : Nodes)
 	{
-		for (const uint32 ConnectedNodeIndex : Node.GetConnections())
+		const TArray<uint32>& Connections = Node.GetConnections();
+		for (const uint32 ConnectedNodeIndex : Connections)
 		{
 			DrawDebugLine(World, Node.GetLocation(), Nodes[ConnectedNodeIndex].GetLocation(), FColor::White, true, -1);
 		}
@@ -413,33 +343,10 @@ void UTrSimulationSystem::DrawInitialDebug()
 	GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::White, FString::Printf(TEXT("Simulating %d vehicles"), NumEntities));
 }
 
-void UTrSimulationSystem::InitializeJunctions()
+void UTrSimulationSystem::UpdateCollisionData()
 {
-	for (uint32 NodeIndex = 0, NumNodes = Nodes.Num(); NodeIndex < NumNodes; ++NodeIndex)
-	{
-		const FRpSpatialGraphNode& Node = Nodes[NodeIndex];
-		const TArray<uint32> Connections = Node.GetConnections().Array();
-		if (Connections.Num() > 2)
-		{
-			Junctions.Add(NodeIndex, Connections[0]);
-		}
-	}
-}
-
-void UTrSimulationSystem::UpdateJunctions()
-{
-	for (auto& Junction : Junctions)
-	{
-		const TArray<uint32> Connections = Nodes[Junction.Key].GetConnections().Array();
-		Junction.Value = Connections[FMath::RandRange(0, Connections.Num() - 1)];
-
-		const FVector Direction = (Nodes[Junction.Value].GetLocation() - Nodes[Junction.Key].GetLocation()).GetSafeNormal();
-		DrawDebugPoint(GetWorld(), Nodes[Junction.Key].GetLocation() + Direction * PathFollowingConfig.JunctionExtents, 3.0f, FColor::Green, false, JunctionUpdateRate);
-	}
-}
-
-void UTrSimulationSystem::UpdateLeadingVehicles()
-{
+	TRACE_CPUPROFILER_EVENT_SCOPE(UTrSimulationSystem::UpdateCollisionData)
+	
 	const float Bound = VehicleConfig.Dimensions.Y; 
 	for(int Index = 0; Index < NumEntities; ++Index)
 	{

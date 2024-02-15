@@ -42,7 +42,7 @@ struct TRAFFICAI_API FTrVehicleDynamics
 	float WheelBaseLength = 270;
 	
 	UPROPERTY(EditAnywhere)
-	float SteeringSpeed = 0.2f;
+	float SteeringSpeed = 1.0f;
 
 	UPROPERTY(EditAnywhere)
 	float MaxSteeringAngle = (UE_PI / 180.f) * 45.0f;
@@ -55,12 +55,6 @@ USTRUCT(BlueprintType)
 struct TRAFFICAI_API FTrPathFollowingConfiguration
 {
 	GENERATED_BODY()
-	
-	UPROPERTY(EditAnywhere, meta = (Units = "cm"))
-	float PathTrim = 500.0f;
-	
-	UPROPERTY(EditAnywhere, meta = (Units = "cm"))
-	float JunctionExtents = 1250.0f;
 	
 	UPROPERTY(EditAnywhere, meta = (Units = "cm"))
 	float PathFollowThreshold = 100.0f;
@@ -93,11 +87,4 @@ public:
 	
 	UPROPERTY(EditAnywhere, Category = "Timings", meta = (Units = "s"))
 	float TickRate = 0.016f;
-
-	UPROPERTY(EditAnywhere, Category = "Timings", meta = (Units = "s"))
-	float JunctionUpdateRate = 2.0f;
-
-	UPROPERTY(EditAnywhere, Category = "Timings", meta = (Units = "s"))
-	float LookAheadTime = 1.0f;
-	
 };

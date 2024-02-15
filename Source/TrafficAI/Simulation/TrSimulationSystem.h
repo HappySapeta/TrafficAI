@@ -46,15 +46,17 @@ protected:
 	
 	FVector ProjectPointOnPath(const FVector& Point, const FTrPath& Path) const;
 
-	int FindNearestPath(int EntityIndex, FVector& NearestProjection);
+	int FindNearestPath(int EntityIndex, FVector& NearestProjection) const;
+
+	float ScalarProjection(const FVector& V1, const FVector& V2) const { return V1.Dot(V2) / V2.Length(); }
 	
 #pragma endregion
 
 #pragma region Debug
 	
-	void DrawInitialDebug();
+	void DrawFirstDebug();
 
-	void DebugVisualization();
+	void DrawDebug();
 
 #pragma endregion
 	
@@ -62,57 +64,39 @@ private:
 
 	virtual void TickSimulation();
 
-	virtual void PathFollow();
-
-	virtual void UpdatePath(const uint32 Index);
-
-	virtual bool ShouldWaitAtJunction(uint32 Index);
-
-	virtual void HandleGoal();
-
-	virtual void SetAcceleration();
-
-	virtual void UpdateVehicle();
-
-	virtual void UpdateVehicleKinematics(int Index);
-
-	virtual void UpdateVehicleSteer(int Index);
-
-	void UpdateLeadingVehicles();
-
-#pragma region Junctions
+	virtual void SetGoals();
 	
-	void InitializeJunctions();
+	virtual void HandleGoals();
 
-	void UpdateJunctions();
+	virtual void UpdateKinematics();
 
-#pragma endregion
+	virtual void UpdateOrientations();
 
+	virtual void UpdateCollisionData();
+	
+	virtual void UpdatePath(const uint32 Index);
+	
 protected:
-
-	float TickRate = 0.016f;
-	float JunctionUpdateRate = 1.0f;
 
 	FTrVehicleDynamics VehicleConfig;
 	FTrPathFollowingConfiguration PathFollowingConfig;
-	
-private:
 	
 	int NumEntities;
 	TArray<FVector> Positions;
 	TArray<FVector> Velocities;
 	TArray<FVector> Headings;
 	TArray<FVector> Goals;
-	TArray<float> Accelerations;
-	TArray<float> SteerAngles;
 	TArray<FTrVehiclePathTransform> PathTransforms;
 	TArray<ETrState> States;
 	TArray<int> LeadingVehicleIndices;
 	TArray<FColor> DebugColors;
 	
 	TArray<FRpSpatialGraphNode> Nodes;
-	TMap<uint32, uint32> Junctions;
 
+private:
+
+	float TickRate = 0.016f;
+	
 	FTimerHandle SimTimerHandle;
 	FTimerHandle JunctionTimerHandle;
 };

@@ -177,7 +177,8 @@ void FTrVehicleStartCreator::CreateVehicleStartsOnGraph
 	uint32 NumNodes = static_cast<uint32>(Nodes->Num());
 	for (uint32 Index = 0; Index < NumNodes; ++Index)
 	{
-		for (uint32 ConnectedIndex : Nodes->operator[](Index).GetConnections())
+		const TArray<uint32>& Connections = Nodes->operator[](Index).GetConnections();
+		for (uint32 ConnectedIndex : Connections)
 		{
 			if (SeenEdges.Contains({Index, ConnectedIndex}) || SeenEdges.Contains({ConnectedIndex, Index}))
 			{
