@@ -6,6 +6,7 @@
 #include "TrSimulationData.h"
 #include "../Shared/TrTypes.h"
 #include "Ripple/Public/RpSpatialGraphComponent.h"
+#include "SpatialAcceleration/RpImplicitGrid.h"
 #include "TrSimulationSystem.generated.h"
 
 class UTrSimulationConfiguration;
@@ -82,7 +83,7 @@ protected:
 	FTrPathFollowingConfiguration PathFollowingConfig;
 	
 	int NumEntities;
-	TArray<FVector> Positions;
+	TSharedPtr<TArray<FVector>> Positions;
 	TArray<FVector> Velocities;
 	TArray<FVector> Headings;
 	TArray<FVector> Goals;
@@ -92,6 +93,7 @@ protected:
 	TArray<FColor> DebugColors;
 	
 	TArray<FRpSpatialGraphNode> Nodes;
+	FRpImplicitGrid ImplicitGrid;
 
 private:
 
