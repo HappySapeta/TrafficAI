@@ -65,7 +65,7 @@ void UTrSimulationSystem::Initialize
 
 	ImplicitGrid(FFloatRange(-5500.0f, 5500.0f), 20);
 	ImplicitGrid.SetPositionsArray(Positions);
-	ImplicitGrid.DrawDebugGrid(GetWorld());
+	//ImplicitGrid.DrawDebugGrid(GetWorld());
 	DrawFirstDebug();
 }
 
