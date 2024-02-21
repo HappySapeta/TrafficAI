@@ -381,7 +381,7 @@ void UTrSimulationSystem::UpdateCollisionData()
 		const int LeadingVehicleIndex = LeadingVehicleIndices[Index];
 		if(LeadingVehicleIndex != -1)
 		{
-			DrawDebugLine(GetWorld(), Positions->operator[](Index), Positions->operator[](LeadingVehicleIndex), DebugColors[LeadingVehicleIndex], false, TickRate);
+			//DrawDebugLine(GetWorld(), Positions->operator[](Index), Positions->operator[](LeadingVehicleIndex), DebugColors[LeadingVehicleIndex], false, TickRate);
 		}
 	}
 }
