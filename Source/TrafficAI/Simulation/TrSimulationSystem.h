@@ -98,7 +98,6 @@ protected:
 private:
 
 	float TickRate = 0.016f;
-	TArray<int> Results;
 	FTimerHandle SimTimerHandle;
 	FTimerHandle JunctionTimerHandle;
 };

@@ -63,10 +63,7 @@ void UTrSimulationSystem::Initialize
 		}
 	}
 
-	ImplicitGrid(FFloatRange(-5500.0f, 5500.0f), 20);
-	ImplicitGrid.SetPositionsArray(Positions);
-	//ImplicitGrid.DrawDebugGrid(GetWorld());
-	Results.Reserve(10);
+	ImplicitGrid.Initialize(FFloatRange(-7000.0f, 7000.0f), 20, Positions);
 	DrawFirstDebug();
 }
 
@@ -352,79 +349,37 @@ void UTrSimulationSystem::DrawFirstDebug()
 void UTrSimulationSystem::UpdateCollisionData()
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(UTrSimulationSystem::UpdateCollisionData)
-	
+
 	const UWorld* World = GetWorld();
+
+	FRpSearchResults Results;
 	const float Bound = VehicleConfig.Dimensions.Y; 
-#if 1
-	Results.Reset();
-	for(int Index = 0; Index < NumEntities; ++Index)
-	{
-		const FVector& CurrentPosition = Positions->operator[](Index);
-		ImplicitGrid.Search(CurrentPosition, 2000.0f, Results);
-		
-		LeadingVehicleIndices[Index] = -1;
-		float ClosestDistance = TNumericLimits<float>().Max();
-		FTransform CurrentTransform(Headings[Index].ToOrientationRotator(), Positions->operator[](Index));
-		for(int OtherIndex : Results)
-		{
-			if(OtherIndex == Index)
-			{
-				continue;
-			}
-
-			const FVector OtherLocalVector = CurrentTransform.InverseTransformPosition(Positions->operator[](OtherIndex));
-
-			if(OtherLocalVector.Y >= -Bound && OtherLocalVector.Y <= Bound)
-			{
-				const float Distance = OtherLocalVector.X;
-				if((Distance > VehicleConfig.Dimensions.X / 2) && Distance < ClosestDistance)
-				{
-					ClosestDistance = Distance;
-					LeadingVehicleIndices[Index] = OtherIndex;
-				}
-			}
-		}
-		
-		continue;
-		for(int OtherIndex : Results)
-		{
-			DrawDebugLine(World, CurrentPosition, Positions->operator[](OtherIndex), DebugColors[Index], false, TickRate);
-		}
-	}
-
-#else
-	for(int Index = 0; Index < NumEntities; ++Index)
-	{
-		LeadingVehicleIndices[Index] = -1;
-		float ClosestDistance = TNumericLimits<float>().Max();
-		FTransform CurrentTransform(Headings[Index].ToOrientationRotator(), Positions->operator[](Index));
-		for(int OtherIndex = 0; OtherIndex < NumEntities; ++OtherIndex)
-		{
-			if(OtherIndex == Index)
-			{
-				continue;
-			}
-
-			const FVector OtherLocalVector = CurrentTransform.InverseTransformPosition(Positions->operator[](OtherIndex));
-
-			if(OtherLocalVector.Y >= -Bound && OtherLocalVector.Y <= Bound)
-			{
-				const float Distance = OtherLocalVector.X;
-				if((Distance > VehicleConfig.Dimensions.X / 2) && Distance < ClosestDistance)
-				{
-					ClosestDistance = Distance;
-					LeadingVehicleIndices[Index] = OtherIndex;
-				}
-			}
-		}
-
-		continue;
-		const int LeadingVehicleIndex = LeadingVehicleIndices[Index];
-		if(LeadingVehicleIndex != -1)
-		{
-			DrawDebugLine(World, Positions->operator[](Index), Positions->operator[](LeadingVehicleIndex), DebugColors[LeadingVehicleIndex], false, TickRate);
-		}
-	}
-#endif
 	
+	for(int Index = 0; Index < NumEntities; ++Index)
+	{
+		Results.Reset();
+		const FVector& CurrentPosition = Positions->operator[](Index);
+		ImplicitGrid.RadialSearch(CurrentPosition, 2000.0f, Results);
+
+		LeadingVehicleIndices[Index] = -1;
+		float ClosestDistance = TNumericLimits<float>().Max();
+		FTransform CurrentTransform(Headings[Index].ToOrientationRotator(), CurrentPosition);
+		uint8 Count = Results.Num();
+		for(auto Itr = Results.Array.begin(); Count > 0; --Count, ++Itr)
+		{
+			const FVector& OtherPosition = Positions->operator[](*Itr);
+			const FVector OtherLocalVector = CurrentTransform.InverseTransformPosition(OtherPosition);
+			if(OtherLocalVector.Y >= -Bound && OtherLocalVector.Y <= Bound)
+			{
+				const float Distance = OtherLocalVector.X;
+				if(Distance > 0.0f && Distance < ClosestDistance)
+				{
+					ClosestDistance = Distance;
+					LeadingVehicleIndices[Index] = *Itr;
+				}
+			}
+
+			DrawDebugLine(World, CurrentPosition, OtherPosition, DebugColors[Index], false, TickRate);
+		}
+	}
 }
