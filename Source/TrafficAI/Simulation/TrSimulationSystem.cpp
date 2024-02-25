@@ -324,8 +324,8 @@ void UTrSimulationSystem::DrawDebug()
 	{
 		DrawDebugBox(World, Positions->operator[](Index), VehicleConfig.Dimensions, Headings[Index].ToOrientationQuat(), DebugColors[Index], false, TickRate);
 		DrawDebugDirectionalArrow(World, Positions->operator[](Index), Positions->operator[](Index) + Headings[Index] * VehicleConfig.Dimensions.X * 1.5f, 1000.0f, FColor::Red, false, TickRate);
-		DrawDebugPoint(World, Goals[Index], 2.0f, DebugColors[Index], false, TickRate);
-		DrawDebugLine(World, Positions->operator[](Index), Goals[Index], DebugColors[Index], false, TickRate);
+		//DrawDebugPoint(World, Goals[Index], 2.0f, DebugColors[Index], false, TickRate);
+		//DrawDebugLine(World, Positions->operator[](Index), Goals[Index], DebugColors[Index], false, TickRate);
 	}
 
 	GEngine->AddOnScreenDebugMessage(-1, GetWorld()->GetDeltaSeconds(), FColor::Green, FString::Printf(TEXT("Speed : %.2f km/h"), Velocities[0].Length() * 0.036));
@@ -379,7 +379,7 @@ void UTrSimulationSystem::UpdateCollisionData()
 				}
 			}
 
-			DrawDebugLine(World, CurrentPosition, OtherPosition, DebugColors[Index], false, TickRate);
+			//DrawDebugLine(World, CurrentPosition, OtherPosition, DebugColors[Index], false, TickRate);
 		}
 	}
 }
