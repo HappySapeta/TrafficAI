@@ -98,7 +98,6 @@ protected:
 private:
 
 	float TickRate = 0.016f;
-	
 	FTimerHandle SimTimerHandle;
 	FTimerHandle JunctionTimerHandle;
 };
