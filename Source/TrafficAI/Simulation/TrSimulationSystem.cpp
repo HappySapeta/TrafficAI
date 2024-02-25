@@ -353,13 +353,14 @@ void UTrSimulationSystem::UpdateCollisionData()
 	const UWorld* World = GetWorld();
 
 	FRpSearchResults Results;
-	const float Bound = VehicleConfig.Dimensions.Y; 
+	const float Bound = VehicleConfig.Dimensions.Y * 2.0f; 
 	
 	for(int Index = 0; Index < NumEntities; ++Index)
 	{
 		Results.Reset();
 		const FVector& CurrentPosition = Positions->operator[](Index);
-		ImplicitGrid.RadialSearch(CurrentPosition, 2000.0f, Results);
+		const FVector EndPosition = CurrentPosition + Headings[Index] * 2000.0f;
+		ImplicitGrid.LineSearch(CurrentPosition + Headings[Index] * 250.0f, EndPosition, Results, GetWorld());
 
 		LeadingVehicleIndices[Index] = -1;
 		float ClosestDistance = TNumericLimits<float>().Max();
