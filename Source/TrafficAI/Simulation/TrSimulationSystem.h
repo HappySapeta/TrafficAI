@@ -76,7 +76,11 @@ private:
 	virtual void UpdateCollisionData();
 	
 	virtual void UpdatePath(const uint32 Index);
+
+public:
 	
+	virtual void Initialize(FSubsystemCollectionBase& Collection) override {};
+
 protected:
 
 	FTrVehicleDynamics VehicleConfig;

@@ -324,8 +324,8 @@ void UTrSimulationSystem::DrawDebug()
 	{
 		DrawDebugBox(World, Positions->operator[](Index), VehicleConfig.Dimensions, Headings[Index].ToOrientationQuat(), DebugColors[Index], false, TickRate);
 		DrawDebugDirectionalArrow(World, Positions->operator[](Index), Positions->operator[](Index) + Headings[Index] * VehicleConfig.Dimensions.X * 1.5f, 1000.0f, FColor::Red, false, TickRate);
-		DrawDebugPoint(World, Goals[Index], 2.0f, DebugColors[Index], false, TickRate);
-		DrawDebugLine(World, Positions->operator[](Index), Goals[Index], DebugColors[Index], false, TickRate);
+		//DrawDebugPoint(World, Goals[Index], 2.0f, DebugColors[Index], false, TickRate);
+		//DrawDebugLine(World, Positions->operator[](Index), Goals[Index], DebugColors[Index], false, TickRate);
 	}
 
 	GEngine->AddOnScreenDebugMessage(-1, GetWorld()->GetDeltaSeconds(), FColor::Green, FString::Printf(TEXT("Speed : %.2f km/h"), Velocities[0].Length() * 0.036));
@@ -353,13 +353,14 @@ void UTrSimulationSystem::UpdateCollisionData()
 	const UWorld* World = GetWorld();
 
 	FRpSearchResults Results;
-	const float Bound = VehicleConfig.Dimensions.Y; 
+	const float Bound = VehicleConfig.Dimensions.Y * 2.0f; 
 	
 	for(int Index = 0; Index < NumEntities; ++Index)
 	{
 		Results.Reset();
 		const FVector& CurrentPosition = Positions->operator[](Index);
-		ImplicitGrid.RadialSearch(CurrentPosition, 2000.0f, Results);
+		const FVector EndPosition = CurrentPosition + Headings[Index] * 2000.0f;
+		ImplicitGrid.LineSearch(CurrentPosition + Headings[Index] * 250.0f, EndPosition, Results, GetWorld());
 
 		LeadingVehicleIndices[Index] = -1;
 		float ClosestDistance = TNumericLimits<float>().Max();
@@ -379,7 +380,7 @@ void UTrSimulationSystem::UpdateCollisionData()
 				}
 			}
 
-			DrawDebugLine(World, CurrentPosition, OtherPosition, DebugColors[Index], false, TickRate);
+			//DrawDebugLine(World, CurrentPosition, OtherPosition, DebugColors[Index], false, TickRate);
 		}
 	}
 }
