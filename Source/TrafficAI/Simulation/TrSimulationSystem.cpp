@@ -25,42 +25,39 @@ void UTrSimulationSystem::Initialize
 (
 	const UTrSimulationConfiguration* SimData,
 	const URpSpatialGraphComponent* GraphComponent,
-	TWeakPtr<TArray<FTrVehicleRepresentation>> TrafficEntities,
+	const TArray<FTrVehicleRepresentation>& TrafficEntities,
 	const TArray<FTrVehiclePathTransform>& TrafficVehicleStarts
 )
 {
-	if (TrafficEntities.IsValid())
-	{
-		NumEntities = TrafficEntities.Pin()->Num();
+	NumEntities = TrafficEntities.Num();
 
-		check(SimData)
-		VehicleConfig = SimData->VehicleConfig;
-		PathFollowingConfig = SimData->PathFollowingConfig;
-		TickRate = SimData->TickRate;
+	check(SimData)
+	VehicleConfig = SimData->VehicleConfig;
+	PathFollowingConfig = SimData->PathFollowingConfig;
+	TickRate = SimData->TickRate;
 
-		PathTransforms = TrafficVehicleStarts;
-		check(PathTransforms.Num() > 0);
+	PathTransforms = TrafficVehicleStarts;
+	check(PathTransforms.Num() > 0);
 
-		Nodes = *GraphComponent->GetNodes();
-		check(Nodes.Num() > 0);
+	Nodes = *GraphComponent->GetNodes();
+	check(Nodes.Num() > 0);
 
-		Positions = MakeShared<TArray<FVector>>();
+	Positions = MakeShared<TArray<FVector>>();
 		
-		for (int Index = 0; Index < NumEntities; ++Index)
-		{
-			const AActor* EntityActor = (*TrafficEntities.Pin())[Index].Dummy;
+	for (int Index = 0; Index < NumEntities; ++Index)
+	{
+		const AActor* EntityActor = TrafficEntities[Index].Dummy;
 
-			Positions->Push(EntityActor->GetActorLocation());
-			Velocities.Push(EntityActor->GetVelocity());
-			Headings.Push(EntityActor->GetActorForwardVector());
-			States.Push(ETrState::None);
-			LeadingVehicleIndices.Push(-1);
-			DebugColors.Push(FColor::MakeRandomColor());
+		Positions->Push(EntityActor->GetActorLocation());
+		Velocities.Push(EntityActor->GetVelocity());
+		Headings.Push(EntityActor->GetActorForwardVector());
+		States.Push(ETrState::None);
+		LeadingVehicleIndices.Push(-1);
+		DebugColors.Push(FColor::MakeRandomColor());
 
-			FVector NearestProjectionPoint;
-			FindNearestPath(Index, NearestProjectionPoint);
-			Goals.Push(NearestProjectionPoint);
-		}
+		FVector NearestProjectionPoint;
+		FindNearestPath(Index, NearestProjectionPoint);
+		Goals.Push(NearestProjectionPoint);
 	}
 
 	ImplicitGrid.Initialize(FFloatRange(-7000.0f, 7000.0f), 20, Positions);
@@ -79,6 +76,25 @@ void UTrSimulationSystem::StartSimulation()
 void UTrSimulationSystem::StopSimulation()
 {
 	GetWorld()->GetTimerManager().ClearTimer(SimTimerHandle);
+}
+
+void UTrSimulationSystem::GetVehicleTransforms(TArray<FTransform>& OutTransforms)
+{
+	if(OutTransforms.Num() < NumEntities)
+	{
+		OutTransforms.Init(FTransform::Identity, NumEntities);
+	}
+	
+	for(int Index = 0; Index < NumEntities; ++Index)
+	{
+		FTransform Transform
+		{
+			Headings[Index].ToOrientationQuat(),
+			Positions->operator[](Index)
+		};
+
+		OutTransforms[Index] = MoveTemp(Transform);
+	}
 }
 
 void UTrSimulationSystem::TickSimulation()

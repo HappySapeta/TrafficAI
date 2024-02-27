@@ -55,9 +55,7 @@ class TRAFFICAI_API UTrRepresentationSystem : public UWorldSubsystem
 	GENERATED_BODY()
 
 public:
-
-	UTrRepresentationSystem();
-
+	
 	// Spawn Vehicles
 	UFUNCTION(BlueprintCallable)
 	void Spawn(const URpSpatialGraphComponent* NewGraphComponent, const UTrSpawnConfiguration* NewRequestData);
@@ -69,9 +67,11 @@ public:
 	// Assign an actor whose distance is used for determining the appropriate Level of Detail to be used.
 	UFUNCTION(BlueprintCallable)
 	void SetFocus(const AActor* Actor) { POVActor = Actor; }
+
+	void StartSimulation() {};
 	
 	// Get a weak pointer to an array of all entities.
-	TWeakPtr<TArray<FTrVehicleRepresentation>> GetEntities() const { return Entities; }
+	const TArray<FTrVehicleRepresentation>& GetEntities() const { return Entities; }
 
 	virtual void PostInitialize() override;
 
@@ -99,7 +99,7 @@ protected:
 
 	FTrVehicleStartCreator VehicleStartCreator;
 	
-	TSharedPtr<TArray<FTrVehicleRepresentation>> Entities;
+	TArray<FTrVehicleRepresentation> Entities;
 
 	UPROPERTY()
 	TObjectPtr<class ATrISMCManager> ISMCManager;
@@ -124,7 +124,7 @@ private:
 
 	// This actor's distance is used to determine the transition between LODs.
 	UPROPERTY()
-	const AActor* POVActor;
+	const AActor* POVActor = nullptr;
 	
 private:
 

@@ -16,12 +16,6 @@
 #include "GameFramework/PlayerController.h"
 #include "Components/HierarchicalInstancedStaticMeshComponent.h"
 
-UTrRepresentationSystem::UTrRepresentationSystem()
-{
-	Entities = MakeShared<TArray<FTrVehicleRepresentation>>();
-	POVActor = nullptr;
-}
-
 void UTrRepresentationSystem::Spawn(const URpSpatialGraphComponent* NewGraphComponent, const UTrSpawnConfiguration* NewSpawnConfiguration)
 {
 	if (IsValid(NewGraphComponent))
@@ -49,7 +43,7 @@ void UTrRepresentationSystem::SpawnDeferred(const FTrafficAISpawnRequest& SpawnR
 	{
 		BatchProcessor->QueueCommand("SpawnProcessor", [this, SpawnRequest]()
 		{
-			if(Entities->Num() >= MaxInstances)
+			if(Entities.Num() >= MaxInstances)
 			{
 				return;
 			}
@@ -65,7 +59,7 @@ void UTrRepresentationSystem::SpawnDeferred(const FTrafficAISpawnRequest& SpawnR
 				       TEXT("[UTrRepresentationSystem][ProcessSpawnRequests] Reference to the ISMCManager is null."))
 				const int32 ISMIndex = ISMCManager->
 					AddInstance(SpawnRequest.LOD2_Mesh, nullptr, SpawnRequest.Transform);
-				Entities->Add({SpawnRequest.LOD2_Mesh, ISMIndex, NewActor});
+				Entities.Add({SpawnRequest.LOD2_Mesh, ISMIndex, NewActor});
 				SET_ACTOR_ENABLED(NewActor, false);
 			}
 		});
@@ -108,7 +102,7 @@ void UTrRepresentationSystem::InitializeLODUpdater()
 			TRACE_CPUPROFILER_EVENT_SCOPE(UTrRepresentationSystem::UpdateLODLambda)
 
 			static int EntityIndex = 0;
-			if (EntityIndex >= Entities->Num())
+			if (EntityIndex >= Entities.Num())
 			{
 				EntityIndex = 0;
 			}
@@ -125,9 +119,9 @@ void UTrRepresentationSystem::InitializeLODUpdater()
 
 			const FVector& FocusLocation = POVActor->GetActorLocation();
 			int CurrentBatchSize = 0;
-			while (EntityIndex < Entities->Num() && CurrentBatchSize < ProcessingBatchSize)
+			while (EntityIndex < Entities.Num() && CurrentBatchSize < ProcessingBatchSize)
 			{
-				const FTrVehicleRepresentation& Entity = Entities->operator[](EntityIndex);
+				const FTrVehicleRepresentation& Entity = Entities.operator[](EntityIndex);
 				const float Distance = FVector::Distance(FocusLocation, Entity.Dummy->GetActorLocation());
 
 				// Toggle Actors.

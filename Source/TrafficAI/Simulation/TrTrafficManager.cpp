@@ -32,6 +32,7 @@ void ATrTrafficManager::StartSimulation()
 		bInitialized = true;
 	}
 	SimulationSystem->StartSimulation();
+	RepresentationSystem->StartSimulation();
 }
 
 void ATrTrafficManager::StopSimulation()

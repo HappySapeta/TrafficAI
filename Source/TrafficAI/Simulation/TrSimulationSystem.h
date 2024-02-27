@@ -33,13 +33,17 @@ public:
 	(
 		const UTrSimulationConfiguration* SimData,
 		const URpSpatialGraphComponent* GraphComponent,
-	    TWeakPtr<TArray<FTrVehicleRepresentation>> TrafficEntities,
-	    const TArray<FTrVehiclePathTransform>& TrafficVehicleStarts
+		const TArray<FTrVehicleRepresentation>& TrafficEntities,
+		const TArray<FTrVehiclePathTransform>& TrafficVehicleStarts
 	);
+	
+	virtual void Initialize(FSubsystemCollectionBase& Collection) override {};
 	
 	void StartSimulation();
 
 	void StopSimulation();
+
+	void GetVehicleTransforms(TArray<FTransform>& OutTransforms);
 
 protected:
 
@@ -76,10 +80,6 @@ private:
 	virtual void UpdateCollisionData();
 	
 	virtual void UpdatePath(const uint32 Index);
-
-public:
-	
-	virtual void Initialize(FSubsystemCollectionBase& Collection) override {};
 
 protected:
 
