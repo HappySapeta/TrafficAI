@@ -52,13 +52,10 @@ void UTrRepresentationSystem::SpawnDeferred(const FTrafficAISpawnRequest& SpawnR
 #if UE_EDITOR
 			SpawnParameters.bHideFromSceneOutliner = true;
 #endif
-			if (AActor* NewActor = GetWorld()->SpawnActor(SpawnRequest.LOD1_Actor, &SpawnRequest.Transform,
-			                                              SpawnParameters))
+			if (AActor* NewActor = GetWorld()->SpawnActor(SpawnRequest.LOD1_Actor, &SpawnRequest.Transform, SpawnParameters))
 			{
-				checkf(ISMCManager,
-				       TEXT("[UTrRepresentationSystem][ProcessSpawnRequests] Reference to the ISMCManager is null."))
-				const int32 ISMIndex = ISMCManager->
-					AddInstance(SpawnRequest.LOD2_Mesh, nullptr, SpawnRequest.Transform);
+				checkf(ISMCManager, TEXT("[UTrRepresentationSystem][ProcessSpawnRequests] Reference to the ISMCManager is null."))
+				const int32 ISMIndex = ISMCManager->AddInstance(SpawnRequest.LOD2_Mesh, nullptr, SpawnRequest.Transform);
 				Entities.Add({SpawnRequest.LOD2_Mesh, ISMIndex, NewActor});
 				SET_ACTOR_ENABLED(NewActor, false);
 			}
@@ -128,8 +125,7 @@ void UTrRepresentationSystem::InitializeLODUpdater()
 				const FVector& NewScale = bIsMeshRelevant * FVector::OneVector;
 				FTransform MeshTransform = Entity.Dummy->GetActorTransform();
 				MeshTransform.SetScale3D(NewScale);
-				ISMCManager->GetISMC(Entity.Mesh)->UpdateInstanceTransform(
-					Entity.InstanceIndex, MeshTransform, true, true, false);
+				ISMCManager->GetISMC(Entity.Mesh)->UpdateInstanceTransform(Entity.InstanceIndex, MeshTransform, true, true, false);
 
 				++EntityIndex;
 				++CurrentBatchSize;
@@ -223,7 +219,6 @@ void FTrVehicleStartCreator::CreateStartTransformsOnEdge
 	const FVector NewForwardVector = (Destination - Start).GetSafeNormal();
 	const FRotator NewRotation = UKismetMathLibrary::MakeRotFromX(NewForwardVector);
 	const FVector NewRightVector = NewForwardVector.Cross(FVector::UpVector);
-
 	
 	const float EdgeLength = FVector::Distance(Start, Destination);
 	const float NormMinSeparation = SpawnConfiguration->Separation.GetLowerBoundValue() /  EdgeLength;
