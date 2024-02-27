@@ -33,7 +33,7 @@ public:
 	FTrVehicleStartCreator() = default;
 	
 	// Traverse the edges of the Graph
-	void CreateVehicleStartsOnGraph
+	static void CreateVehicleStartsOnGraph
 	(
 		const URpSpatialGraphComponent* GraphComponent,
 		const UTrSpawnConfiguration* SpawnConfiguration,
@@ -42,7 +42,7 @@ public:
 	);
 
 	// Create spawn points along an edge
-	void CreateStartTransformsOnEdge(const FVector& Start, const FVector& Destination, const UTrSpawnConfiguration* SpawnConfiguration, TArray<
+	static void CreateStartTransformsOnEdge(const FVector& Start, const FVector& Destination, const UTrSpawnConfiguration* SpawnConfiguration, TArray<
 	                                 FTrVehiclePathTransform>& OutStartData);
 };
 
@@ -92,8 +92,6 @@ private:
 	void InitializeLODUpdater();
 
 protected:
-
-	FTrVehicleStartCreator VehicleStartCreator;
 	
 	TArray<FTrVehicleRepresentation> Entities;
 
@@ -121,8 +119,6 @@ private:
 private:
 
 	FTimerHandle MainTimer;
-
 	TArray<FTrafficAISpawnRequest> SpawnRequests;
-
 	TArray<FTrVehiclePathTransform> Starts;
 };

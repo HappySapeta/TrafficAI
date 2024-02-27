@@ -20,7 +20,7 @@ void UTrRepresentationSystem::Spawn(const URpSpatialGraphComponent* NewGraphComp
 {
 	if (IsValid(NewGraphComponent))
 	{
-		VehicleStartCreator.CreateVehicleStartsOnGraph(NewGraphComponent, NewSpawnConfiguration, MaxInstances, Starts);
+		FTrVehicleStartCreator::CreateVehicleStartsOnGraph(NewGraphComponent, NewSpawnConfiguration, MaxInstances, Starts);
 
 		for (const FTrVehiclePathTransform& StartData : Starts)
 		{
@@ -177,7 +177,7 @@ void FTrVehicleStartCreator::CreateVehicleStartsOnGraph
 			const FVector& Node1Location = Nodes->operator[](Index).GetLocation();
 			const FVector& Node2Location = Nodes->operator[](ConnectedIndex).GetLocation();
 
-			auto PushVehicleStartsLambda = [this, SpawnConfiguration, MaxInstances, &OutVehicleStarts]
+			auto PushVehicleStartsLambda = [SpawnConfiguration, MaxInstances, &OutVehicleStarts]
 			(
 				const FVector& FirstLocation,
 				const FVector& SecondLocation,
