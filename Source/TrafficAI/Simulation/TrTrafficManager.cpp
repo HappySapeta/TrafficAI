@@ -16,7 +16,7 @@ ATrTrafficManager::ATrTrafficManager()
 
 void ATrTrafficManager::SpawnVehicles()
 {
-	RepresentationSystem->Spawn(SpatialGraphComponent, SpawnConfiguration);
+	RepresentationSystem->SpawnOnGraph(SpatialGraphComponent, SpawnConfiguration);
 }
 
 void ATrTrafficManager::InitializeSimulator()

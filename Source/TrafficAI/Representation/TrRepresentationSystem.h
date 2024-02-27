@@ -12,12 +12,11 @@ struct TRAFFICAI_API FTrafficAISpawnRequest
 {
 	GENERATED_BODY()
 
-	// LOD2_Mesh used by the Instanced Static LOD2_Mesh renderer.
-	// (Note - LOD2_Mesh LODs are currently not supported.)
+	// Static Mesh used by the Instanced Static Mesh Renderer.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	UStaticMesh* LOD2_Mesh;
 
-	// Low-detail actor entirely controlled by AI.
+	// An Actor that represents an Active vehicle with maximum details.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TSubclassOf<AActor> LOD1_Actor;
 
@@ -29,8 +28,6 @@ struct TRAFFICAI_API FTrafficAISpawnRequest
 class TRAFFICAI_API FTrVehicleStartCreator
 {
 public:
-
-	FTrVehicleStartCreator() = default;
 	
 	// Traverse the edges of the Graph
 	static void CreateVehicleStartsOnGraph
@@ -42,8 +39,13 @@ public:
 	);
 
 	// Create spawn points along an edge
-	static void CreateStartTransformsOnEdge(const FVector& Start, const FVector& Destination, const UTrSpawnConfiguration* SpawnConfiguration, TArray<
-	                                 FTrVehiclePathTransform>& OutStartData);
+	static void CreateStartTransformsOnEdge
+	(
+		const FVector& Start,
+		const FVector& Destination,
+		const UTrSpawnConfiguration* SpawnConfiguration,
+		TArray<FTrVehiclePathTransform>& OutStartData
+	);
 };
 
 /**
@@ -58,16 +60,19 @@ public:
 	
 	// Spawn Vehicles
 	UFUNCTION(BlueprintCallable)
-	void Spawn(const URpSpatialGraphComponent* NewGraphComponent, const UTrSpawnConfiguration* NewRequestData);
+	void SpawnOnGraph(const URpSpatialGraphComponent* NewGraphComponent, const UTrSpawnConfiguration* NewRequestData);
 
 	// Push a request to spawn an Entity. The request is not guaranteed to be processed immediately.
 	UFUNCTION(BlueprintCallable)
-	void SpawnDeferred(const FTrafficAISpawnRequest& SpawnRequest);
+	void SpawnSingleVehicle(const FTrafficAISpawnRequest& SpawnRequest);
 
-	void StartSimulation() {};
-	
-	// Get a weak pointer to an array of all entities.
+	// Returns a const reference to an array of Entities.
 	const TArray<FTrVehicleRepresentation>& GetEntities() const { return Entities; }
+
+	// Returns a const reference to an array of Vehicle Start Transforms.
+	const TArray<FTrVehiclePathTransform>& GetVehicleStarts() const { return VehicleStarts; }
+	
+	void StartSimulation() {};
 
 	virtual void PostInitialize() override;
 
@@ -76,8 +81,6 @@ public:
 
 	// Create this Subsystem only if playing in PIE or in game.
 	virtual bool ShouldCreateSubsystem(UObject* Outer) const override;
-
-	TArray<FTrVehiclePathTransform> GetVehicleStarts();
 
 protected:
 	
@@ -120,5 +123,5 @@ private:
 
 	FTimerHandle MainTimer;
 	TArray<FTrafficAISpawnRequest> SpawnRequests;
-	TArray<FTrVehiclePathTransform> Starts;
+	TArray<FTrVehiclePathTransform> VehicleStarts;
 };

@@ -16,13 +16,13 @@
 #include "GameFramework/PlayerController.h"
 #include "Components/HierarchicalInstancedStaticMeshComponent.h"
 
-void UTrRepresentationSystem::Spawn(const URpSpatialGraphComponent* NewGraphComponent, const UTrSpawnConfiguration* NewSpawnConfiguration)
+void UTrRepresentationSystem::SpawnOnGraph(const URpSpatialGraphComponent* NewGraphComponent, const UTrSpawnConfiguration* NewSpawnConfiguration)
 {
 	if (IsValid(NewGraphComponent))
 	{
-		FTrVehicleStartCreator::CreateVehicleStartsOnGraph(NewGraphComponent, NewSpawnConfiguration, MaxInstances, Starts);
+		FTrVehicleStartCreator::CreateVehicleStartsOnGraph(NewGraphComponent, NewSpawnConfiguration, MaxInstances, VehicleStarts);
 
-		for (const FTrVehiclePathTransform& StartData : Starts)
+		for (const FTrVehiclePathTransform& StartData : VehicleStarts)
 		{
 			FTrafficAISpawnRequest NewSpawnRequest;
 			NewSpawnRequest.Transform = StartData.Transform;
@@ -31,12 +31,12 @@ void UTrRepresentationSystem::Spawn(const URpSpatialGraphComponent* NewGraphComp
 			NewSpawnRequest.LOD1_Actor = NewSpawnConfiguration->TrafficDefinitions[0].ActorClass;
 			NewSpawnRequest.LOD2_Mesh = NewSpawnConfiguration->TrafficDefinitions[0].StaticMesh;
 
-			SpawnDeferred(NewSpawnRequest);
+			SpawnSingleVehicle(NewSpawnRequest);
 		}
 	}
 }
 
-void UTrRepresentationSystem::SpawnDeferred(const FTrafficAISpawnRequest& SpawnRequest)
+void UTrRepresentationSystem::SpawnSingleVehicle(const FTrafficAISpawnRequest& SpawnRequest)
 {
 	URpDeferredBatchProcessingSystem* BatchProcessor = GetWorld()->GetSubsystem<URpDeferredBatchProcessingSystem>();
 	if (ensure(BatchProcessor))
@@ -69,11 +69,6 @@ bool UTrRepresentationSystem::ShouldCreateSubsystem(UObject* Outer) const
 	return (GEditor && GEditor->IsPlaySessionInProgress());
 #endif
 	return true;
-}
-
-TArray<FTrVehiclePathTransform> UTrRepresentationSystem::GetVehicleStarts()
-{
-	return Starts;
 }
 
 void UTrRepresentationSystem::Initialize(FSubsystemCollectionBase& Collection)
