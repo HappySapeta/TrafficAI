@@ -64,10 +64,6 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void SpawnDeferred(const FTrafficAISpawnRequest& SpawnRequest);
 
-	// Assign an actor whose distance is used for determining the appropriate Level of Detail to be used.
-	UFUNCTION(BlueprintCallable)
-	void SetFocus(const AActor* Actor) { POVActor = Actor; }
-
 	void StartSimulation() {};
 	
 	// Get a weak pointer to an array of all entities.
@@ -121,10 +117,6 @@ private:
 	// The range within which Static Mesh Instances replace Actors.
 	UPROPERTY(Config, EditAnywhere, Category = "Representation System | Update Settings")
 	FFloatRange StaticMeshRelevancyRange;
-
-	// This actor's distance is used to determine the transition between LODs.
-	UPROPERTY()
-	const AActor* POVActor = nullptr;
 	
 private:
 

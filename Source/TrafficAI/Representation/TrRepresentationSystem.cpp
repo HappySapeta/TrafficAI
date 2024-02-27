@@ -107,17 +107,12 @@ void UTrRepresentationSystem::InitializeLODUpdater()
 				EntityIndex = 0;
 			}
 
-			if (!IsValid(POVActor))
+			FVector FocusLocation(0.0f);
+			if(APawn* Pawn = GetWorld()->GetFirstPlayerController()->GetPawn())
 			{
-				POVActor = GetWorld()->GetFirstPlayerController()->GetPawn();
-				if (!ensureMsgf(IsValid(POVActor),
-				                TEXT("[UTrRepresentationSystem::UpdateLODs] No focussed actor has been set.")))
-				{
-					return;
-				}
+				FocusLocation = Pawn->GetActorLocation();	
 			}
 
-			const FVector& FocusLocation = POVActor->GetActorLocation();
 			int CurrentBatchSize = 0;
 			while (EntityIndex < Entities.Num() && CurrentBatchSize < ProcessingBatchSize)
 			{
