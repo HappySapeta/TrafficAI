@@ -9,44 +9,47 @@
 ATrTrafficManager::ATrTrafficManager()
 {
 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = false;
+	PrimaryActorTick.bCanEverTick = true;
 
 	SpatialGraphComponent = CreateDefaultSubobject<URpSpatialGraphComponent>(TEXT("SpatialGraphComponent"));
-}
-
-void ATrTrafficManager::SpawnVehicles()
-{
-	RepresentationSystem->SpawnOnGraph(SpatialGraphComponent, SpawnConfiguration);
-}
-
-void ATrTrafficManager::InitializeSimulator()
-{
-	SimulationSystem->Initialize(SimulationConfiguration, SpatialGraphComponent, RepresentationSystem->GetEntities(), RepresentationSystem->GetVehicleStarts());
-}
-
-void ATrTrafficManager::StartSimulation()
-{
-	if(!bInitialized)
-	{
-		InitializeSimulator();
-		bInitialized = true;
-	}
-	SimulationSystem->StartSimulation();
-	RepresentationSystem->StartSimulation();
-}
-
-void ATrTrafficManager::StopSimulation()
-{
-	SimulationSystem->StopSimulation();
 }
 
 void ATrTrafficManager::BeginPlay()
 {
 	const UWorld* World = GetWorld();
-	check(World);
 
+	bSimulate = false;
+	
 	RepresentationSystem = World->GetSubsystem<UTrRepresentationSystem>();
 	SimulationSystem = World->GetSubsystem<UTrSimulationSystem>();
 	
 	Super::BeginPlay();
+}
+
+void ATrTrafficManager::Tick(float DeltaSeconds)
+{
+	if(!bSimulate)
+	{
+		return;
+	}
+	
+	SimulationSystem->TickSimulation(DeltaSeconds);
+	RepresentationSystem->UpdateLODs();
+	Super::Tick(DeltaSeconds);
+}
+
+void ATrTrafficManager::SpawnVehicles()
+{
+	RepresentationSystem->SpawnVehiclesOnGraph(SpatialGraphComponent, SpawnConfiguration);
+	SimulationSystem->Initialize(SimulationConfiguration, SpatialGraphComponent, RepresentationSystem->GetEntities(), RepresentationSystem->GetVehicleStarts());
+}
+
+void ATrTrafficManager::StartSimulation()
+{
+	bSimulate = true;
+}
+
+void ATrTrafficManager::StopSimulation()
+{
+	bSimulate = false;
 }

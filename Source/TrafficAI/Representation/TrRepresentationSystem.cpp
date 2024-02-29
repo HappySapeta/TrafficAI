@@ -10,13 +10,12 @@
 #include "TrISMCManager.h"
 
 #include "RpSpatialGraphComponent.h"
-#include "DeferredBatchProcessor/RpDeferredBatchProcessingSystem.h"
 
 #include "Kismet/KismetMathLibrary.h"
 #include "GameFramework/PlayerController.h"
 #include "Components/HierarchicalInstancedStaticMeshComponent.h"
 
-void UTrRepresentationSystem::SpawnOnGraph(const URpSpatialGraphComponent* NewGraphComponent, const UTrSpawnConfiguration* NewSpawnConfiguration)
+void UTrRepresentationSystem::SpawnVehiclesOnGraph(const URpSpatialGraphComponent* NewGraphComponent, const UTrSpawnConfiguration* NewSpawnConfiguration)
 {
 	if (IsValid(NewGraphComponent))
 	{
@@ -38,28 +37,64 @@ void UTrRepresentationSystem::SpawnOnGraph(const URpSpatialGraphComponent* NewGr
 
 void UTrRepresentationSystem::SpawnSingleVehicle(const FTrafficAISpawnRequest& SpawnRequest)
 {
-	URpDeferredBatchProcessingSystem* BatchProcessor = GetWorld()->GetSubsystem<URpDeferredBatchProcessingSystem>();
-	if (ensure(BatchProcessor))
+	if(!ISMCManager)
 	{
-		BatchProcessor->QueueCommand("SpawnProcessor", [this, SpawnRequest]()
-		{
-			if(Entities.Num() >= MaxInstances)
-			{
-				return;
-			}
+		ISMCManager = GetWorld()->SpawnActor<ATrISMCManager>();
+	}
+	
+	if(Entities.Num() >= MaxInstances)
+	{
+		return;
+	}
 			
-			static FActorSpawnParameters SpawnParameters;
+	static FActorSpawnParameters SpawnParameters;
 #if UE_EDITOR
-			SpawnParameters.bHideFromSceneOutliner = true;
+	SpawnParameters.bHideFromSceneOutliner = true;
 #endif
-			if (AActor* NewActor = GetWorld()->SpawnActor(SpawnRequest.LOD1_Actor, &SpawnRequest.Transform, SpawnParameters))
-			{
-				checkf(ISMCManager, TEXT("[UTrRepresentationSystem][ProcessSpawnRequests] Reference to the ISMCManager is null."))
-				const int32 ISMIndex = ISMCManager->AddInstance(SpawnRequest.LOD2_Mesh, nullptr, SpawnRequest.Transform);
-				Entities.Add({SpawnRequest.LOD2_Mesh, ISMIndex, NewActor});
-				SET_ACTOR_ENABLED(NewActor, false);
-			}
-		});
+	if (AActor* NewActor = GetWorld()->SpawnActor(SpawnRequest.LOD1_Actor, &SpawnRequest.Transform, SpawnParameters))
+	{
+		checkf(ISMCManager, TEXT("[UTrRepresentationSystem][ProcessSpawnRequests] Reference to the ISMCManager is null."))
+		const int32 ISMIndex = ISMCManager->AddInstance(SpawnRequest.LOD2_Mesh, nullptr, SpawnRequest.Transform);
+		Entities.Add({SpawnRequest.LOD2_Mesh, ISMIndex, NewActor});
+		SET_ACTOR_ENABLED(NewActor, false);
+	}
+}
+
+void UTrRepresentationSystem::UpdateLODs()
+{
+	TRACE_CPUPROFILER_EVENT_SCOPE(UTrRepresentationSystem::UpdateLODLambda)
+
+	static int EntityIndex = 0;
+	if (EntityIndex >= Entities.Num())
+	{
+		EntityIndex = 0;
+	}
+
+	FVector FocusLocation(0.0f);
+	if(APawn* Pawn = GetWorld()->GetFirstPlayerController()->GetPawn())
+	{
+		FocusLocation = Pawn->GetActorLocation();	
+	}
+
+	int CurrentBatchSize = 0;
+	while (EntityIndex < Entities.Num() && CurrentBatchSize < ProcessingBatchSize)
+	{
+		const FTrVehicleRepresentation& Entity = Entities.operator[](EntityIndex);
+		const float Distance = FVector::Distance(FocusLocation, Entity.Dummy->GetActorLocation());
+
+		// Toggle Actors.
+		const bool bIsActorRelevant = ActorRelevancyRange.Contains(Distance);
+		SET_ACTOR_ENABLED(Entity.Dummy, bIsActorRelevant);
+
+		// Toggle ISMCs.
+		const bool bIsMeshRelevant = !bIsActorRelevant && StaticMeshRelevancyRange.Contains(Distance);
+		const FVector& NewScale = bIsMeshRelevant * FVector::OneVector;
+		FTransform MeshTransform = Entity.Dummy->GetActorTransform();
+		MeshTransform.SetScale3D(NewScale);
+		ISMCManager->GetISMC(Entity.Mesh)->UpdateInstanceTransform(Entity.InstanceIndex, MeshTransform, true, true, false);
+
+		++EntityIndex;
+		++CurrentBatchSize;
 	}
 }
 
@@ -71,74 +106,10 @@ bool UTrRepresentationSystem::ShouldCreateSubsystem(UObject* Outer) const
 	return true;
 }
 
-void UTrRepresentationSystem::Initialize(FSubsystemCollectionBase& Collection)
-{
-	UWorld* World = GetWorld();
-	ISMCManager = World->SpawnActor<ATrISMCManager>();
-}
-
-void UTrRepresentationSystem::PostInitialize()
-{
-	InitializeLODUpdater();
-	Super::PostInitialize();
-}
-
-void UTrRepresentationSystem::InitializeLODUpdater()
-{
-	// TODO : Can we completely rely on the Batch Processor to do the LOD update instead of using custom batching logic ?
-	URpDeferredBatchProcessingSystem* BatchProcessor = GetWorld()->GetSubsystem<URpDeferredBatchProcessingSystem>();
-	if (ensureMsgf(BatchProcessor, TEXT("BatchProcessor not found.")))
-	{
-		BatchProcessor->QueueCommand("LODUpdateProcessor", [this]()
-		{
-			TRACE_CPUPROFILER_EVENT_SCOPE(UTrRepresentationSystem::UpdateLODLambda)
-
-			static int EntityIndex = 0;
-			if (EntityIndex >= Entities.Num())
-			{
-				EntityIndex = 0;
-			}
-
-			FVector FocusLocation(0.0f);
-			if(APawn* Pawn = GetWorld()->GetFirstPlayerController()->GetPawn())
-			{
-				FocusLocation = Pawn->GetActorLocation();	
-			}
-
-			int CurrentBatchSize = 0;
-			while (EntityIndex < Entities.Num() && CurrentBatchSize < ProcessingBatchSize)
-			{
-				const FTrVehicleRepresentation& Entity = Entities.operator[](EntityIndex);
-				const float Distance = FVector::Distance(FocusLocation, Entity.Dummy->GetActorLocation());
-
-				// Toggle Actors.
-				const bool bIsActorRelevant = ActorRelevancyRange.Contains(Distance);
-				SET_ACTOR_ENABLED(Entity.Dummy, bIsActorRelevant);
-
-				// Toggle ISMCs.
-				const bool bIsMeshRelevant = !bIsActorRelevant && StaticMeshRelevancyRange.Contains(Distance);
-				const FVector& NewScale = bIsMeshRelevant * FVector::OneVector;
-				FTransform MeshTransform = Entity.Dummy->GetActorTransform();
-				MeshTransform.SetScale3D(NewScale);
-				ISMCManager->GetISMC(Entity.Mesh)->UpdateInstanceTransform(Entity.InstanceIndex, MeshTransform, true, true, false);
-
-				++EntityIndex;
-				++CurrentBatchSize;
-			}
-		});
-	}
-}
-
 void UTrRepresentationSystem::BeginDestroy()
 {
 	Entities.Reset();
 	Super::BeginDestroy();
-}
-
-void UTrRepresentationSystem::Deinitialize()
-{
-	const UWorld* World = GetWorld();
-	World->GetTimerManager().ClearTimer(MainTimer);
 }
 
 void FTrVehicleStartCreator::CreateVehicleStartsOnGraph

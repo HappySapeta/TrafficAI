@@ -60,7 +60,7 @@ public:
 	
 	// Spawn Vehicles
 	UFUNCTION(BlueprintCallable)
-	void SpawnOnGraph(const URpSpatialGraphComponent* NewGraphComponent, const UTrSpawnConfiguration* NewRequestData);
+	void SpawnVehiclesOnGraph(const URpSpatialGraphComponent* NewGraphComponent, const UTrSpawnConfiguration* NewRequestData);
 
 	// Push a request to spawn an Entity. The request is not guaranteed to be processed immediately.
 	UFUNCTION(BlueprintCallable)
@@ -72,27 +72,13 @@ public:
 	// Returns a const reference to an array of Vehicle Start Transforms.
 	const TArray<FTrVehiclePathTransform>& GetVehicleStarts() const { return VehicleStarts; }
 	
-	void StartSimulation() {};
-
-	virtual void PostInitialize() override;
-
 	// Reset SharedPtrs to Entities.
 	virtual void BeginDestroy() override;
 
 	// Create this Subsystem only if playing in PIE or in game.
 	virtual bool ShouldCreateSubsystem(UObject* Outer) const override;
 
-protected:
-	
-	// Spawn an ISMCManager and set timers.
-	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
-
-	// Clear all timers.
-	virtual void Deinitialize() override;
-
-private:
-	
-	void InitializeLODUpdater();
+	void UpdateLODs();
 
 protected:
 	
@@ -121,7 +107,6 @@ private:
 	
 private:
 
-	FTimerHandle MainTimer;
 	TArray<FTrafficAISpawnRequest> SpawnRequests;
 	TArray<FTrVehiclePathTransform> VehicleStarts;
 };

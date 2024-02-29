@@ -38,10 +38,8 @@ public:
 	);
 	
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override {};
-	
-	void StartSimulation();
 
-	void StopSimulation();
+	virtual void TickSimulation(const float DeltaSeconds);
 
 	void GetVehicleTransforms(TArray<FTransform>& OutTransforms);
 
@@ -67,7 +65,6 @@ protected:
 	
 private:
 
-	virtual void TickSimulation();
 
 	virtual void SetGoals();
 	
@@ -101,7 +98,6 @@ protected:
 
 private:
 
-	float TickRate = 0.016f;
-	FTimerHandle SimTimerHandle;
+	float TickRate;
 	FTimerHandle JunctionTimerHandle;
 };
