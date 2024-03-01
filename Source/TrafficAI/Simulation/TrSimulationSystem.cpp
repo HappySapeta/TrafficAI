@@ -63,7 +63,7 @@ void UTrSimulationSystem::Initialize
 	DrawFirstDebug();
 }
 
-void UTrSimulationSystem::GetVehicleTransforms(TArray<FTransform>& OutTransforms)
+void UTrSimulationSystem::GetVehicleTransforms(TArray<FTransform>& OutTransforms, const FVector& PositionOffset)
 {
 	if(OutTransforms.Num() < NumEntities)
 	{
@@ -75,7 +75,7 @@ void UTrSimulationSystem::GetVehicleTransforms(TArray<FTransform>& OutTransforms
 		FTransform Transform
 		{
 			Headings[Index].ToOrientationQuat(),
-			Positions->operator[](Index)
+			Positions->operator[](Index) + PositionOffset
 		};
 
 		OutTransforms[Index] = MoveTemp(Transform);

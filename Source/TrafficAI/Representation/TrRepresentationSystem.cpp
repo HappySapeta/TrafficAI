@@ -14,11 +14,13 @@
 #include "Kismet/KismetMathLibrary.h"
 #include "GameFramework/PlayerController.h"
 #include "Components/HierarchicalInstancedStaticMeshComponent.h"
+#include "TrafficAI/Simulation/TrSimulationSystem.h"
 
 void UTrRepresentationSystem::SpawnVehiclesOnGraph(const URpSpatialGraphComponent* NewGraphComponent, const UTrSpawnConfiguration* NewSpawnConfiguration)
 {
 	if (IsValid(NewGraphComponent))
 	{
+		MeshPositionOffset = NewSpawnConfiguration->MeshPositionOffset;
 		FTrVehicleStartCreator::CreateVehicleStartsOnGraph(NewGraphComponent, NewSpawnConfiguration, MaxInstances, VehicleStarts);
 
 		for (const FTrVehiclePathTransform& StartData : VehicleStarts)
@@ -96,6 +98,15 @@ void UTrRepresentationSystem::UpdateLODs()
 		++EntityIndex;
 		++CurrentBatchSize;
 	}
+
+	SimulationSystem->GetVehicleTransforms(VehicleTransforms, MeshPositionOffset);
+	ISMCManager->GetISMC(Entities[0].Mesh)->BatchUpdateInstancesTransforms(0, VehicleTransforms, true, true, true);
+}
+
+void UTrRepresentationSystem::PostInitialize()
+{
+	SimulationSystem = GetWorld()->GetSubsystem<UTrSimulationSystem>();
+	Super::PostInitialize();
 }
 
 bool UTrRepresentationSystem::ShouldCreateSubsystem(UObject* Outer) const

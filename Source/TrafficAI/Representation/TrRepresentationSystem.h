@@ -79,6 +79,8 @@ public:
 	virtual bool ShouldCreateSubsystem(UObject* Outer) const override;
 
 	void UpdateLODs();
+	
+	virtual void PostInitialize() override;
 
 protected:
 	
@@ -104,9 +106,14 @@ private:
 	// The range within which Static Mesh Instances replace Actors.
 	UPROPERTY(Config, EditAnywhere, Category = "Representation System | Update Settings")
 	FFloatRange StaticMeshRelevancyRange;
+
+	UPROPERTY()
+	TObjectPtr<class UTrSimulationSystem> SimulationSystem; 
 	
 private:
 
+	FVector MeshPositionOffset;
+	TArray<FTransform> VehicleTransforms;
 	TArray<FTrafficAISpawnRequest> SpawnRequests;
 	TArray<FTrVehiclePathTransform> VehicleStarts;
 };

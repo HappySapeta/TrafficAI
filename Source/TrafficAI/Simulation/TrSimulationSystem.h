@@ -41,7 +41,7 @@ public:
 
 	virtual void TickSimulation(const float DeltaSeconds);
 
-	void GetVehicleTransforms(TArray<FTransform>& OutTransforms);
+	void GetVehicleTransforms(TArray<FTransform>& OutTransforms, const FVector& PositionOffset);
 
 protected:
 
