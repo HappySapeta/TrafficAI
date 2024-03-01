@@ -25,66 +25,69 @@ void UTrSimulationSystem::Initialize
 (
 	const UTrSimulationConfiguration* SimData,
 	const URpSpatialGraphComponent* GraphComponent,
-	TWeakPtr<TArray<FTrVehicleRepresentation>> TrafficEntities,
+	const TArray<FTrVehicleRepresentation>& TrafficEntities,
 	const TArray<FTrVehiclePathTransform>& TrafficVehicleStarts
 )
 {
-	if (TrafficEntities.IsValid())
-	{
-		NumEntities = TrafficEntities.Pin()->Num();
+	NumEntities = TrafficEntities.Num();
 
-		check(SimData)
-		VehicleConfig = SimData->VehicleConfig;
-		PathFollowingConfig = SimData->PathFollowingConfig;
-		TickRate = SimData->TickRate;
+	check(SimData)
+	VehicleConfig = SimData->VehicleConfig;
+	PathFollowingConfig = SimData->PathFollowingConfig;
 
-		PathTransforms = TrafficVehicleStarts;
-		check(PathTransforms.Num() > 0);
+	PathTransforms = TrafficVehicleStarts;
+	check(PathTransforms.Num() > 0);
 
-		Nodes = *GraphComponent->GetNodes();
-		check(Nodes.Num() > 0);
+	Nodes = *GraphComponent->GetNodes();
+	check(Nodes.Num() > 0);
 
-		Positions = MakeShared<TArray<FVector>>();
+	Positions = MakeShared<TArray<FVector>>();
 		
-		for (int Index = 0; Index < NumEntities; ++Index)
-		{
-			const AActor* EntityActor = (*TrafficEntities.Pin())[Index].Dummy;
+	for (int Index = 0; Index < NumEntities; ++Index)
+	{
+		const AActor* EntityActor = TrafficEntities[Index].Dummy;
 
-			Positions->Push(EntityActor->GetActorLocation());
-			Velocities.Push(EntityActor->GetVelocity());
-			Headings.Push(EntityActor->GetActorForwardVector());
-			States.Push(ETrState::None);
-			LeadingVehicleIndices.Push(-1);
-			DebugColors.Push(FColor::MakeRandomColor());
+		Positions->Push(EntityActor->GetActorLocation());
+		Velocities.Push(EntityActor->GetVelocity());
+		Headings.Push(EntityActor->GetActorForwardVector());
+		States.Push(ETrState::None);
+		LeadingVehicleIndices.Push(-1);
+		DebugColors.Push(FColor::MakeRandomColor());
 
-			FVector NearestProjectionPoint;
-			FindNearestPath(Index, NearestProjectionPoint);
-			Goals.Push(NearestProjectionPoint);
-		}
+		FVector NearestProjectionPoint;
+		FindNearestPath(Index, NearestProjectionPoint);
+		Goals.Push(NearestProjectionPoint);
 	}
 
 	ImplicitGrid.Initialize(FFloatRange(-7000.0f, 7000.0f), 20, Positions);
 	DrawFirstDebug();
 }
 
-void UTrSimulationSystem::StartSimulation()
+void UTrSimulationSystem::GetVehicleTransforms(TArray<FTransform>& OutTransforms, const FVector& PositionOffset)
 {
-	const UWorld* World = GetWorld();
+	if(OutTransforms.Num() < NumEntities)
+	{
+		OutTransforms.Init(FTransform::Identity, NumEntities);
+	}
+	
+	for(int Index = 0; Index < NumEntities; ++Index)
+	{
+		FTransform Transform
+		{
+			Headings[Index].ToOrientationQuat(),
+			Positions->operator[](Index) + PositionOffset
+		};
 
-	FTimerDelegate SimTimerDelegate;
-	SimTimerDelegate.BindUObject(this, &UTrSimulationSystem::TickSimulation);
-	World->GetTimerManager().SetTimer(SimTimerHandle, SimTimerDelegate, TickRate, true);
+		OutTransforms[Index] = MoveTemp(Transform);
+	}
 }
 
-void UTrSimulationSystem::StopSimulation()
-{
-	GetWorld()->GetTimerManager().ClearTimer(SimTimerHandle);
-}
-
-void UTrSimulationSystem::TickSimulation()
+void UTrSimulationSystem::TickSimulation(const float DeltaSeconds)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(UTrSimulationSystem::TickSimulation)
 
+	TickRate = DeltaSeconds;
+	
 	DrawDebug();
 	ImplicitGrid.Update();
 	SetGoals();
@@ -319,16 +322,18 @@ void UTrSimulationSystem::DrawDebug()
 		return;
 	}
 
+	const float DebugLifeTime = TickRate * 2.0f;
+	
 	const UWorld* World = GetWorld();
 	for (int Index = 0; Index < NumEntities; ++Index)
 	{
-		DrawDebugBox(World, Positions->operator[](Index), VehicleConfig.Dimensions, Headings[Index].ToOrientationQuat(), DebugColors[Index], false, TickRate);
-		DrawDebugDirectionalArrow(World, Positions->operator[](Index), Positions->operator[](Index) + Headings[Index] * VehicleConfig.Dimensions.X * 1.5f, 1000.0f, FColor::Red, false, TickRate);
-		//DrawDebugPoint(World, Goals[Index], 2.0f, DebugColors[Index], false, TickRate);
-		//DrawDebugLine(World, Positions->operator[](Index), Goals[Index], DebugColors[Index], false, TickRate);
+		DrawDebugBox(World, Positions->operator[](Index), VehicleConfig.Dimensions, Headings[Index].ToOrientationQuat(), DebugColors[Index], false, DebugLifeTime);
+		DrawDebugDirectionalArrow(World, Positions->operator[](Index), Positions->operator[](Index) + Headings[Index] * VehicleConfig.Dimensions.X * 1.5f, 1000.0f, FColor::Red, false, DebugLifeTime);
+		DrawDebugPoint(World, Goals[Index], 2.0f, DebugColors[Index], false, DebugLifeTime);
+		DrawDebugLine(World, Positions->operator[](Index), Goals[Index], DebugColors[Index], false, DebugLifeTime);
 	}
 
-	GEngine->AddOnScreenDebugMessage(-1, GetWorld()->GetDeltaSeconds(), FColor::Green, FString::Printf(TEXT("Speed : %.2f km/h"), Velocities[0].Length() * 0.036));
+	GEngine->AddOnScreenDebugMessage(-1, DebugLifeTime, FColor::Green, FString::Printf(TEXT("Speed : %.2f km/h"), Velocities[0].Length() * 0.036));
 }
 
 void UTrSimulationSystem::DrawFirstDebug()

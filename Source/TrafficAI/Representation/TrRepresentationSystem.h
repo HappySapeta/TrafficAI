@@ -12,12 +12,11 @@ struct TRAFFICAI_API FTrafficAISpawnRequest
 {
 	GENERATED_BODY()
 
-	// LOD2_Mesh used by the Instanced Static LOD2_Mesh renderer.
-	// (Note - LOD2_Mesh LODs are currently not supported.)
+	// Static Mesh used by the Instanced Static Mesh Renderer.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	UStaticMesh* LOD2_Mesh;
 
-	// Low-detail actor entirely controlled by AI.
+	// An Actor that represents an Active vehicle with maximum details.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TSubclassOf<AActor> LOD1_Actor;
 
@@ -29,11 +28,9 @@ struct TRAFFICAI_API FTrafficAISpawnRequest
 class TRAFFICAI_API FTrVehicleStartCreator
 {
 public:
-
-	FTrVehicleStartCreator() = default;
 	
 	// Traverse the edges of the Graph
-	void CreateVehicleStartsOnGraph
+	static void CreateVehicleStartsOnGraph
 	(
 		const URpSpatialGraphComponent* GraphComponent,
 		const UTrSpawnConfiguration* SpawnConfiguration,
@@ -42,8 +39,13 @@ public:
 	);
 
 	// Create spawn points along an edge
-	void CreateStartTransformsOnEdge(const FVector& Start, const FVector& Destination, const UTrSpawnConfiguration* SpawnConfiguration, TArray<
-	                                 FTrVehiclePathTransform>& OutStartData);
+	static void CreateStartTransformsOnEdge
+	(
+		const FVector& Start,
+		const FVector& Destination,
+		const UTrSpawnConfiguration* SpawnConfiguration,
+		TArray<FTrVehiclePathTransform>& OutStartData
+	);
 };
 
 /**
@@ -55,51 +57,34 @@ class TRAFFICAI_API UTrRepresentationSystem : public UWorldSubsystem
 	GENERATED_BODY()
 
 public:
-
-	UTrRepresentationSystem();
-
+	
 	// Spawn Vehicles
 	UFUNCTION(BlueprintCallable)
-	void Spawn(const URpSpatialGraphComponent* NewGraphComponent, const UTrSpawnConfiguration* NewRequestData);
+	void SpawnVehiclesOnGraph(const URpSpatialGraphComponent* NewGraphComponent, const UTrSpawnConfiguration* NewRequestData);
 
 	// Push a request to spawn an Entity. The request is not guaranteed to be processed immediately.
 	UFUNCTION(BlueprintCallable)
-	void SpawnDeferred(const FTrafficAISpawnRequest& SpawnRequest);
+	void SpawnSingleVehicle(const FTrafficAISpawnRequest& SpawnRequest);
 
-	// Assign an actor whose distance is used for determining the appropriate Level of Detail to be used.
-	UFUNCTION(BlueprintCallable)
-	void SetFocus(const AActor* Actor) { POVActor = Actor; }
+	// Returns a const reference to an array of Entities.
+	const TArray<FTrVehicleRepresentation>& GetEntities() const { return Entities; }
+
+	// Returns a const reference to an array of Vehicle Start Transforms.
+	const TArray<FTrVehiclePathTransform>& GetVehicleStarts() const { return VehicleStarts; }
 	
-	// Get a weak pointer to an array of all entities.
-	TWeakPtr<TArray<FTrVehicleRepresentation>> GetEntities() const { return Entities; }
-
-	virtual void PostInitialize() override;
-
 	// Reset SharedPtrs to Entities.
 	virtual void BeginDestroy() override;
 
 	// Create this Subsystem only if playing in PIE or in game.
 	virtual bool ShouldCreateSubsystem(UObject* Outer) const override;
 
-	TArray<FTrVehiclePathTransform> GetVehicleStarts();
+	void UpdateLODs();
+	
+	virtual void PostInitialize() override;
 
 protected:
 	
-	// Spawn an ISMCManager and set timers.
-	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
-
-	// Clear all timers.
-	virtual void Deinitialize() override;
-
-private:
-	
-	void InitializeLODUpdater();
-
-protected:
-
-	FTrVehicleStartCreator VehicleStartCreator;
-	
-	TSharedPtr<TArray<FTrVehicleRepresentation>> Entities;
+	TArray<FTrVehicleRepresentation> Entities;
 
 	UPROPERTY()
 	TObjectPtr<class ATrISMCManager> ISMCManager;
@@ -122,15 +107,13 @@ private:
 	UPROPERTY(Config, EditAnywhere, Category = "Representation System | Update Settings")
 	FFloatRange StaticMeshRelevancyRange;
 
-	// This actor's distance is used to determine the transition between LODs.
 	UPROPERTY()
-	const AActor* POVActor;
+	TObjectPtr<class UTrSimulationSystem> SimulationSystem; 
 	
 private:
 
-	FTimerHandle MainTimer;
-
+	FVector MeshPositionOffset;
+	TArray<FTransform> VehicleTransforms;
 	TArray<FTrafficAISpawnRequest> SpawnRequests;
-
-	TArray<FTrVehiclePathTransform> Starts;
+	TArray<FTrVehiclePathTransform> VehicleStarts;
 };

@@ -63,6 +63,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawn Configuration")
 	float LaneWidth = 250.0f;
 
+	// Absolute Width of a lane
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawn Configuration")
+	FVector MeshPositionOffset;
+
 	// Traffic Archetypes defined by their LODs
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawn Configuration")
 	TArray<FTrVehicleDefinition> TrafficDefinitions;

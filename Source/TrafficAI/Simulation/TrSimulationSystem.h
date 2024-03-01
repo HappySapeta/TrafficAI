@@ -33,13 +33,15 @@ public:
 	(
 		const UTrSimulationConfiguration* SimData,
 		const URpSpatialGraphComponent* GraphComponent,
-	    TWeakPtr<TArray<FTrVehicleRepresentation>> TrafficEntities,
-	    const TArray<FTrVehiclePathTransform>& TrafficVehicleStarts
+		const TArray<FTrVehicleRepresentation>& TrafficEntities,
+		const TArray<FTrVehiclePathTransform>& TrafficVehicleStarts
 	);
 	
-	void StartSimulation();
+	virtual void Initialize(FSubsystemCollectionBase& Collection) override {};
 
-	void StopSimulation();
+	virtual void TickSimulation(const float DeltaSeconds);
+
+	void GetVehicleTransforms(TArray<FTransform>& OutTransforms, const FVector& PositionOffset);
 
 protected:
 
@@ -63,7 +65,6 @@ protected:
 	
 private:
 
-	virtual void TickSimulation();
 
 	virtual void SetGoals();
 	
@@ -76,10 +77,6 @@ private:
 	virtual void UpdateCollisionData();
 	
 	virtual void UpdatePath(const uint32 Index);
-
-public:
-	
-	virtual void Initialize(FSubsystemCollectionBase& Collection) override {};
 
 protected:
 
@@ -101,7 +98,6 @@ protected:
 
 private:
 
-	float TickRate = 0.016f;
-	FTimerHandle SimTimerHandle;
+	float TickRate;
 	FTimerHandle JunctionTimerHandle;
 };

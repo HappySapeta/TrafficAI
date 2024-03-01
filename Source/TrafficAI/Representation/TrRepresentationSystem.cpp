@@ -10,25 +10,20 @@
 #include "TrISMCManager.h"
 
 #include "RpSpatialGraphComponent.h"
-#include "DeferredBatchProcessor/RpDeferredBatchProcessingSystem.h"
 
 #include "Kismet/KismetMathLibrary.h"
 #include "GameFramework/PlayerController.h"
 #include "Components/HierarchicalInstancedStaticMeshComponent.h"
+#include "TrafficAI/Simulation/TrSimulationSystem.h"
 
-UTrRepresentationSystem::UTrRepresentationSystem()
-{
-	Entities = MakeShared<TArray<FTrVehicleRepresentation>>();
-	POVActor = nullptr;
-}
-
-void UTrRepresentationSystem::Spawn(const URpSpatialGraphComponent* NewGraphComponent, const UTrSpawnConfiguration* NewSpawnConfiguration)
+void UTrRepresentationSystem::SpawnVehiclesOnGraph(const URpSpatialGraphComponent* NewGraphComponent, const UTrSpawnConfiguration* NewSpawnConfiguration)
 {
 	if (IsValid(NewGraphComponent))
 	{
-		VehicleStartCreator.CreateVehicleStartsOnGraph(NewGraphComponent, NewSpawnConfiguration, MaxInstances, Starts);
+		MeshPositionOffset = NewSpawnConfiguration->MeshPositionOffset;
+		FTrVehicleStartCreator::CreateVehicleStartsOnGraph(NewGraphComponent, NewSpawnConfiguration, MaxInstances, VehicleStarts);
 
-		for (const FTrVehiclePathTransform& StartData : Starts)
+		for (const FTrVehiclePathTransform& StartData : VehicleStarts)
 		{
 			FTrafficAISpawnRequest NewSpawnRequest;
 			NewSpawnRequest.Transform = StartData.Transform;
@@ -37,39 +32,81 @@ void UTrRepresentationSystem::Spawn(const URpSpatialGraphComponent* NewGraphComp
 			NewSpawnRequest.LOD1_Actor = NewSpawnConfiguration->TrafficDefinitions[0].ActorClass;
 			NewSpawnRequest.LOD2_Mesh = NewSpawnConfiguration->TrafficDefinitions[0].StaticMesh;
 
-			SpawnDeferred(NewSpawnRequest);
+			SpawnSingleVehicle(NewSpawnRequest);
 		}
 	}
 }
 
-void UTrRepresentationSystem::SpawnDeferred(const FTrafficAISpawnRequest& SpawnRequest)
+void UTrRepresentationSystem::SpawnSingleVehicle(const FTrafficAISpawnRequest& SpawnRequest)
 {
-	URpDeferredBatchProcessingSystem* BatchProcessor = GetWorld()->GetSubsystem<URpDeferredBatchProcessingSystem>();
-	if (ensure(BatchProcessor))
+	if(!ISMCManager)
 	{
-		BatchProcessor->QueueCommand("SpawnProcessor", [this, SpawnRequest]()
-		{
-			if(Entities->Num() >= MaxInstances)
-			{
-				return;
-			}
-			
-			static FActorSpawnParameters SpawnParameters;
-#if UE_EDITOR
-			SpawnParameters.bHideFromSceneOutliner = true;
-#endif
-			if (AActor* NewActor = GetWorld()->SpawnActor(SpawnRequest.LOD1_Actor, &SpawnRequest.Transform,
-			                                              SpawnParameters))
-			{
-				checkf(ISMCManager,
-				       TEXT("[UTrRepresentationSystem][ProcessSpawnRequests] Reference to the ISMCManager is null."))
-				const int32 ISMIndex = ISMCManager->
-					AddInstance(SpawnRequest.LOD2_Mesh, nullptr, SpawnRequest.Transform);
-				Entities->Add({SpawnRequest.LOD2_Mesh, ISMIndex, NewActor});
-				SET_ACTOR_ENABLED(NewActor, false);
-			}
-		});
+		ISMCManager = GetWorld()->SpawnActor<ATrISMCManager>();
 	}
+	
+	if(Entities.Num() >= MaxInstances)
+	{
+		return;
+	}
+			
+	static FActorSpawnParameters SpawnParameters;
+#if UE_EDITOR
+	SpawnParameters.bHideFromSceneOutliner = true;
+#endif
+	if (AActor* NewActor = GetWorld()->SpawnActor(SpawnRequest.LOD1_Actor, &SpawnRequest.Transform, SpawnParameters))
+	{
+		checkf(ISMCManager, TEXT("[UTrRepresentationSystem][ProcessSpawnRequests] Reference to the ISMCManager is null."))
+		const int32 ISMIndex = ISMCManager->AddInstance(SpawnRequest.LOD2_Mesh, nullptr, SpawnRequest.Transform);
+		Entities.Add({SpawnRequest.LOD2_Mesh, ISMIndex, NewActor});
+		SET_ACTOR_ENABLED(NewActor, false);
+	}
+}
+
+void UTrRepresentationSystem::UpdateLODs()
+{
+	TRACE_CPUPROFILER_EVENT_SCOPE(UTrRepresentationSystem::UpdateLODLambda)
+
+	static int EntityIndex = 0;
+	if (EntityIndex >= Entities.Num())
+	{
+		EntityIndex = 0;
+	}
+
+	FVector FocusLocation(0.0f);
+	if(APawn* Pawn = GetWorld()->GetFirstPlayerController()->GetPawn())
+	{
+		FocusLocation = Pawn->GetActorLocation();	
+	}
+
+	int CurrentBatchSize = 0;
+	while (EntityIndex < Entities.Num() && CurrentBatchSize < ProcessingBatchSize)
+	{
+		const FTrVehicleRepresentation& Entity = Entities.operator[](EntityIndex);
+		const float Distance = FVector::Distance(FocusLocation, Entity.Dummy->GetActorLocation());
+
+		// Toggle Actors.
+		const bool bIsActorRelevant = ActorRelevancyRange.Contains(Distance);
+		SET_ACTOR_ENABLED(Entity.Dummy, bIsActorRelevant);
+
+		// Toggle ISMCs.
+		const bool bIsMeshRelevant = !bIsActorRelevant && StaticMeshRelevancyRange.Contains(Distance);
+		const FVector& NewScale = bIsMeshRelevant * FVector::OneVector;
+		FTransform MeshTransform = Entity.Dummy->GetActorTransform();
+		MeshTransform.SetScale3D(NewScale);
+		ISMCManager->GetISMC(Entity.Mesh)->UpdateInstanceTransform(Entity.InstanceIndex, MeshTransform, true, true, false);
+
+		++EntityIndex;
+		++CurrentBatchSize;
+	}
+
+	SimulationSystem->GetVehicleTransforms(VehicleTransforms, MeshPositionOffset);
+	ISMCManager->GetISMC(Entities[0].Mesh)->BatchUpdateInstancesTransforms(0, VehicleTransforms, true, true, true);
+}
+
+void UTrRepresentationSystem::PostInitialize()
+{
+	SimulationSystem = GetWorld()->GetSubsystem<UTrSimulationSystem>();
+	Super::PostInitialize();
 }
 
 bool UTrRepresentationSystem::ShouldCreateSubsystem(UObject* Outer) const
@@ -80,85 +117,10 @@ bool UTrRepresentationSystem::ShouldCreateSubsystem(UObject* Outer) const
 	return true;
 }
 
-TArray<FTrVehiclePathTransform> UTrRepresentationSystem::GetVehicleStarts()
-{
-	return Starts;
-}
-
-void UTrRepresentationSystem::Initialize(FSubsystemCollectionBase& Collection)
-{
-	UWorld* World = GetWorld();
-	ISMCManager = World->SpawnActor<ATrISMCManager>();
-}
-
-void UTrRepresentationSystem::PostInitialize()
-{
-	InitializeLODUpdater();
-	Super::PostInitialize();
-}
-
-void UTrRepresentationSystem::InitializeLODUpdater()
-{
-	// TODO : Can we completely rely on the Batch Processor to do the LOD update instead of using custom batching logic ?
-	URpDeferredBatchProcessingSystem* BatchProcessor = GetWorld()->GetSubsystem<URpDeferredBatchProcessingSystem>();
-	if (ensureMsgf(BatchProcessor, TEXT("BatchProcessor not found.")))
-	{
-		BatchProcessor->QueueCommand("LODUpdateProcessor", [this]()
-		{
-			TRACE_CPUPROFILER_EVENT_SCOPE(UTrRepresentationSystem::UpdateLODLambda)
-
-			static int EntityIndex = 0;
-			if (EntityIndex >= Entities->Num())
-			{
-				EntityIndex = 0;
-			}
-
-			if (!IsValid(POVActor))
-			{
-				POVActor = GetWorld()->GetFirstPlayerController()->GetPawn();
-				if (!ensureMsgf(IsValid(POVActor),
-				                TEXT("[UTrRepresentationSystem::UpdateLODs] No focussed actor has been set.")))
-				{
-					return;
-				}
-			}
-
-			const FVector& FocusLocation = POVActor->GetActorLocation();
-			int CurrentBatchSize = 0;
-			while (EntityIndex < Entities->Num() && CurrentBatchSize < ProcessingBatchSize)
-			{
-				const FTrVehicleRepresentation& Entity = Entities->operator[](EntityIndex);
-				const float Distance = FVector::Distance(FocusLocation, Entity.Dummy->GetActorLocation());
-
-				// Toggle Actors.
-				const bool bIsActorRelevant = ActorRelevancyRange.Contains(Distance);
-				SET_ACTOR_ENABLED(Entity.Dummy, bIsActorRelevant);
-
-				// Toggle ISMCs.
-				const bool bIsMeshRelevant = !bIsActorRelevant && StaticMeshRelevancyRange.Contains(Distance);
-				const FVector& NewScale = bIsMeshRelevant * FVector::OneVector;
-				FTransform MeshTransform = Entity.Dummy->GetActorTransform();
-				MeshTransform.SetScale3D(NewScale);
-				ISMCManager->GetISMC(Entity.Mesh)->UpdateInstanceTransform(
-					Entity.InstanceIndex, MeshTransform, true, true, false);
-
-				++EntityIndex;
-				++CurrentBatchSize;
-			}
-		});
-	}
-}
-
 void UTrRepresentationSystem::BeginDestroy()
 {
 	Entities.Reset();
 	Super::BeginDestroy();
-}
-
-void UTrRepresentationSystem::Deinitialize()
-{
-	const UWorld* World = GetWorld();
-	World->GetTimerManager().ClearTimer(MainTimer);
 }
 
 void FTrVehicleStartCreator::CreateVehicleStartsOnGraph
@@ -188,7 +150,7 @@ void FTrVehicleStartCreator::CreateVehicleStartsOnGraph
 			const FVector& Node1Location = Nodes->operator[](Index).GetLocation();
 			const FVector& Node2Location = Nodes->operator[](ConnectedIndex).GetLocation();
 
-			auto PushVehicleStartsLambda = [this, SpawnConfiguration, MaxInstances, &OutVehicleStarts]
+			auto PushVehicleStartsLambda = [SpawnConfiguration, MaxInstances, &OutVehicleStarts]
 			(
 				const FVector& FirstLocation,
 				const FVector& SecondLocation,
@@ -234,7 +196,6 @@ void FTrVehicleStartCreator::CreateStartTransformsOnEdge
 	const FVector NewForwardVector = (Destination - Start).GetSafeNormal();
 	const FRotator NewRotation = UKismetMathLibrary::MakeRotFromX(NewForwardVector);
 	const FVector NewRightVector = NewForwardVector.Cross(FVector::UpVector);
-
 	
 	const float EdgeLength = FVector::Distance(Start, Destination);
 	const float NormMinSeparation = SpawnConfiguration->Separation.GetLowerBoundValue() /  EdgeLength;

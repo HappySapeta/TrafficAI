@@ -20,16 +20,16 @@ public:
 	
 	UFUNCTION(CallInEditor, BlueprintCallable)
 	void StartSimulation();
-
+	
 	UFUNCTION(CallInEditor, BlueprintCallable)
 	void StopSimulation();
+	
+	virtual void Tick(float DeltaSeconds) override;
 	
 protected:
 	
 	virtual void BeginPlay() override;
 
-	void InitializeSimulator();
-	
 protected:
 
 	UPROPERTY(VisibleDefaultsOnly, Category = "Configs")
@@ -49,6 +49,6 @@ protected:
 
 private:
 
-	bool bInitialized = false;
+	bool bSimulate;
 	
 };
