@@ -6,19 +6,39 @@
 
 //#define USE_ANGULAR_VELOCITY_BASED_STEERING
 
-static bool GTrSimDebug = true;
+#define DEBUG_LIFETIME TickRate * 2.0f
 
-FAutoConsoleCommand CComRenderDebug
+static int32 GDebugVerbosity = 0;
+static FAutoConsoleVariableRef CVarDebugVerbosity
 (
-	TEXT("trafficai.Debug"),
-	TEXT("Draw traffic simulation debug information"),
-	FConsoleCommandDelegate::CreateLambda
-	(
-		[]()
-		{
-			GTrSimDebug = !GTrSimDebug;
-		}
-	)
+	TEXT("TrafficDebugVerbosity"),
+	GDebugVerbosity,
+	TEXT("Set the level of debug information shown."),
+	ECVF_Default
+);
+
+static bool GCollisionDebug = false;
+static FAutoConsoleCommand CComCollisionDebug
+(
+	TEXT("ToggleCollisionDebug"),
+	TEXT(""),
+	FConsoleCommandDelegate::CreateLambda([]()
+	{
+		GCollisionDebug = !GCollisionDebug;		
+	}),
+	ECVF_Default
+);
+
+static bool GGridDebug = false;
+static FAutoConsoleCommand CComGridDebug
+(
+	TEXT("ToggleGridDebug"),
+	TEXT(""),
+	FConsoleCommandDelegate::CreateLambda([]()
+	{
+		GGridDebug = !GGridDebug;		
+	}),
+	ECVF_Default
 );
 
 void UTrSimulationSystem::Initialize
@@ -69,10 +89,6 @@ void UTrSimulationSystem::Initialize
 	);
 	
 	ImplicitGrid.Initialize(FFloatRange(-SimData->GridConfiguration.Range, SimData->GridConfiguration.Range), SimData->GridConfiguration.Resolution, Positions);
-	if(SimData->GridConfiguration.DebugGrid)
-	{
-		ImplicitGrid.DrawDebugGrid(GetWorld());
-	}
 	DrawFirstDebug();
 }
 
@@ -331,24 +347,27 @@ int UTrSimulationSystem::FindNearestPath(int EntityIndex, FVector& NearestProjec
 void UTrSimulationSystem::DrawDebug()
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(UTrSimulationSystem::DrawDebug)
-	
-	if (!GTrSimDebug)
-	{
-		return;
-	}
 
-	const float DebugLifeTime = TickRate * 2.0f;
-	
 	const UWorld* World = GetWorld();
+	if(GGridDebug)
+	{
+		ImplicitGrid.DrawDebug(World, DEBUG_LIFETIME);
+	}
+	
 	for (int Index = 0; Index < NumEntities; ++Index)
 	{
-		DrawDebugBox(World, Positions->operator[](Index), VehicleConfig.Dimensions, Headings[Index].ToOrientationQuat(), DebugColors[Index], false, DebugLifeTime);
-		DrawDebugDirectionalArrow(World, Positions->operator[](Index), Positions->operator[](Index) + Headings[Index] * VehicleConfig.Dimensions.X * 1.5f, 1000.0f, FColor::Red, false, DebugLifeTime);
-		DrawDebugPoint(World, Goals[Index], 2.0f, DebugColors[Index], false, DebugLifeTime);
-		DrawDebugLine(World, Positions->operator[](Index), Goals[Index], DebugColors[Index], false, DebugLifeTime);
+		if(GDebugVerbosity >= 1)
+		{
+			DrawDebugBox(World, Positions->operator[](Index), VehicleConfig.Dimensions, Headings[Index].ToOrientationQuat(), DebugColors[Index], false, DEBUG_LIFETIME);
+			DrawDebugDirectionalArrow(World, Positions->operator[](Index), Positions->operator[](Index) + Headings[Index] * VehicleConfig.Dimensions.X * 1.5f, 1000.0f, FColor::Red, false, DEBUG_LIFETIME);
+		}
+		
+		if(GDebugVerbosity >= 2)
+		{
+			DrawDebugPoint(World, Goals[Index], 2.0f, DebugColors[Index], false, DEBUG_LIFETIME);
+			DrawDebugLine(World, Positions->operator[](Index), Goals[Index], DebugColors[Index], false, DEBUG_LIFETIME);
+		}
 	}
-
-	GEngine->AddOnScreenDebugMessage(-1, DebugLifeTime, FColor::Green, FString::Printf(TEXT("Speed : %.2f km/h"), Velocities[0].Length() * 0.036));
 }
 
 void UTrSimulationSystem::DrawFirstDebug()
@@ -372,6 +391,8 @@ void UTrSimulationSystem::UpdateCollisionData()
 	
 	FRpSearchResults Results;
 	const float Bound = VehicleConfig.Dimensions.Y * 2.0f; 
+
+	const UWorld* World = GetWorld();
 	
 	for(int Index = 0; Index < NumEntities; ++Index)
 	{
@@ -397,6 +418,17 @@ void UTrSimulationSystem::UpdateCollisionData()
 					LeadingVehicleIndices[Index] = *Itr;
 				}
 			}
+
+			if(GCollisionDebug)
+			{
+				DrawDebugLine(World, CurrentPosition, OtherPosition, FColor::White, false, DEBUG_LIFETIME);
+			}
+		}
+
+		if(GCollisionDebug && LeadingVehicleIndices[Index] != -1)
+		{
+			const FVector& OtherPosition = Positions->operator[](LeadingVehicleIndices[Index]);
+			DrawDebugLine(World, CurrentPosition, OtherPosition, FColor::Red, false, DEBUG_LIFETIME);
 		}
 	}
 }
