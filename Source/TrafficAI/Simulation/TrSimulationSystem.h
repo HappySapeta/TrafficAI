@@ -7,6 +7,7 @@
 #include "../Shared/TrTypes.h"
 #include "Ripple/Public/RpSpatialGraphComponent.h"
 #include "SpatialAcceleration/RpImplicitGrid.h"
+#include "TrafficAI/Utility/TrSpatialGraphComponent.h"
 #include "TrSimulationSystem.generated.h"
 
 class UTrSimulationConfiguration;
@@ -19,9 +20,52 @@ enum class ETrState
 	None
 };
 
-/**
- * 
- */
+class FTrIntersectionManager
+{
+public:
+
+	void Initialize(const TArray<FTrIntersection>& NewIntersections)
+	{
+		Intersections = NewIntersections;
+		for(const FTrIntersection& Intersection : NewIntersections)
+		{
+			for(const uint32 Node : Intersection.Nodes)
+			{
+				IntersectionNodes.Add(Node);
+			}
+		}
+		
+		Update();
+	}
+
+	bool IsNodeBlocked(const uint32 NodeIndex) const
+	{
+		if(IntersectionNodes.Contains(NodeIndex))
+		{
+			return !UnblockedNodes.Contains(NodeIndex);
+		}
+
+		return false;
+	}
+
+	void Update()
+	{
+		UnblockedNodes.Empty();
+		for(const FTrIntersection& Intersection : Intersections)
+		{
+			uint32 RandomNode = FMath::RandRange(0, Intersection.Nodes.Num() - 1);
+			UnblockedNodes.Add(Intersection.Nodes[RandomNode]);
+		}
+	}
+	
+private:
+
+	TArray<FTrIntersection> Intersections;
+	TSet<uint32> IntersectionNodes;
+	TSet<uint32> UnblockedNodes;
+};
+
+
 UCLASS()
 class TRAFFICAI_API UTrSimulationSystem : public UWorldSubsystem
 {
@@ -32,7 +76,7 @@ public:
 	void Initialize
 	(
 		const UTrSimulationConfiguration* SimData,
-		const URpSpatialGraphComponent* GraphComponent,
+		const UTrSpatialGraphComponent* GraphComponent,
 		const TArray<FTrVehicleRepresentation>& TrafficEntities,
 		const TArray<FTrVehiclePathTransform>& TrafficVehicleStarts
 	);
@@ -94,10 +138,11 @@ protected:
 	TArray<FColor> DebugColors;
 	
 	TArray<FRpSpatialGraphNode> Nodes;
+	FTrIntersectionManager IntersectionManager;
 	FRpImplicitGrid ImplicitGrid;
 
 private:
 
 	float TickRate;
-	FTimerHandle JunctionTimerHandle;
+	FTimerHandle IntersectionTimerHandle;
 };

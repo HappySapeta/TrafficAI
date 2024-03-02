@@ -4,6 +4,7 @@
 #include "RpSpatialGraphComponent.h"
 #include "TrafficAI/Representation/TrRepresentationSystem.h"
 #include "TrafficAI/Simulation/TrSimulationSystem.h"
+#include "TrafficAI/Utility/TrSpatialGraphComponent.h"
 
 // Sets default values
 ATrTrafficManager::ATrTrafficManager()
@@ -11,7 +12,7 @@ ATrTrafficManager::ATrTrafficManager()
 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
-	SpatialGraphComponent = CreateDefaultSubobject<URpSpatialGraphComponent>(TEXT("SpatialGraphComponent"));
+	SpatialGraphComponent = CreateDefaultSubobject<UTrSpatialGraphComponent>(TEXT("SpatialGraphComponent"));
 }
 
 void ATrTrafficManager::BeginPlay()
