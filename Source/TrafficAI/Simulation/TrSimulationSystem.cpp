@@ -65,11 +65,15 @@ void UTrSimulationSystem::Initialize
 	(
 		IntersectionTimerHandle,
 		FTimerDelegate::CreateRaw(&IntersectionManager, &FTrIntersectionManager::Update),
-		5.0f, // Interval
+		SimData->PathFollowingConfig.SignalSwitchInterval,
 		true  // Loop
 	);
 	
-	ImplicitGrid.Initialize(FFloatRange(-7000.0f, 7000.0f), 20, Positions);
+	ImplicitGrid.Initialize(FFloatRange(-SimData->GridConfiguration.Range, SimData->GridConfiguration.Range), SimData->GridConfiguration.Resolution, Positions);
+	if(SimData->GridConfiguration.DebugGrid)
+	{
+		ImplicitGrid.DrawDebugGrid(GetWorld());
+	}
 	DrawFirstDebug();
 }
 

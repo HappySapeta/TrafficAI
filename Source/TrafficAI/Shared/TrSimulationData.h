@@ -67,6 +67,24 @@ struct TRAFFICAI_API FTrPathFollowingConfiguration
 
 	UPROPERTY(EditAnywhere, meta = (Units = "cm"))
 	float GoalUpdateDistance = 500.0f; // 500 : 5m
+
+	UPROPERTY(EditAnywhere)
+	float SignalSwitchInterval = 10.0f;
+};
+
+USTRUCT(BlueprintType)
+struct TRAFFICAI_API FTrImplicitGridConfiguration
+{
+	GENERATED_BODY()
+	
+	UPROPERTY(EditAnywhere)
+	float Range;
+
+	UPROPERTY(EditAnywhere, meta = (UIMin = 1, ClampMin = 1))
+	uint32 Resolution;
+
+	UPROPERTY(EditAnywhere)
+	bool DebugGrid = false;
 };
 
 /**
@@ -84,7 +102,7 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = "Path Follow")
 	FTrPathFollowingConfiguration PathFollowingConfig;
-	
-	UPROPERTY(EditAnywhere, Category = "Timings", meta = (Units = "s"))
-	float TickRate = 0.016f;
+
+	UPROPERTY(EditAnywhere, Category = "Spatial Acceleration Grid")
+	FTrImplicitGridConfiguration GridConfiguration;
 };

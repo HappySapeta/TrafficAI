@@ -69,7 +69,7 @@ public:
 
 	// Traffic Archetypes defined by their LODs
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawn Configuration")
-	TArray<FTrVehicleDefinition> TrafficDefinitions;
+	TArray<FTrVehicleDefinition> VehicleVariants;
 };
 
 struct TRAFFICAI_API FTrPath

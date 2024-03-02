@@ -29,8 +29,8 @@ void UTrRepresentationSystem::SpawnVehiclesOnGraph(const URpSpatialGraphComponen
 			NewSpawnRequest.Transform = StartData.Transform;
 
 			// TODO : support for multiple definitions
-			NewSpawnRequest.LOD1_Actor = NewSpawnConfiguration->TrafficDefinitions[0].ActorClass;
-			NewSpawnRequest.LOD2_Mesh = NewSpawnConfiguration->TrafficDefinitions[0].StaticMesh;
+			NewSpawnRequest.LOD1_Actor = NewSpawnConfiguration->VehicleVariants[0].ActorClass;
+			NewSpawnRequest.LOD2_Mesh = NewSpawnConfiguration->VehicleVariants[0].StaticMesh;
 
 			SpawnSingleVehicle(NewSpawnRequest);
 		}
