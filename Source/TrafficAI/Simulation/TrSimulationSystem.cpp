@@ -24,7 +24,7 @@ FAutoConsoleCommand CComRenderDebug
 void UTrSimulationSystem::Initialize
 (
 	const UTrSimulationConfiguration* SimData,
-	const URpSpatialGraphComponent* GraphComponent,
+	const UTrSpatialGraphComponent* GraphComponent,
 	const TArray<FTrVehicleRepresentation>& TrafficEntities,
 	const TArray<FTrVehiclePathTransform>& TrafficVehicleStarts
 )
@@ -38,7 +38,9 @@ void UTrSimulationSystem::Initialize
 	PathTransforms = TrafficVehicleStarts;
 	check(PathTransforms.Num() > 0);
 
-	Nodes = *GraphComponent->GetNodes();
+	Nodes = GraphComponent->GetNodes();
+	IntersectionManager.Initialize(GraphComponent->GetIntersections());
+	
 	check(Nodes.Num() > 0);
 
 	Positions = MakeShared<TArray<FVector>>();
@@ -59,6 +61,14 @@ void UTrSimulationSystem::Initialize
 		Goals.Push(NearestProjectionPoint);
 	}
 
+	GetWorld()->GetTimerManager().SetTimer
+	(
+		IntersectionTimerHandle,
+		FTimerDelegate::CreateRaw(&IntersectionManager, &FTrIntersectionManager::Update),
+		5.0f, // Interval
+		true  // Loop
+	);
+	
 	ImplicitGrid.Initialize(FFloatRange(-7000.0f, 7000.0f), 20, Positions);
 	DrawFirstDebug();
 }
@@ -179,7 +189,7 @@ void UTrSimulationSystem::UpdateKinematics()
 		const float InteractionTerm = -VehicleConfig.MaximumAcceleration * FMath::Square(GapTerm);
 
 		float Acceleration = FreeRoadTerm + InteractionTerm;
-		Acceleration = FMath::Clamp(Acceleration, -10000.0f, VehicleConfig.MaximumAcceleration);
+		Acceleration = FMath::Clamp(Acceleration, -VehicleConfig.ComfortableBrakingDeceleration * 2.0f, VehicleConfig.MaximumAcceleration);
 
 		FVector& CurrentHeading = Headings[Index];
 		FVector& CurrentVelocity = Velocities[Index];
@@ -264,8 +274,14 @@ void UTrSimulationSystem::UpdatePath(const uint32 Index)
 			}
 		}
 
-		if(EligibleConnections.Num() > 0)
+		const uint32 NumEligibleConnections = EligibleConnections.Num();
+		if(NumEligibleConnections > 0)
 		{
+			if(NumEligibleConnections > 1 && IntersectionManager.IsNodeBlocked(NewStartNodeIndex))
+			{
+				return;
+			}
+
 			NewEndNodeIndex = EligibleConnections[FMath::RandRange(0, EligibleConnections.Num() - 1)];
 		}
 	}
@@ -354,9 +370,7 @@ void UTrSimulationSystem::DrawFirstDebug()
 void UTrSimulationSystem::UpdateCollisionData()
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(UTrSimulationSystem::UpdateCollisionData)
-
-	const UWorld* World = GetWorld();
-
+	
 	FRpSearchResults Results;
 	const float Bound = VehicleConfig.Dimensions.Y * 2.0f; 
 	
@@ -384,8 +398,6 @@ void UTrSimulationSystem::UpdateCollisionData()
 					LeadingVehicleIndices[Index] = *Itr;
 				}
 			}
-
-			//DrawDebugLine(World, CurrentPosition, OtherPosition, DebugColors[Index], false, TickRate);
 		}
 	}
 }

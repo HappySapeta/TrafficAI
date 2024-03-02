@@ -133,13 +133,13 @@ void FTrVehicleStartCreator::CreateVehicleStartsOnGraph
 {
 	check(SpawnConfiguration);
 
-	const TArray<FRpSpatialGraphNode>* Nodes = GraphComponent->GetNodes();
+	const TArray<FRpSpatialGraphNode>& Nodes = GraphComponent->GetNodes();
 	TSet<TPair<uint32, uint32>> SeenEdges;
 
-	uint32 NumNodes = static_cast<uint32>(Nodes->Num());
+	uint32 NumNodes = static_cast<uint32>(Nodes.Num());
 	for (uint32 Index = 0; Index < NumNodes; ++Index)
 	{
-		const TArray<uint32>& Connections = Nodes->operator[](Index).GetConnections();
+		const TArray<uint32>& Connections = Nodes[Index].GetConnections();
 		for (uint32 ConnectedIndex : Connections)
 		{
 			if (SeenEdges.Contains({Index, ConnectedIndex}) || SeenEdges.Contains({ConnectedIndex, Index}))
@@ -147,8 +147,8 @@ void FTrVehicleStartCreator::CreateVehicleStartsOnGraph
 				continue;
 			}
 
-			const FVector& Node1Location = Nodes->operator[](Index).GetLocation();
-			const FVector& Node2Location = Nodes->operator[](ConnectedIndex).GetLocation();
+			const FVector& Node1Location = Nodes[Index].GetLocation();
+			const FVector& Node2Location = Nodes[ConnectedIndex].GetLocation();
 
 			auto PushVehicleStartsLambda = [SpawnConfiguration, MaxInstances, &OutVehicleStarts]
 			(
