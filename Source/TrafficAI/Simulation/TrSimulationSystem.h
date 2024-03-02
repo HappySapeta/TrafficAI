@@ -12,14 +12,6 @@
 
 class UTrSimulationConfiguration;
 
-enum class ETrState
-{
-	PathFollowing,
-	PathInserting,
-	JunctionHandling,
-	None
-};
-
 class FTrIntersectionManager
 {
 public:
@@ -133,7 +125,6 @@ protected:
 	TArray<FVector> Headings;
 	TArray<FVector> Goals;
 	TArray<FTrVehiclePathTransform> PathTransforms;
-	TArray<ETrState> States;
 	TArray<int> LeadingVehicleIndices;
 	TArray<FColor> DebugColors;
 	

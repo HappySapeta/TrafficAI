@@ -52,7 +52,6 @@ void UTrSimulationSystem::Initialize
 		Positions->Push(EntityActor->GetActorLocation());
 		Velocities.Push(EntityActor->GetVelocity());
 		Headings.Push(EntityActor->GetActorForwardVector());
-		States.Push(ETrState::None);
 		LeadingVehicleIndices.Push(-1);
 		DebugColors.Push(FColor::MakeRandomColor());
 
@@ -137,12 +136,10 @@ void UTrSimulationSystem::SetGoals()
 		if (Distance < PathFollowingConfig.PathFollowThreshold)
 		{
 			Goals[Index] = OffsetPath.End;
-			States[Index] = ETrState::PathFollowing;
 		}
 		else
 		{
 			Goals[Index] = FutureOnPath;
-			States[Index] = ETrState::PathInserting;
 		}
 	}
 }
@@ -151,10 +148,8 @@ void UTrSimulationSystem::HandleGoals()
 {
 	for (int Index = 0; Index < NumEntities; ++Index)
 	{
-		ETrState CurrentState = States[Index];
-
 		const float Distance = FVector::Distance(Goals[Index], Positions->operator[](Index));
-		if (Distance <= PathFollowingConfig.GoalUpdateDistance && CurrentState == ETrState::PathFollowing)
+		if (Distance <= PathFollowingConfig.GoalUpdateDistance)
 		{
 			UpdatePath(Index);
 		}
