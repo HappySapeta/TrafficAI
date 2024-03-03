@@ -18,22 +18,34 @@
 
 void UTrRepresentationSystem::SpawnVehiclesOnGraph(const URpSpatialGraphComponent* NewGraphComponent, const UTrSpawnConfiguration* NewSpawnConfiguration)
 {
-	if (IsValid(NewGraphComponent))
+	check(NewGraphComponent);
+	check(NewSpawnConfiguration);
+	check(NewSpawnConfiguration->VehicleVariants.Num() > 0);
+	
+	MeshPositionOffset = NewSpawnConfiguration->MeshPositionOffset;
+	FTrVehicleStartCreator::CreateVehicleStartsOnGraph(NewGraphComponent, NewSpawnConfiguration, MaxInstances, VehicleStarts);
+
+	for (const FTrVehiclePathTransform& StartData : VehicleStarts)
 	{
-		MeshPositionOffset = NewSpawnConfiguration->MeshPositionOffset;
-		FTrVehicleStartCreator::CreateVehicleStartsOnGraph(NewGraphComponent, NewSpawnConfiguration, MaxInstances, VehicleStarts);
+		FTrafficAISpawnRequest NewSpawnRequest;
+		NewSpawnRequest.Transform = StartData.Transform;
 
-		for (const FTrVehiclePathTransform& StartData : VehicleStarts)
+
+		FTrVehicleDefinition ChosenVariant = NewSpawnConfiguration->VehicleVariants[0];
+		for(const FTrVehicleDefinition& Variant : NewSpawnConfiguration->VehicleVariants)
 		{
-			FTrafficAISpawnRequest NewSpawnRequest;
-			NewSpawnRequest.Transform = StartData.Transform;
-
-			// TODO : support for multiple definitions
-			NewSpawnRequest.LOD1_Actor = NewSpawnConfiguration->VehicleVariants[0].ActorClass;
-			NewSpawnRequest.LOD2_Mesh = NewSpawnConfiguration->VehicleVariants[0].StaticMesh;
-
-			SpawnSingleVehicle(NewSpawnRequest);
+			if(UKismetMathLibrary::RandomBoolWithWeight(Variant.Ratio))
+			{
+				ChosenVariant = Variant;
+				break;
+			}
 		}
+			
+		// TODO : support for multiple definitions
+		NewSpawnRequest.LOD1_Actor = ChosenVariant.ActorClass;
+		NewSpawnRequest.LOD2_Mesh = ChosenVariant.StaticMesh;
+		
+		SpawnSingleVehicle(NewSpawnRequest);
 	}
 }
 
@@ -42,6 +54,7 @@ void UTrRepresentationSystem::SpawnSingleVehicle(const FTrafficAISpawnRequest& S
 	if(!ISMCManager)
 	{
 		ISMCManager = GetWorld()->SpawnActor<ATrISMCManager>();
+		check(ISMCManager);
 	}
 	
 	if(Entities.Num() >= MaxInstances)
@@ -55,9 +68,21 @@ void UTrRepresentationSystem::SpawnSingleVehicle(const FTrafficAISpawnRequest& S
 #endif
 	if (AActor* NewActor = GetWorld()->SpawnActor(SpawnRequest.LOD1_Actor, &SpawnRequest.Transform, SpawnParameters))
 	{
-		checkf(ISMCManager, TEXT("[UTrRepresentationSystem][ProcessSpawnRequests] Reference to the ISMCManager is null."))
-		const int32 ISMIndex = ISMCManager->AddInstance(SpawnRequest.LOD2_Mesh, nullptr, SpawnRequest.Transform);
-		Entities.Add({SpawnRequest.LOD2_Mesh, ISMIndex, NewActor});
+		UStaticMesh* Mesh = SpawnRequest.LOD2_Mesh;
+		const int32 ISMIndex = ISMCManager->AddInstance(Mesh, nullptr, SpawnRequest.Transform);
+		Entities.Add({Mesh, ISMIndex, NewActor});
+		if(Mesh)
+		{
+			const uint32 EntityIndex = Entities.Num() - 1;
+			if(MeshIDs.Contains(Mesh))
+			{
+				MeshIDs[Mesh].Add(EntityIndex);
+			}
+			else
+			{
+				MeshIDs.Add(Mesh, {EntityIndex});
+			}
+		}
 		SET_ACTOR_ENABLED(NewActor, false);
 	}
 }
@@ -100,7 +125,17 @@ void UTrRepresentationSystem::UpdateLODs()
 	}
 
 	SimulationSystem->GetVehicleTransforms(VehicleTransforms, MeshPositionOffset);
-	ISMCManager->GetISMC(Entities[0].Mesh)->BatchUpdateInstancesTransforms(0, VehicleTransforms, true, true, true);
+	for(auto KVP : MeshIDs)
+	{
+		const TArray<uint32>& Indices = KVP.Value;
+		TArray<FTransform> Transforms;
+		for(uint32 Index : Indices)
+		{
+			Transforms.Push(VehicleTransforms[Index]);
+		}
+
+		ISMCManager->GetISMC(KVP.Key)->BatchUpdateInstancesTransforms(0, Transforms, true, true, true);
+	}
 }
 
 void UTrRepresentationSystem::PostInitialize()
