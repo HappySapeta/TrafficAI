@@ -93,8 +93,6 @@ protected:
 
 #pragma region Debug
 	
-	void DrawFirstDebug();
-
 	void DrawDebug();
 
 #pragma endregion
@@ -111,7 +109,8 @@ private:
 	virtual void UpdateOrientations();
 
 	virtual void UpdateCollisionData();
-	
+	void DrawGraph(const UWorld* World);
+
 	virtual void UpdatePath(const uint32 Index);
 
 protected:
@@ -120,12 +119,13 @@ protected:
 	FTrPathFollowingConfiguration PathFollowingConfig;
 	
 	int NumEntities;
-	TSharedPtr<TArray<FVector>> Positions;
+	TArray<FVector> Positions;
 	TArray<FVector> Velocities;
 	TArray<FVector> Headings;
 	TArray<FVector> Goals;
 	TArray<FTrVehiclePathTransform> PathTransforms;
 	TArray<int> LeadingVehicleIndices;
+	TArray<bool> PathFollowingStates;
 	TArray<FColor> DebugColors;
 	
 	TArray<FRpSpatialGraphNode> Nodes;
