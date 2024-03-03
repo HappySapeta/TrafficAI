@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "UObject/ObjectSaveContext.h"
 #include "TrTypes.generated.h"
 
 // Simulated Entity
@@ -70,7 +71,35 @@ public:
 	// Traffic Archetypes defined by their LODs
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawn Configuration")
 	TArray<FTrVehicleDefinition> VehicleVariants;
+	
+private:
+	
+	void NormalizeVariants();
+
+public:
+	
+	virtual void PostSaveRoot(FObjectPostSaveRootContext ObjectSaveContext) override;
 };
+
+inline void UTrSpawnConfiguration::PostSaveRoot(FObjectPostSaveRootContext ObjectSaveContext)
+{
+	//NormalizeVariants();
+	Super::PostSaveRoot(ObjectSaveContext);
+}
+
+inline void UTrSpawnConfiguration::NormalizeVariants()
+{
+	float Magnitude = 0;
+	for(const FTrVehicleDefinition& Variant : VehicleVariants)
+	{
+		Magnitude += Variant.Ratio;
+	}
+
+	for(FTrVehicleDefinition& Variant : VehicleVariants)
+	{
+		Variant.Ratio /= Magnitude;
+	}
+}
 
 struct TRAFFICAI_API FTrPath
 {

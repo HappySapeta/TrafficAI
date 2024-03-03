@@ -46,6 +46,9 @@ struct TRAFFICAI_API FTrVehicleDynamics
 
 	UPROPERTY(EditAnywhere)
 	float MaxSteeringAngle = (UE_PI / 180.f) * 45.0f;
+
+	UPROPERTY(EditAnywhere)
+	float SensorRange = 2000.0f;
 	
 #pragma endregion
 	
