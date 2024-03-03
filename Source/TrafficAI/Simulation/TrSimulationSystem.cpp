@@ -8,19 +8,22 @@
 
 #define DEBUG_LIFETIME TickRate * 2.0f
 
-static int32 GDebugVerbosity = 0;
-static FAutoConsoleVariableRef CVarDebugVerbosity
+static bool GAIDebug = false;
+static FAutoConsoleCommand CComToggleAIDebug
 (
-	TEXT("TrafficDebugVerbosity"),
-	GDebugVerbosity,
-	TEXT("Set the level of debug information shown."),
+	TEXT("Traffic.AIDebug"),
+	TEXT(""),
+	FConsoleCommandDelegate::CreateLambda([]()
+	{
+		GAIDebug = !GAIDebug;		
+	}),
 	ECVF_Default
 );
 
 static bool GCollisionDebug = false;
-static FAutoConsoleCommand CComCollisionDebug
+static FAutoConsoleCommand CComToggleCollisionDebug
 (
-	TEXT("ToggleCollisionDebug"),
+	TEXT("Traffic.CollisionDebug"),
 	TEXT(""),
 	FConsoleCommandDelegate::CreateLambda([]()
 	{
@@ -30,9 +33,9 @@ static FAutoConsoleCommand CComCollisionDebug
 );
 
 static bool GGridDebug = false;
-static FAutoConsoleCommand CComGridDebug
+static FAutoConsoleCommand CComToggleGridDebug
 (
-	TEXT("ToggleGridDebug"),
+	TEXT("Traffic.GridDebug"),
 	TEXT(""),
 	FConsoleCommandDelegate::CreateLambda([]()
 	{
@@ -62,17 +65,15 @@ void UTrSimulationSystem::Initialize
 	IntersectionManager.Initialize(GraphComponent->GetIntersections());
 	
 	check(Nodes.Num() > 0);
-
-	Positions = MakeShared<TArray<FVector>>();
-		
 	for (int Index = 0; Index < NumEntities; ++Index)
 	{
 		const AActor* EntityActor = TrafficEntities[Index].Dummy;
 
-		Positions->Push(EntityActor->GetActorLocation());
+		Positions.Push(EntityActor->GetActorLocation());
 		Velocities.Push(EntityActor->GetVelocity());
 		Headings.Push(EntityActor->GetActorForwardVector());
 		LeadingVehicleIndices.Push(-1);
+		PathFollowingStates.Push(false);
 		DebugColors.Push(FColor::MakeRandomColor());
 
 		FVector NearestProjectionPoint;
@@ -88,8 +89,8 @@ void UTrSimulationSystem::Initialize
 		true  // Loop
 	);
 	
-	ImplicitGrid.Initialize(FFloatRange(-SimData->GridConfiguration.Range, SimData->GridConfiguration.Range), SimData->GridConfiguration.Resolution, Positions);
-	DrawFirstDebug();
+	ImplicitGrid.Initialize(FFloatRange(-SimData->GridConfiguration.Range, SimData->GridConfiguration.Range), SimData->GridConfiguration.Resolution);
+	GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::White, FString::Printf(TEXT("Simulating %d vehicles"), NumEntities));
 }
 
 void UTrSimulationSystem::GetVehicleTransforms(TArray<FTransform>& OutTransforms, const FVector& PositionOffset)
@@ -104,7 +105,7 @@ void UTrSimulationSystem::GetVehicleTransforms(TArray<FTransform>& OutTransforms
 		FTransform Transform
 		{
 			Headings[Index].ToOrientationQuat(),
-			Positions->operator[](Index) + PositionOffset
+			Positions[Index] + PositionOffset
 		};
 
 		OutTransforms[Index] = MoveTemp(Transform);
@@ -118,7 +119,7 @@ void UTrSimulationSystem::TickSimulation(const float DeltaSeconds)
 	TickRate = DeltaSeconds;
 	
 	DrawDebug();
-	ImplicitGrid.Update();
+	ImplicitGrid.Update(Positions);
 	SetGoals();
 	HandleGoals();
 	UpdateCollisionData();
@@ -135,7 +136,7 @@ void UTrSimulationSystem::SetGoals()
 
 	for (int Index = 0; Index < NumEntities; ++Index)
 	{
-		const FVector Future = Positions->operator[](Index) + Velocities[Index].GetSafeNormal() * PathFollowingConfig.LookAheadDistance;
+		const FVector Future = Positions[Index] + Velocities[Index].GetSafeNormal() * PathFollowingConfig.LookAheadDistance;
 
 		const FVector PathDirection = (PathTransforms[Index].Path.End - PathTransforms[Index].Path.Start).GetSafeNormal();
 		const FVector PathLeft = PathDirection.RotateAngleAxis(-90.0f, FVector::UpVector);
@@ -146,16 +147,18 @@ void UTrSimulationSystem::SetGoals()
 		OffsetPath.End += PathOffset;
 
 		const FVector FutureOnPath = ProjectPointOnPath(Future, OffsetPath);
-		const FVector PositionOnPath = ProjectPointOnPath(Positions->operator[](Index), OffsetPath);
+		const FVector PositionOnPath = ProjectPointOnPath(Positions[Index], OffsetPath);
 
-		const float Distance = FVector::Distance(Positions->operator[](Index), PositionOnPath);
+		const float Distance = FVector::Distance(Positions[Index], PositionOnPath);
 		if (Distance < PathFollowingConfig.PathFollowThreshold)
 		{
 			Goals[Index] = OffsetPath.End;
+			PathFollowingStates[Index] = true;
 		}
 		else
 		{
 			Goals[Index] = FutureOnPath;
+			PathFollowingStates[Index] = false;
 		}
 	}
 }
@@ -164,8 +167,8 @@ void UTrSimulationSystem::HandleGoals()
 {
 	for (int Index = 0; Index < NumEntities; ++Index)
 	{
-		const float Distance = FVector::Distance(Goals[Index], Positions->operator[](Index));
-		if (Distance <= PathFollowingConfig.GoalUpdateDistance)
+		const float Distance = FVector::Distance(Goals[Index], Positions[Index]);
+		if (Distance <= PathFollowingConfig.GoalUpdateDistance && PathFollowingStates[Index] == true)
 		{
 			UpdatePath(Index);
 		}
@@ -180,7 +183,7 @@ void UTrSimulationSystem::UpdateKinematics()
 	{
 		int LeadingVehicleIndex = LeadingVehicleIndices[Index];
 
-		FVector& CurrentPosition = Positions->operator[](Index);
+		FVector& CurrentPosition = Positions[Index];
 		const float CurrentSpeed = Velocities[Index].Size();
 		float RelativeSpeed = CurrentSpeed;
 		float CurrentGap = FVector::Distance(Goals[Index], CurrentPosition);
@@ -188,7 +191,7 @@ void UTrSimulationSystem::UpdateKinematics()
 
 		if(LeadingVehicleIndex != -1)
 		{
-			const float DistanceToOther = FVector::Distance(CurrentPosition, Positions->operator[](LeadingVehicleIndex));
+			const float DistanceToOther = FVector::Distance(CurrentPosition, Positions[LeadingVehicleIndex]);
 			if(DistanceToOther < CurrentGap)
 			{
 				MinimumGap = VehicleConfig.MinimumGap;
@@ -221,10 +224,10 @@ void UTrSimulationSystem::UpdateOrientations()
 	for (int Index = 0; Index < NumEntities; ++Index)
 	{
 		FVector& CurrentHeading = Headings[Index];
-		FVector& CurrentPosition = Positions->operator[](Index);
+		FVector& CurrentPosition = Positions[Index];
 		FVector& CurrentVelocity = Velocities[Index];
 
-		const FVector GoalDirection = (Goals[Index] - Positions->operator[](Index)).GetSafeNormal();
+		const FVector GoalDirection = (Goals[Index] - Positions[Index]).GetSafeNormal();
 
 		FVector RearWheelPosition = CurrentPosition - CurrentHeading * VehicleConfig.WheelBaseLength * 0.5f;
 		FVector FrontWheelPosition = CurrentPosition + CurrentHeading * VehicleConfig.WheelBaseLength * 0.5f;
@@ -324,15 +327,15 @@ FVector UTrSimulationSystem::ProjectPointOnPath(const FVector& Point, const FTrP
 
 int UTrSimulationSystem::FindNearestPath(int EntityIndex, FVector& NearestProjection) const
 {
-	NearestProjection = Positions->operator[](EntityIndex);
+	NearestProjection = Positions[EntityIndex];
 	int NearestPathIndex = 0;
 	float SmallestDistance = TNumericLimits<float>::Max();
 
 	for (int PathIndex = 0; PathIndex < PathTransforms.Num(); ++PathIndex)
 	{
-		const FVector Future = Positions->operator[](EntityIndex) + Velocities[EntityIndex].GetSafeNormal() * PathFollowingConfig.LookAheadDistance;
+		const FVector Future = Positions[EntityIndex] + Velocities[EntityIndex].GetSafeNormal() * PathFollowingConfig.LookAheadDistance;
 		const FVector ProjectionPoint = ProjectPointOnPath(Future, PathTransforms[PathIndex].Path);
-		const float Distance = FVector::Distance(ProjectionPoint, Positions->operator[](EntityIndex));
+		const float Distance = FVector::Distance(ProjectionPoint, Positions[EntityIndex]);
 
 		if (Distance < SmallestDistance)
 		{
@@ -342,47 +345,6 @@ int UTrSimulationSystem::FindNearestPath(int EntityIndex, FVector& NearestProjec
 		}
 	}
 	return NearestPathIndex;
-}
-
-void UTrSimulationSystem::DrawDebug()
-{
-	TRACE_CPUPROFILER_EVENT_SCOPE(UTrSimulationSystem::DrawDebug)
-
-	const UWorld* World = GetWorld();
-	if(GGridDebug)
-	{
-		ImplicitGrid.DrawDebug(World, DEBUG_LIFETIME);
-	}
-	
-	for (int Index = 0; Index < NumEntities; ++Index)
-	{
-		if(GDebugVerbosity >= 1)
-		{
-			DrawDebugBox(World, Positions->operator[](Index), VehicleConfig.Dimensions, Headings[Index].ToOrientationQuat(), DebugColors[Index], false, DEBUG_LIFETIME);
-			DrawDebugDirectionalArrow(World, Positions->operator[](Index), Positions->operator[](Index) + Headings[Index] * VehicleConfig.Dimensions.X * 1.5f, 1000.0f, FColor::Red, false, DEBUG_LIFETIME);
-		}
-		
-		if(GDebugVerbosity >= 2)
-		{
-			DrawDebugPoint(World, Goals[Index], 2.0f, DebugColors[Index], false, DEBUG_LIFETIME);
-			DrawDebugLine(World, Positions->operator[](Index), Goals[Index], DebugColors[Index], false, DEBUG_LIFETIME);
-		}
-	}
-}
-
-void UTrSimulationSystem::DrawFirstDebug()
-{
-	const UWorld* World = GetWorld();
-	for (const FRpSpatialGraphNode& Node : Nodes)
-	{
-		const TArray<uint32>& Connections = Node.GetConnections();
-		for (const uint32 ConnectedNodeIndex : Connections)
-		{
-			DrawDebugLine(World, Node.GetLocation(), Nodes[ConnectedNodeIndex].GetLocation(), FColor::White, true, -1);
-		}
-	}
-
-	GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::White, FString::Printf(TEXT("Simulating %d vehicles"), NumEntities));
 }
 
 void UTrSimulationSystem::UpdateCollisionData()
@@ -397,9 +359,9 @@ void UTrSimulationSystem::UpdateCollisionData()
 	for(int Index = 0; Index < NumEntities; ++Index)
 	{
 		Results.Reset();
-		const FVector& CurrentPosition = Positions->operator[](Index);
+		const FVector& CurrentPosition = Positions[Index];
 		const FVector EndPosition = CurrentPosition + Headings[Index] * VehicleConfig.SensorRange;
-		ImplicitGrid.LineSearch(CurrentPosition + Headings[Index] * VehicleConfig.Dimensions.X, EndPosition, Results, GetWorld());
+		ImplicitGrid.RadialSearch(CurrentPosition, VehicleConfig.SensorRange, Results);
 
 		LeadingVehicleIndices[Index] = -1;
 		float ClosestDistance = TNumericLimits<float>().Max();
@@ -407,7 +369,7 @@ void UTrSimulationSystem::UpdateCollisionData()
 		uint8 Count = Results.Num();
 		for(auto Itr = Results.Array.begin(); Count > 0; --Count, ++Itr)
 		{
-			const FVector& OtherPosition = Positions->operator[](*Itr);
+			const FVector& OtherPosition = Positions[*Itr];
 			const FVector OtherLocalVector = CurrentTransform.InverseTransformPosition(OtherPosition);
 			if(OtherLocalVector.Y >= -Bound && OtherLocalVector.Y <= Bound)
 			{
@@ -418,17 +380,47 @@ void UTrSimulationSystem::UpdateCollisionData()
 					LeadingVehicleIndices[Index] = *Itr;
 				}
 			}
-
-			if(GCollisionDebug)
-			{
-				DrawDebugLine(World, CurrentPosition, OtherPosition, FColor::White, false, DEBUG_LIFETIME);
-			}
 		}
 
 		if(GCollisionDebug && LeadingVehicleIndices[Index] != -1)
 		{
-			const FVector& OtherPosition = Positions->operator[](LeadingVehicleIndices[Index]);
+			const FVector& OtherPosition = Positions[LeadingVehicleIndices[Index]];
 			DrawDebugLine(World, CurrentPosition, OtherPosition, FColor::Red, false, DEBUG_LIFETIME);
+		}
+	}
+}
+
+void UTrSimulationSystem::DrawDebug()
+{
+	TRACE_CPUPROFILER_EVENT_SCOPE(UTrSimulationSystem::DrawDebug)
+
+	const UWorld* World = GetWorld();
+	if(GGridDebug)
+	{
+		ImplicitGrid.DrawDebug(World, DEBUG_LIFETIME);
+	}
+
+	if(GAIDebug)
+	{
+		for (int Index = 0; Index < NumEntities; ++Index)
+		{
+			DrawGraph(World);
+			DrawDebugBox(World, Positions[Index], VehicleConfig.Dimensions, Headings[Index].ToOrientationQuat(), DebugColors[Index], false, DEBUG_LIFETIME);
+			DrawDebugDirectionalArrow(World, Positions[Index], Positions[Index] + Headings[Index] * VehicleConfig.Dimensions.X * 1.5f, 1000.0f, FColor::Red, false, DEBUG_LIFETIME);
+			DrawDebugPoint(World, Goals[Index], 2.0f, DebugColors[Index], false, DEBUG_LIFETIME);
+			DrawDebugLine(World, Positions[Index], Goals[Index], DebugColors[Index], false, DEBUG_LIFETIME);
+		}
+	}
+}
+
+void UTrSimulationSystem::DrawGraph(const UWorld* World)
+{
+	for (const FRpSpatialGraphNode& Node : Nodes)
+	{
+		const TArray<uint32>& Connections = Node.GetConnections();
+		for (const uint32 ConnectedNodeIndex : Connections)
+		{
+			DrawDebugLine(World, Node.GetLocation(), Nodes[ConnectedNodeIndex].GetLocation(), FColor::White, false, DEBUG_LIFETIME);
 		}
 	}
 }
