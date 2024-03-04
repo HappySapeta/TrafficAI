@@ -361,7 +361,7 @@ void UTrSimulationSystem::UpdateCollisionData()
 		Results.Reset();
 		const FVector& CurrentPosition = Positions[Index];
 		const FVector EndPosition = CurrentPosition + Headings[Index] * VehicleConfig.SensorRange;
-		ImplicitGrid.RadialSearch(CurrentPosition, VehicleConfig.SensorRange, Results);
+		ImplicitGrid.LineSearch(CurrentPosition, EndPosition, Results);
 
 		LeadingVehicleIndices[Index] = -1;
 		float ClosestDistance = TNumericLimits<float>().Max();
