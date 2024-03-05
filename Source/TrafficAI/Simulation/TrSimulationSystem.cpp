@@ -4,9 +4,7 @@
 #include "TrSimulationData.h"
 #include "RpSpatialGraphComponent.h"
 
-//#define USE_ANGULAR_VELOCITY_BASED_STEERING
-
-#define DEBUG_LIFETIME TickRate * 2.0f
+#define DEBUG_LIFETIME -1
 
 static bool GAIDebug = false;
 static FAutoConsoleCommand CComToggleAIDebug
@@ -239,7 +237,6 @@ void UTrSimulationSystem::UpdateOrientations()
 			CurrentHeading.X * TargetHeading.X + CurrentHeading.Y * TargetHeading.Y
 		);
 
-#ifndef USE_ANGULAR_VELOCITY_BASED_STEERING
 		float SteerAngle = FMath::Clamp(TargetSteerAngle * VehicleConfig.SteeringSpeed, -VehicleConfig.MaxSteeringAngle, VehicleConfig.MaxSteeringAngle);
 
 		RearWheelPosition += CurrentVelocity.Length() * CurrentHeading * TickRate;
@@ -248,17 +245,6 @@ void UTrSimulationSystem::UpdateOrientations()
 		CurrentHeading = (FrontWheelPosition - RearWheelPosition).GetSafeNormal();
 		CurrentPosition = (FrontWheelPosition + RearWheelPosition) * 0.5f;
 		CurrentVelocity = CurrentHeading * CurrentVelocity.Length();
-#else 
-		float SteerAngle = FMath::Clamp(TargetSteerAngle * VehicleConfig.SteeringSpeed, -VehicleConfig.MaxSteeringAngle, VehicleConfig.MaxSteeringAngle);
-
-		const float TurningRadius = VehicleConfig.WheelBaseLength / FMath::Abs(FMath::Sin(SteerAngle));
-		const float AngularSpeed = CurrentVelocity.Length() * FMath::Sign(SteerAngle) / TurningRadius;
-
-		CurrentHeading = CurrentHeading.RotateAngleAxis(AngularSpeed, FVector::UpVector);
-		CurrentVelocity = CurrentVelocity.Length() * CurrentHeading;
-		CurrentPosition += CurrentVelocity * TickRate;
-#endif
-		
 	}
 }
 
