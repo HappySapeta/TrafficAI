@@ -5,6 +5,8 @@
 #include "RpSpatialGraphComponent.h"
 
 #define DEBUG_LIFETIME -1
+constexpr float AMBER_DURATION = 5.0f; // This duration is used for the timer that switches the signal state from green to amber.
+constexpr float DETECTION_RANGE_SCALE = 2.0f; // Values smaller than 2 would result in failure to detect other vehicles properly.
 
 static bool GAIDebug = false;
 static FAutoConsoleCommand CComToggleAIDebug
@@ -60,7 +62,6 @@ void UTrSimulationSystem::Initialize
 	check(PathTransforms.Num() > 0);
 
 	Nodes = GraphComponent->GetNodes();
-	IntersectionManager.Initialize(GraphComponent->GetIntersections());
 	
 	check(Nodes.Num() > 0);
 	for (int Index = 0; Index < NumEntities; ++Index)
@@ -72,19 +73,32 @@ void UTrSimulationSystem::Initialize
 		Headings.Push(EntityActor->GetActorForwardVector());
 		LeadingVehicleIndices.Push(-1);
 		PathFollowingStates.Push(false);
-		DebugColors.Push(FColor::MakeRandomColor());
-
 		FVector NearestProjectionPoint;
 		FindNearestPath(Index, NearestProjectionPoint);
 		Goals.Push(NearestProjectionPoint);
+		
+#if !UE_BUILD_SHIPPING
+		DebugColors.Push(FColor::MakeRandomColor());
+#endif
 	}
 
+	IntersectionManager.Initialize(GraphComponent->GetIntersections());
+
+	const float SignalSwitchTime = SimData->PathFollowingConfig.SignalSwitchInterval;
 	GetWorld()->GetTimerManager().SetTimer
 	(
 		IntersectionTimerHandle,
-		FTimerDelegate::CreateRaw(&IntersectionManager, &FTrIntersectionManager::Update),
-		SimData->PathFollowingConfig.SignalSwitchInterval,
-		true  // Loop
+		FTimerDelegate::CreateRaw(&IntersectionManager, &FTrIntersectionManager::SwitchToGreen),
+		SignalSwitchTime,
+		true
+	);
+
+	GetWorld()->GetTimerManager().SetTimer
+	(
+		AmberTimerHandle,
+		FTimerDelegate::CreateRaw(&IntersectionManager, &FTrIntersectionManager::SwitchToAmber),
+		FMath::Max(1, SignalSwitchTime - AMBER_DURATION),
+		true
 	);
 	
 	ImplicitGrid.Initialize(FFloatRange(-SimData->GridConfiguration.Range, SimData->GridConfiguration.Range), SimData->GridConfiguration.Resolution);
@@ -106,7 +120,7 @@ void UTrSimulationSystem::GetVehicleTransforms(TArray<FTransform>& OutTransforms
 			Positions[Index] + PositionOffset
 		};
 
-		OutTransforms[Index] = MoveTemp(Transform);
+		OutTransforms[Index] = Transform;
 	}
 }
 
@@ -144,8 +158,8 @@ void UTrSimulationSystem::SetGoals()
 		OffsetPath.Start += PathOffset;
 		OffsetPath.End += PathOffset;
 
-		const FVector FutureOnPath = ProjectPointOnPath(Future, OffsetPath);
-		const FVector PositionOnPath = ProjectPointOnPath(Positions[Index], OffsetPath);
+		const FVector FutureOnPath = ProjectPointOnPathClamped(Future, OffsetPath);
+		const FVector PositionOnPath = ProjectPointOnPathClamped(Positions[Index], OffsetPath);
 
 		const float Distance = FVector::Distance(Positions[Index], PositionOnPath);
 		if (Distance < PathFollowingConfig.PathFollowThreshold)
@@ -296,7 +310,7 @@ void UTrSimulationSystem::UpdatePath(const uint32 Index)
 	CurrentPath.EndNodeIndex = NewEndNodeIndex;
 }
 
-FVector UTrSimulationSystem::ProjectPointOnPath(const FVector& Point, const FTrPath& Path) const
+FVector UTrSimulationSystem::ProjectPointOnPathClamped(const FVector& Point, const FTrPath& Path) const
 {
 	const FVector PathStart = Path.Start;
 	const FVector PathEnd = Path.End;
@@ -320,7 +334,7 @@ int UTrSimulationSystem::FindNearestPath(int EntityIndex, FVector& NearestProjec
 	for (int PathIndex = 0; PathIndex < PathTransforms.Num(); ++PathIndex)
 	{
 		const FVector Future = Positions[EntityIndex] + Velocities[EntityIndex].GetSafeNormal() * PathFollowingConfig.LookAheadDistance;
-		const FVector ProjectionPoint = ProjectPointOnPath(Future, PathTransforms[PathIndex].Path);
+		const FVector ProjectionPoint = ProjectPointOnPathClamped(Future, PathTransforms[PathIndex].Path);
 		const float Distance = FVector::Distance(ProjectionPoint, Positions[EntityIndex]);
 
 		if (Distance < SmallestDistance)
@@ -338,7 +352,7 @@ void UTrSimulationSystem::UpdateCollisionData()
 	TRACE_CPUPROFILER_EVENT_SCOPE(UTrSimulationSystem::UpdateCollisionData)
 	
 	FRpSearchResults Results;
-	const float Bound = VehicleConfig.Dimensions.Y * 2.0f; 
+	const float Bound = VehicleConfig.Dimensions.Y * DETECTION_RANGE_SCALE; 
 
 	const UWorld* World = GetWorld();
 	
@@ -376,6 +390,7 @@ void UTrSimulationSystem::UpdateCollisionData()
 	}
 }
 
+#if !UE_BUILD_SHIPPING
 void UTrSimulationSystem::DrawDebug()
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(UTrSimulationSystem::DrawDebug)
@@ -409,4 +424,16 @@ void UTrSimulationSystem::DrawGraph(const UWorld* World)
 			DrawDebugLine(World, Node.GetLocation(), Nodes[ConnectedNodeIndex].GetLocation(), FColor::White, false, DEBUG_LIFETIME);
 		}
 	}
+}
+#endif
+
+void UTrSimulationSystem::BeginDestroy()
+{
+	if(const UWorld* World = GetWorld())
+	{
+		FTimerManager& TimerManager = World->GetTimerManager();
+		TimerManager.ClearTimer(IntersectionTimerHandle);
+		TimerManager.ClearTimer(AmberTimerHandle);
+	}
+	Super::BeginDestroy();
 }
