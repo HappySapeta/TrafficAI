@@ -5,6 +5,7 @@
 #include "RpSpatialGraphComponent.h"
 
 #define DEBUG_LIFETIME -1
+constexpr float AMBER_DURATION = 5.0f;
 
 static bool GAIDebug = false;
 static FAutoConsoleCommand CComToggleAIDebug
@@ -60,7 +61,6 @@ void UTrSimulationSystem::Initialize
 	check(PathTransforms.Num() > 0);
 
 	Nodes = GraphComponent->GetNodes();
-	IntersectionManager.Initialize(GraphComponent->GetIntersections());
 	
 	check(Nodes.Num() > 0);
 	for (int Index = 0; Index < NumEntities; ++Index)
@@ -72,19 +72,32 @@ void UTrSimulationSystem::Initialize
 		Headings.Push(EntityActor->GetActorForwardVector());
 		LeadingVehicleIndices.Push(-1);
 		PathFollowingStates.Push(false);
-		DebugColors.Push(FColor::MakeRandomColor());
-
 		FVector NearestProjectionPoint;
 		FindNearestPath(Index, NearestProjectionPoint);
 		Goals.Push(NearestProjectionPoint);
+		
+#if !UE_BUILD_SHIPPING
+		DebugColors.Push(FColor::MakeRandomColor());
+#endif
 	}
 
+	IntersectionManager.Initialize(GraphComponent->GetIntersections());
+
+	const float SignalSwitchTime = SimData->PathFollowingConfig.SignalSwitchInterval;
 	GetWorld()->GetTimerManager().SetTimer
 	(
 		IntersectionTimerHandle,
-		FTimerDelegate::CreateRaw(&IntersectionManager, &FTrIntersectionManager::Update),
-		SimData->PathFollowingConfig.SignalSwitchInterval,
-		true  // Loop
+		FTimerDelegate::CreateRaw(&IntersectionManager, &FTrIntersectionManager::SwitchToGreen),
+		SignalSwitchTime,
+		true
+	);
+
+	GetWorld()->GetTimerManager().SetTimer
+	(
+		AmberTimerHandle,
+		FTimerDelegate::CreateRaw(&IntersectionManager, &FTrIntersectionManager::SwitchToAmber),
+		FMath::Max(1, SignalSwitchTime - AMBER_DURATION),
+		true
 	);
 	
 	ImplicitGrid.Initialize(FFloatRange(-SimData->GridConfiguration.Range, SimData->GridConfiguration.Range), SimData->GridConfiguration.Resolution);
@@ -376,6 +389,7 @@ void UTrSimulationSystem::UpdateCollisionData()
 	}
 }
 
+#if !UE_BUILD_SHIPPING
 void UTrSimulationSystem::DrawDebug()
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(UTrSimulationSystem::DrawDebug)
@@ -410,3 +424,17 @@ void UTrSimulationSystem::DrawGraph(const UWorld* World)
 		}
 	}
 }
+#endif
+
+void UTrSimulationSystem::BeginDestroy()
+{
+	if(const UWorld* World = GetWorld())
+	{
+		FTimerManager& TimerManager = World->GetTimerManager();
+		TimerManager.ClearTimer(IntersectionTimerHandle);
+		TimerManager.ClearTimer(AmberTimerHandle);
+	}
+
+	Super::BeginDestroy();
+}
+

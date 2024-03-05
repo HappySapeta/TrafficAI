@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "FTrIntersectionManager.h"
 #include "TrSimulationData.h"
 #include "../Shared/TrTypes.h"
 #include "Ripple/Public/RpSpatialGraphComponent.h"
@@ -11,52 +12,6 @@
 #include "TrSimulationSystem.generated.h"
 
 class UTrSimulationConfiguration;
-
-class FTrIntersectionManager
-{
-public:
-
-	void Initialize(const TArray<FTrIntersection>& NewIntersections)
-	{
-		Intersections = NewIntersections;
-		for(const FTrIntersection& Intersection : NewIntersections)
-		{
-			for(const uint32 Node : Intersection.Nodes)
-			{
-				IntersectionNodes.Add(Node);
-			}
-		}
-		
-		Update();
-	}
-
-	bool IsNodeBlocked(const uint32 NodeIndex) const
-	{
-		if(IntersectionNodes.Contains(NodeIndex))
-		{
-			return !UnblockedNodes.Contains(NodeIndex);
-		}
-
-		return false;
-	}
-
-	void Update()
-	{
-		UnblockedNodes.Empty();
-		for(const FTrIntersection& Intersection : Intersections)
-		{
-			uint32 RandomNode = FMath::RandRange(0, Intersection.Nodes.Num() - 1);
-			UnblockedNodes.Add(Intersection.Nodes[RandomNode]);
-		}
-	}
-	
-private:
-
-	TArray<FTrIntersection> Intersections;
-	TSet<uint32> IntersectionNodes;
-	TSet<uint32> UnblockedNodes;
-};
-
 
 UCLASS()
 class TRAFFICAI_API UTrSimulationSystem : public UWorldSubsystem
@@ -73,11 +28,13 @@ public:
 		const TArray<FTrVehiclePathTransform>& TrafficVehicleStarts
 	);
 	
-	virtual void Initialize(FSubsystemCollectionBase& Collection) override {};
+	void Initialize(FSubsystemCollectionBase& Collection) override {};
 
-	virtual void TickSimulation(const float DeltaSeconds);
+	void TickSimulation(const float DeltaSeconds);
 
 	void GetVehicleTransforms(TArray<FTransform>& OutTransforms, const FVector& PositionOffset);
+
+	virtual void BeginDestroy() override;
 
 protected:
 
@@ -92,26 +49,25 @@ protected:
 #pragma endregion
 
 #pragma region Debug
-	
+#if !UE_BUILD_SHIPPING
 	void DrawDebug();
-
-#pragma endregion
-	
-private:
-
-
-	virtual void SetGoals();
-	
-	virtual void HandleGoals();
-
-	virtual void UpdateKinematics();
-
-	virtual void UpdateOrientations();
-
-	virtual void UpdateCollisionData();
 	void DrawGraph(const UWorld* World);
+#endif
+#pragma endregion
 
-	virtual void UpdatePath(const uint32 Index);
+private:
+	
+	void SetGoals();
+	
+	void HandleGoals();
+
+	void UpdateKinematics();
+
+	void UpdateOrientations();
+
+	void UpdateCollisionData();
+	
+	void UpdatePath(const uint32 Index);
 
 protected:
 
@@ -126,7 +82,10 @@ protected:
 	TArray<FTrVehiclePathTransform> PathTransforms;
 	TArray<int> LeadingVehicleIndices;
 	TArray<bool> PathFollowingStates;
+
+#if !UE_BUILD_SHIPPING
 	TArray<FColor> DebugColors;
+#endif
 	
 	TArray<FRpSpatialGraphNode> Nodes;
 	FTrIntersectionManager IntersectionManager;
@@ -136,4 +95,5 @@ private:
 
 	float TickRate;
 	FTimerHandle IntersectionTimerHandle;
+	FTimerHandle AmberTimerHandle;
 };
