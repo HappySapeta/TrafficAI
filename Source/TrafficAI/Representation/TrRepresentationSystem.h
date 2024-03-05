@@ -129,11 +129,11 @@ private:
 	
 private:
 
-	UPROPERTY()
 	TMap<UStaticMesh*, TArray<uint32>> MeshIDs;
 	
 	FVector MeshPositionOffset;
 	TArray<FTransform> VehicleTransforms;
+
 	TArray<FTrafficAISpawnRequest> SpawnRequests;
 	TArray<FTrVehiclePathTransform> VehicleStarts;
 };

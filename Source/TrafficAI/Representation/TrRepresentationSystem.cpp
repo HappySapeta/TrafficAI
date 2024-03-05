@@ -2,11 +2,12 @@
 
 #include "TrRepresentationSystem.h"
 
+#define SET_ACTOR_ENABLED(Actor, Value) Actor->SetActorEnableCollision(Value); Actor->SetActorHiddenInGame(!Value); Actor->SetActorTickEnabled(Value);
+
 #if UE_EDITOR
 #include "Editor.h"
 #endif
 
-#include "TrUtility.h"
 #include "TrISMCManager.h"
 #include "RpSpatialGraphComponent.h"
 #include "Kismet/KismetMathLibrary.h"
