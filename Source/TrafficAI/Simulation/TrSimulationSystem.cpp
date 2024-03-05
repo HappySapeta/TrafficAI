@@ -360,7 +360,7 @@ void UTrSimulationSystem::UpdateCollisionData()
 	{
 		Results.Reset();
 		const FVector& CurrentPosition = Positions[Index];
-		const FVector EndPosition = CurrentPosition + Headings[Index] * VehicleConfig.SensorRange;
+		const FVector EndPosition = CurrentPosition + Headings[Index] * VehicleConfig.CollisionSensorRange;
 		ImplicitGrid.LineSearch(CurrentPosition, EndPosition, Results);
 
 		LeadingVehicleIndices[Index] = -1;
