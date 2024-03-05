@@ -6,6 +6,10 @@
 #include "GameFramework/Actor.h"
 #include "TrTrafficManager.generated.h"
 
+/**
+ * The `ATrTrafficManager` class is responsible for managing traffic simulation.
+ * It provides methods for spawning vehicles, starting and stopping the simulation, and handling tick events.
+ */
 UCLASS()
 class TRAFFICAI_API ATrTrafficManager : public AActor
 {
@@ -15,12 +19,18 @@ public:
 	
 	ATrTrafficManager();
 
+	/**
+	 * Spawns vehicles using the Representation System,
+	 * and initialize the Simulation System.
+	 */
 	UFUNCTION(CallInEditor, BlueprintCallable)
 	void SpawnVehicles();
 	
+	// Starts the simulation.
 	UFUNCTION(CallInEditor, BlueprintCallable)
 	void StartSimulation();
 	
+	// Stops the simulation.
 	UFUNCTION(CallInEditor, BlueprintCallable)
 	void StopSimulation();
 	
