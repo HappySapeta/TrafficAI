@@ -53,15 +53,15 @@ class TRAFFICAI_API UTrSpawnConfiguration : public UDataAsset
 public:
 	
 	// Absolute Minimum distance between two spawned vehicles
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawn Configuration")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawn Configuration", meta = (Units = "cm"))
 	FFloatRange Separation = FFloatRange(750, 900);
 
 	// Minimum distance from an intersection where vehicles can be spawned relative to length of the lane
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawn Configuration")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawn Configuration", meta = (Units = "cm"))
 	float IntersectionCutoff = 500.0f;
 
 	// Absolute Width of a lane
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawn Configuration")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawn Configuration", meta = (Units = "cm"))
 	float LaneWidth = 250.0f;
 
 	// Absolute Width of a lane
@@ -101,6 +101,7 @@ inline void UTrSpawnConfiguration::NormalizeVariants()
 	}
 }
 
+// Represents a path in a traffic simulation system.
 struct TRAFFICAI_API FTrPath
 {
 	FVector Start = FVector::Zero();
@@ -119,6 +120,10 @@ struct TRAFFICAI_API FTrPath
 	}
 };
 
+/**
+ * This struct is used to store the transform and path information for a traffic vehicle.
+ * It is typically used in the spawning process to create instances of traffic vehicles along a specified path.
+ */
 struct TRAFFICAI_API FTrVehiclePathTransform
 {
 	FTransform Transform;

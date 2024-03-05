@@ -2,15 +2,14 @@
 
 #include "TrRepresentationSystem.h"
 
+#define SET_ACTOR_ENABLED(Actor, Value) Actor->SetActorEnableCollision(Value); Actor->SetActorHiddenInGame(!Value); Actor->SetActorTickEnabled(Value);
+
 #if UE_EDITOR
 #include "Editor.h"
 #endif
 
-#include "TrUtility.h"
 #include "TrISMCManager.h"
-
 #include "RpSpatialGraphComponent.h"
-
 #include "Kismet/KismetMathLibrary.h"
 #include "GameFramework/PlayerController.h"
 #include "Components/HierarchicalInstancedStaticMeshComponent.h"
@@ -29,8 +28,7 @@ void UTrRepresentationSystem::SpawnVehiclesOnGraph(const URpSpatialGraphComponen
 	{
 		FTrafficAISpawnRequest NewSpawnRequest;
 		NewSpawnRequest.Transform = StartData.Transform;
-
-
+		
 		FTrVehicleDefinition ChosenVariant = NewSpawnConfiguration->VehicleVariants[0];
 		for(const FTrVehicleDefinition& Variant : NewSpawnConfiguration->VehicleVariants)
 		{

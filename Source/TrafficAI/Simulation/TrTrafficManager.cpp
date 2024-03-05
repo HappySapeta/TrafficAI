@@ -20,7 +20,6 @@ void ATrTrafficManager::BeginPlay()
 	const UWorld* World = GetWorld();
 
 	bSimulate = false;
-	
 	RepresentationSystem = World->GetSubsystem<UTrRepresentationSystem>();
 	SimulationSystem = World->GetSubsystem<UTrSimulationSystem>();
 	
@@ -33,7 +32,6 @@ void ATrTrafficManager::Tick(float DeltaSeconds)
 	{
 		return;
 	}
-	
 	SimulationSystem->TickSimulation(DeltaSeconds);
 	RepresentationSystem->UpdateLODs();
 	Super::Tick(DeltaSeconds);
