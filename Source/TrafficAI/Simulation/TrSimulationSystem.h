@@ -5,7 +5,7 @@
 #include "CoreMinimal.h"
 #include "FTrIntersectionManager.h"
 #include "TrSimulationData.h"
-#include "../Shared/TrTypes.h"
+#include "TrTypes.h"
 #include "Ripple/Public/RpSpatialGraphComponent.h"
 #include "SpatialAcceleration/RpImplicitGrid.h"
 #include "TrafficAI/Utility/TrSpatialGraphComponent.h"

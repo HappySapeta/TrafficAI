@@ -2,7 +2,7 @@
 
 #pragma once
 #include "CoreMinimal.h"
-#include "..\Shared\TrTypes.h"
+#include "TrTypes.h"
 #include "TrRepresentationSystem.generated.h"
 
 // Information required to spawn an Entity.
