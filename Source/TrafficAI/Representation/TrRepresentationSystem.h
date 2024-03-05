@@ -3,7 +3,6 @@
 #pragma once
 #include "CoreMinimal.h"
 #include "..\Shared\TrTypes.h"
-#include "UObject/WeakFieldPtr.h"
 #include "TrRepresentationSystem.generated.h"
 
 // Information required to spawn an Entity.
@@ -29,7 +28,13 @@ class TRAFFICAI_API FTrVehicleStartCreator
 {
 public:
 	
-	// Traverse the edges of the Graph
+	/**
+	 * \brief Creates vehicle start positions along the specified graph.
+	 *
+	 * This method takes a graph component, spawn configuration, maximum number of instances, and an array of vehicle start positions.
+	 * It iterates through all nodes in the graph and creates start positions between connected nodes.
+	 * When creating a start position, it makes use of the spawn configuration to determine the number of instances and other properties
+	 */
 	static void CreateVehicleStartsOnGraph
 	(
 		const URpSpatialGraphComponent* GraphComponent,
@@ -38,7 +43,13 @@ public:
 		TArray<FTrVehiclePathTransform>& OutVehicleStarts
 	);
 
-	// Create spawn points along an edge
+	/**
+	 * \brief Creates vehicle start positions along an edge between specified start and destination points.
+	 *
+	 * This method takes the start position, destination position, spawn configuration, and an array of vehicle start positions.
+	 * It creates start positions along the edge between the start and destination points based on the spawn configuration.
+	 * The created start positions are added to the OutStartData array.
+	 */
 	static void CreateStartTransformsOnEdge
 	(
 		const FVector& Start,
@@ -49,7 +60,12 @@ public:
 };
 
 /**
- * Subsystem responsible for spawning Entities and handling the seamless transition of LODs.
+ * \brief The UTrRepresentationSystem class is responsible for managing the representation of vehicles in the game world.
+ *
+ * The UTrRepresentationSystem class handles the spawning and updating of vehicle representations in the game world.
+ * It provides methods to spawn vehicles on a specified graph and to push requests to spawn single vehicles.
+ * It also provides methods to retrieve references to the spawned entities and the vehicle start transforms.
+ * The UTrRepresentationSystem class is a part of the Traffic AI system in the game.
  */
 UCLASS(config = Game, DefaultConfig, DisplayName = "Traffic Representation System")
 class TRAFFICAI_API UTrRepresentationSystem : public UWorldSubsystem
@@ -78,6 +94,7 @@ public:
 	// Create this Subsystem only if playing in PIE or in game.
 	virtual bool ShouldCreateSubsystem(UObject* Outer) const override;
 
+	//This method iterates through the entities in the system and switches their LODs based on the distance to the player. 
 	void UpdateLODs();
 	
 	virtual void PostInitialize() override;
@@ -112,7 +129,9 @@ private:
 	
 private:
 
+	UPROPERTY()
 	TMap<UStaticMesh*, TArray<uint32>> MeshIDs;
+	
 	FVector MeshPositionOffset;
 	TArray<FTransform> VehicleTransforms;
 	TArray<FTrafficAISpawnRequest> SpawnRequests;
