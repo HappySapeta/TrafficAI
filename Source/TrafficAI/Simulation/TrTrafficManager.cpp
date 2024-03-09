@@ -40,7 +40,7 @@ void ATrTrafficManager::Tick(float DeltaSeconds)
 void ATrTrafficManager::SpawnVehicles()
 {
 	RepresentationSystem->SpawnVehiclesOnGraph(SpatialGraphComponent, SpawnConfiguration);
-	SimulationSystem->Initialize(SimulationConfiguration, SpatialGraphComponent, RepresentationSystem->GetEntities(), RepresentationSystem->GetVehicleStarts());
+	SimulationSystem->Initialize(SimulationConfiguration, SpatialGraphComponent, RepresentationSystem->GetInitialTransforms(), RepresentationSystem->GetVehicleStarts());
 }
 
 void ATrTrafficManager::StartSimulation()

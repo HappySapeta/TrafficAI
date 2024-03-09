@@ -88,6 +88,8 @@ public:
 	// Returns a const reference to an array of Vehicle Start Transforms.
 	const TArray<FTrVehiclePathTransform>& GetVehicleStarts() const { return VehicleStarts; }
 	
+	TArray<FTransform> GetInitialTransforms() const;
+	
 	// Reset SharedPtrs to Entities.
 	virtual void BeginDestroy() override;
 

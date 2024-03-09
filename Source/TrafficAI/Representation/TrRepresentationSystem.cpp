@@ -85,6 +85,17 @@ void UTrRepresentationSystem::SpawnSingleVehicle(const FTrafficAISpawnRequest& S
 	}
 }
 
+TArray<FTransform> UTrRepresentationSystem::GetInitialTransforms() const
+{
+	TArray<FTransform> InitialTransforms;
+	for(const FTrVehicleRepresentation& Entity : Entities)
+	{
+		InitialTransforms.Push(Entity.Dummy->GetTransform());
+	}
+
+	return InitialTransforms;
+}
+
 void UTrRepresentationSystem::UpdateLODs()
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(UTrRepresentationSystem::UpdateLODLambda)

@@ -57,7 +57,7 @@ public:
 	(
 		const UTrSimulationConfiguration* SimData,
 		const UTrSpatialGraphComponent* GraphComponent,
-		const TArray<FTrVehicleRepresentation>& TrafficEntities,
+		const TArray<FTransform>& InitialTransforms,
 		const TArray<FTrVehiclePathTransform>& TrafficVehicleStarts
 	);
 

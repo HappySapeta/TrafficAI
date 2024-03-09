@@ -48,11 +48,11 @@ void UTrSimulationSystem::Initialize
 (
 	const UTrSimulationConfiguration* SimData,
 	const UTrSpatialGraphComponent* GraphComponent,
-	const TArray<FTrVehicleRepresentation>& TrafficEntities,
+	const TArray<FTransform>& InitialTransforms,
 	const TArray<FTrVehiclePathTransform>& TrafficVehicleStarts
 )
 {
-	NumEntities = TrafficEntities.Num();
+	NumEntities = InitialTransforms.Num();
 
 	check(SimData)
 	VehicleConfig = SimData->VehicleConfig;
@@ -66,11 +66,9 @@ void UTrSimulationSystem::Initialize
 	check(Nodes.Num() > 0);
 	for (int Index = 0; Index < NumEntities; ++Index)
 	{
-		const AActor* EntityActor = TrafficEntities[Index].Dummy;
-
-		Positions.Push(EntityActor->GetActorLocation());
-		Velocities.Push(EntityActor->GetVelocity());
-		Headings.Push(EntityActor->GetActorForwardVector());
+		Positions.Push(InitialTransforms[Index].GetLocation());
+		Velocities.Push(FVector::Zero());
+		Headings.Push(InitialTransforms[Index].GetRotation().GetForwardVector());
 		LeadingVehicleIndices.Push(-1);
 		PathFollowingStates.Push(false);
 		FVector NearestProjectionPoint;
