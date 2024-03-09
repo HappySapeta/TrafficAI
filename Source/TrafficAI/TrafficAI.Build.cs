@@ -16,7 +16,6 @@ public class TrafficAI : ModuleRules
 			"CoreUObject", 
 			"Engine", 
 			"InputCore", 
-			"AStarPathFinder", 
 			"ChaosVehicles",
 		});
 		
