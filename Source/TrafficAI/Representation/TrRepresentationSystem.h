@@ -81,14 +81,11 @@ public:
 	// Push a request to spawn an Entity. The request is not guaranteed to be processed immediately.
 	UFUNCTION(BlueprintCallable)
 	void SpawnSingleVehicle(const FTrafficAISpawnRequest& SpawnRequest);
-
-	// Returns a const reference to an array of Entities.
-	const TArray<FTrVehicleRepresentation>& GetEntities() const { return Entities; }
-
+	
 	// Returns a const reference to an array of Vehicle Start Transforms.
 	const TArray<FTrVehiclePathTransform>& GetVehicleStarts() const { return VehicleStarts; }
-	
-	TArray<FTransform> GetInitialTransforms() const;
+
+	const TArray<FTransform>& GetInitialTransforms() const;
 	
 	// Reset SharedPtrs to Entities.
 	virtual void BeginDestroy() override;
@@ -103,10 +100,10 @@ public:
 
 protected:
 	
-	TArray<FTrVehicleRepresentation> Entities;
-
 	UPROPERTY()
 	TObjectPtr<class ATrISMCManager> ISMCManager;
+
+	uint32 NumEntities;
 
 private:
 
@@ -131,6 +128,7 @@ private:
 	
 private:
 
+	TArray<AActor*> Actors;
 	TMap<UStaticMesh*, TArray<uint32>> MeshIDs;
 	
 	FVector MeshPositionOffset;
