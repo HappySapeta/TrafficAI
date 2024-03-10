@@ -6,23 +6,6 @@
 #include "UObject/ObjectSaveContext.h"
 #include "TrTypes.generated.h"
 
-// Simulated Entity
-struct FTrVehicleRepresentation
-{
-	// Mesh used for the lowest LOD.
-	UStaticMesh* Mesh = nullptr;
-	
-	// Index of the Instanced Static Mesh associated with this Entity.
-	// The InstanceIndex combined with the Mesh reference can be used to uniquely identify this Entity.
-	int32 InstanceIndex = -1;
-
-	// Actor used for the highest LOD.
-	AActor* Dummy = nullptr;
-
-	// The first waypoint assigned to this entity.
-	uint32 InitialWaypoint = 0;
-};
-
 /**
  * A traffic vehicle is represented by a static mesh and an actor class.
  * The ratio property determines the probability of generating this vehicle in relation to other vehicles.
