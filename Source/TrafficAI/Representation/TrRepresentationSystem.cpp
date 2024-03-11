@@ -64,7 +64,7 @@ void UTrRepresentationSystem::SpawnSingleVehicle(const FTrafficAISpawnRequest& S
 #if UE_EDITOR
 	SpawnParameters.bHideFromSceneOutliner = true;
 #endif
-	if (AActor* NewActor = GetWorld()->SpawnActor(SpawnRequest.LOD1_Actor, &SpawnRequest.Transform, SpawnParameters))
+	if (ATrVehicle* NewActor = Cast<ATrVehicle>(GetWorld()->SpawnActor(SpawnRequest.LOD1_Actor, &SpawnRequest.Transform, SpawnParameters)))
 	{
 		Actors.Push(NewActor);
 		UStaticMesh* Mesh = SpawnRequest.LOD2_Mesh;
@@ -96,7 +96,9 @@ const TArray<FTransform>& UTrRepresentationSystem::GetInitialTransforms() const
 void UTrRepresentationSystem::UpdateLODs()
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(UTrRepresentationSystem::UpdateLODLambda)
-	
+
+	const TArray<float>& Accelerations = SimulationSystem->GetAccelerations();
+	const TArray<FVector>& Headings = SimulationSystem->GetHeadings();
 	SimulationSystem->GetVehicleTransforms(VehicleTransforms, MeshPositionOffset);
 	
 	FVector FocusLocation(0.0f);
@@ -113,7 +115,8 @@ void UTrRepresentationSystem::UpdateLODs()
 
 		if(bIsActorRelevant)
 		{
-			Actors[EntityIndex]->SetActorTransform(VehicleTransforms[EntityIndex], false, nullptr, ETeleportType::ResetPhysics);
+			Actors[EntityIndex]->SetAcceleration(Accelerations[EntityIndex]);
+			Actors[EntityIndex]->SetHeading(Headings[EntityIndex]);
 		}
 	}
 	

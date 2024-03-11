@@ -71,6 +71,8 @@ void UTrSimulationSystem::Initialize
 		Headings.Push(InitialTransforms[Index].GetRotation().GetForwardVector());
 		LeadingVehicleIndices.Push(-1);
 		PathFollowingStates.Push(false);
+		Accelerations.Push(0.0f);
+		
 		FVector NearestProjectionPoint;
 		FindNearestPath(Index, NearestProjectionPoint);
 		Goals.Push(NearestProjectionPoint);
@@ -219,6 +221,8 @@ void UTrSimulationSystem::UpdateKinematics()
 		float Acceleration = FreeRoadTerm + InteractionTerm;
 		Acceleration = FMath::Clamp(Acceleration, -VehicleConfig.ComfortableBrakingDeceleration * 2.0f, VehicleConfig.MaximumAcceleration);
 
+		Accelerations[Index] = Acceleration;
+		
 		FVector& CurrentHeading = Headings[Index];
 		FVector& CurrentVelocity = Velocities[Index];
 
@@ -308,7 +312,7 @@ void UTrSimulationSystem::UpdatePath(const uint32 Index)
 	CurrentPath.EndNodeIndex = NewEndNodeIndex;
 }
 
-FVector UTrSimulationSystem::ProjectPointOnPathClamped(const FVector& Point, const FTrPath& Path) const
+FVector UTrSimulationSystem::ProjectPointOnPathClamped(const FVector& Point, const FTrPath& Path)
 {
 	const FVector PathStart = Path.Start;
 	const FVector PathEnd = Path.End;

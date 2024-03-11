@@ -3,31 +3,33 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "WheeledVehiclePawn.h"
+#include "PIDController/FRpPIDController.h"
 #include "TrVehicle.generated.h"
 
 /**
  *
  */
 UCLASS()
-class TRAFFICAI_API ATrVehicle : public APawn
+class TRAFFICAI_API ATrVehicle : public AWheeledVehiclePawn
 {
 	GENERATED_BODY()
 
 public:
-	
-	// Sets default values for this pawn's properties
+
 	ATrVehicle();
 
-	UFUNCTION(BlueprintCallable)
-	UPrimitiveComponent* GetRoot() const { return VehicleRoot; }
+	virtual void Tick(float DeltaSeconds) override;
 	
-protected:
+	void SetAcceleration(const float DesiredAcceleration);
 
-	// The skeletal mesh component representing the vehicle.
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Vehicle")
-	TObjectPtr<USkeletalMeshComponent> VehicleRoot;
-	
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Vehicle")
-	TObjectPtr<class UTrVehicleMovementComponent> VehicleMovementComponent;
+	void SetHeading(const FVector& DesiredHeading);
+
+private:
+
+	FVector PreviousVelocity = FVector::ZeroVector;
+	float Acceleration = 0.0f;
+	float DesiredAcceleration = 0.0f;
+	FRpPIDController<float> AccelerationController;
 	
 };

@@ -3,6 +3,7 @@
 #pragma once
 #include "CoreMinimal.h"
 #include "TrTypes.h"
+#include "TrafficAI/Vehicles/TrVehicle.h"
 #include "TrRepresentationSystem.generated.h"
 
 // Information required to spawn an Entity.
@@ -17,7 +18,7 @@ struct TRAFFICAI_API FTrafficAISpawnRequest
 
 	// An Actor that represents an Active vehicle with maximum details.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	TSubclassOf<AActor> LOD1_Actor;
+	TSubclassOf<ATrVehicle> LOD1_Actor;
 
 	// Initial transform when the Entity is spawned.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
@@ -128,7 +129,9 @@ private:
 	
 private:
 
-	TArray<AActor*> Actors;
+	UPROPERTY()
+	TArray<ATrVehicle*> Actors;
+	
 	TMap<UStaticMesh*, TArray<uint32>> MeshIDs;
 	
 	FVector MeshPositionOffset;
