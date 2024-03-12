@@ -1,43 +1,34 @@
 ﻿// Copyright Anupam Sahu. All Rights Reserved.
 
 #include "TrVehicle.h"
-
 #include "TrafficAI/Simulation/TrSimulationSystem.h"
 
-ATrVehicle::ATrVehicle()
+void ATrVehicle::BeginPlay()
 {
-	PrimaryActorTick.bCanEverTick = true;
-	AccelerationController = FRpPIDController<float>(&Acceleration, 0.5f, 0.0f, 0.1f);
+	ThrottleController.Tune(ThrottleKp, ThrottleKi, ThrottleKd);
+	SteeringController.Tune(SteeringKp, SteeringKi, SteeringKd);
+	Super::BeginPlay();
 }
 
 void ATrVehicle::Tick(float DeltaSeconds)
 {
-	const FVector& DesiredHeading = GetActorForwardVector();
+	USkeletalMeshComponent* Root = GetMesh();
 	
-	const float PIDAcceleration = AccelerationController.Evaluate(DesiredAcceleration, DeltaSeconds);
-	GetMesh()->AddForce(PIDAcceleration * DesiredHeading, NAME_None, true);
+	const float PIDThrottle = ThrottleController.Evaluate(LocationError, DeltaSeconds);
+	Root->AddForce(PIDThrottle * GetActorForwardVector(), NAME_None, true);
 
-	const FVector& CurrentVelocity = GetMesh()->GetPhysicsLinearVelocity();
-	const FVector& VelocityDifference = CurrentVelocity - PreviousVelocity;
-	Acceleration = UTrSimulationSystem::ScalarProjection(VelocityDifference, DesiredHeading);
-
-	PreviousVelocity = CurrentVelocity;
-
-	GEngine->AddOnScreenDebugMessage
-	(
-		-1, DeltaSeconds, FColor::Red,
-		FString::Printf(TEXT("Current = %.1f, Desired = %.1f"), Acceleration, DesiredAcceleration),
-		true, FVector2D::One() * 3.0f
-	);
-	
 	Super::Tick(DeltaSeconds);
 }
 
-void ATrVehicle::SetAcceleration(const float DesiredValue)
+void ATrVehicle::SetTargetTransform(const FTransform& TargetTransform)
 {
-	DesiredAcceleration = DesiredValue;
-}
-
-void ATrVehicle::SetHeading(const FVector& DesiredHeading)
-{
+	LocationError = UTrSimulationSystem::ScalarProjection(TargetTransform.GetLocation() - GetActorLocation(), GetActorForwardVector());
+	
+	const FVector& CurrentHeading = GetActorForwardVector();
+	const FVector& TargetHeading = TargetTransform.GetRotation().GetForwardVector();
+	HeadingError = FMath::Atan2
+	(
+		CurrentHeading.X * TargetHeading.Y - CurrentHeading.Y * TargetHeading.X,
+		CurrentHeading.X * TargetHeading.X + CurrentHeading.Y * TargetHeading.Y
+	);
 }

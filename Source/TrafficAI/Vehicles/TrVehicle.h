@@ -16,20 +16,38 @@ class TRAFFICAI_API ATrVehicle : public AWheeledVehiclePawn
 	GENERATED_BODY()
 
 public:
-
-	ATrVehicle();
+	
+	virtual void BeginPlay() override;
 
 	virtual void Tick(float DeltaSeconds) override;
 	
-	void SetAcceleration(const float DesiredAcceleration);
-
-	void SetHeading(const FVector& DesiredHeading);
+	void SetTargetTransform(const FTransform& TargetTransform);
 
 private:
 
-	FVector PreviousVelocity = FVector::ZeroVector;
-	float Acceleration = 0.0f;
-	float DesiredAcceleration = 0.0f;
-	FRpPIDController<float> AccelerationController;
+	UPROPERTY(EditAnywhere, Category = "Throttle PID Controller")
+	float ThrottleKp = 1.0f;
+
+	UPROPERTY(EditAnywhere, Category = "Throttle PID Controller")
+	float ThrottleKi = 0.0f;
+
+	UPROPERTY(EditAnywhere, Category = "Throttle PID Controller")
+	float ThrottleKd = 1.0f;
+
+	UPROPERTY(EditAnywhere, Category = "Steering PID Controller")
+	float SteeringKp = 1.0f;
+
+	UPROPERTY(EditAnywhere, Category = "Steering PID Controller")
+	float SteeringKi = 0.0f;
+
+	UPROPERTY(EditAnywhere, Category = "Steering PID Controller")
+	float SteeringKd = 1.0f;
+	
+private:
+
+	float LocationError = 0.0f;
+	float HeadingError = 0.0f;
+	FRpPIDController<float> ThrottleController{0.0f};
+	FRpPIDController<float> SteeringController{0.0f};
 	
 };

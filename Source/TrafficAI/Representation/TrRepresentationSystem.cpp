@@ -97,8 +97,6 @@ void UTrRepresentationSystem::UpdateLODs()
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(UTrRepresentationSystem::UpdateLODLambda)
 
-	const TArray<float>& Accelerations = SimulationSystem->GetAccelerations();
-	const TArray<FVector>& Headings = SimulationSystem->GetHeadings();
 	SimulationSystem->GetVehicleTransforms(VehicleTransforms, MeshPositionOffset);
 	
 	FVector FocusLocation(0.0f);
@@ -115,8 +113,7 @@ void UTrRepresentationSystem::UpdateLODs()
 
 		if(bIsActorRelevant)
 		{
-			Actors[EntityIndex]->SetAcceleration(Accelerations[EntityIndex]);
-			Actors[EntityIndex]->SetHeading(Headings[EntityIndex]);
+			Actors[EntityIndex]->SetTargetTransform(VehicleTransforms[EntityIndex]);
 		}
 	}
 	
