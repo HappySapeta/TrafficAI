@@ -97,6 +97,7 @@ void UTrRepresentationSystem::UpdateLODs()
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(UTrRepresentationSystem::UpdateLODLambda)
 
+	TArray<uint32> FeedbackQueue;
 	SimulationSystem->GetVehicleTransforms(VehicleTransforms, MeshPositionOffset);
 	
 	FVector FocusLocation(0.0f);
@@ -114,6 +115,7 @@ void UTrRepresentationSystem::UpdateLODs()
 		if(bIsActorRelevant)
 		{
 			Actors[EntityIndex]->SetDesiredTransform(VehicleTransforms[EntityIndex]);
+			FeedbackQueue.Push(EntityIndex);
 		}
 	}
 	
@@ -130,6 +132,11 @@ void UTrRepresentationSystem::UpdateLODs()
 		}
 		
 		ISMCManager->GetISMC(KVP.Key)->BatchUpdateInstancesTransforms(0, Transforms, true, true, true);
+	}
+
+	for(const uint32 Index : FeedbackQueue)
+	{
+		SimulationSystem->SendFeedback(Index, Actors[Index]->GetActorLocation());
 	}
 }
 

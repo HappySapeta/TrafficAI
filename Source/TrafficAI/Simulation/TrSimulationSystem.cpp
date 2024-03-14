@@ -71,7 +71,6 @@ void UTrSimulationSystem::Initialize
 		Headings.Push(InitialTransforms[Index].GetRotation().GetForwardVector());
 		LeadingVehicleIndices.Push(-1);
 		PathFollowingStates.Push(false);
-		Accelerations.Push(0.0f);
 		
 		FVector NearestProjectionPoint;
 		FindNearestPath(Index, NearestProjectionPoint);
@@ -122,6 +121,11 @@ void UTrSimulationSystem::GetVehicleTransforms(TArray<FTransform>& OutTransforms
 
 		OutTransforms[Index] = Transform;
 	}
+}
+
+void UTrSimulationSystem::SendFeedback(const uint32 Index, const FVector& FeedbackPosition)
+{
+	Positions[Index] = {FeedbackPosition.X, FeedbackPosition.Y, Positions[Index].Z};
 }
 
 void UTrSimulationSystem::TickSimulation(const float DeltaSeconds)
@@ -220,8 +224,6 @@ void UTrSimulationSystem::UpdateKinematics()
 
 		float Acceleration = FreeRoadTerm + InteractionTerm;
 		Acceleration = FMath::Clamp(Acceleration, -VehicleConfig.ComfortableBrakingDeceleration * 2.0f, VehicleConfig.MaximumAcceleration);
-
-		Accelerations[Index] = Acceleration;
 		
 		FVector& CurrentHeading = Headings[Index];
 		FVector& CurrentVelocity = Velocities[Index];

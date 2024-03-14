@@ -62,7 +62,9 @@ public:
 	);
 
 	// No implementation required here.
-	void Initialize(FSubsystemCollectionBase& Collection) override {};
+	void Initialize(FSubsystemCollectionBase& Collection) override {}
+	
+	void SendFeedback(const uint32 Index, const FVector& FeedbackPosition);
 
 	/**
 	 * @brief Update the simulation state of the vehicles.
@@ -80,10 +82,6 @@ public:
 	 * The positions are relative to the provided position offset.
 	 */
 	void GetVehicleTransforms(TArray<FTransform>& OutTransforms, const FVector& PositionOffset);
-
-	const TArray<float>& GetAccelerations() const { return Accelerations; }
-
-	const TArray<FVector>& GetHeadings() const { return Headings; }
 	
 	/**
 	 * @brief Begin the destruction sequence for the simulation system.
@@ -213,7 +211,6 @@ protected:
 	TArray<FVector> Velocities;
 	TArray<FVector> Headings;
 	TArray<FVector> Goals;
-	TArray<float> Accelerations;
 	TArray<FTrVehiclePathTransform> PathTransforms;
 	TArray<int> LeadingVehicleIndices;
 
