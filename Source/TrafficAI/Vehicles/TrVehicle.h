@@ -20,9 +20,9 @@ public:
 	virtual void BeginPlay() override;
 
 	virtual void Tick(float DeltaSeconds) override;
-	
-	void SetTargetTransform(const FTransform& TargetTransform);
 
+	void SetDesiredTransform(const FTransform& Transform);
+	
 private:
 
 	UPROPERTY(EditAnywhere, Category = "Throttle PID Controller")
@@ -45,8 +45,7 @@ private:
 	
 private:
 
-	float LocationError = 0.0f;
-	float HeadingError = 0.0f;
+	FTransform DesiredTransform;
 	FRpPIDController<float> ThrottleController{0.0f};
 	FRpPIDController<float> SteeringController{0.0f};
 	

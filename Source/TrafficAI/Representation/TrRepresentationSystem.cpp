@@ -113,7 +113,7 @@ void UTrRepresentationSystem::UpdateLODs()
 
 		if(bIsActorRelevant)
 		{
-			Actors[EntityIndex]->SetTargetTransform(VehicleTransforms[EntityIndex]);
+			Actors[EntityIndex]->SetDesiredTransform(VehicleTransforms[EntityIndex]);
 		}
 	}
 	
