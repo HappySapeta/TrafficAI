@@ -34,6 +34,13 @@ void ATrVehicle::Tick(float DeltaSeconds)
 	Super::Tick(DeltaSeconds);
 }
 
+void ATrVehicle::OnActivated(const FTransform& Transform, const FVector& Velocity)
+{
+	SetActorTransform(Transform, false, nullptr, ETeleportType::TeleportPhysics);
+	GetMesh()->SetPhysicsLinearVelocity(Velocity);
+	DesiredTransform = Transform;
+}
+
 void ATrVehicle::SetDesiredTransform(const FTransform& Transform)
 {
 	DesiredTransform = Transform;

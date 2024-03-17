@@ -123,11 +123,6 @@ void UTrSimulationSystem::GetVehicleTransforms(TArray<FTransform>& OutTransforms
 	}
 }
 
-void UTrSimulationSystem::SendFeedback(const uint32 Index, const FVector& FeedbackPosition)
-{
-	Positions[Index] = {FeedbackPosition.X, FeedbackPosition.Y, Positions[Index].Z};
-}
-
 void UTrSimulationSystem::TickSimulation(const float DeltaSeconds)
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(UTrSimulationSystem::TickSimulation)

@@ -6,6 +6,14 @@
 #include "TrafficAI/Vehicles/TrVehicle.h"
 #include "TrRepresentationSystem.generated.h"
 
+UENUM()
+enum EVehicleLOD
+{
+	Actor,
+	StaticMesh,
+	None
+};
+
 // Information required to spawn an Entity.
 USTRUCT(BlueprintType)
 struct TRAFFICAI_API FTrafficAISpawnRequest
@@ -133,6 +141,8 @@ private:
 	TArray<ATrVehicle*> Actors;
 	
 	TMap<UStaticMesh*, TArray<uint32>> MeshIDs;
+
+	TArray<EVehicleLOD> LODStates;
 	
 	FVector MeshPositionOffset;
 	TArray<FTransform> VehicleTransforms;

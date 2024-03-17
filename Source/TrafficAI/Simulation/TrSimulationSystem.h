@@ -64,7 +64,7 @@ public:
 	// No implementation required here.
 	void Initialize(FSubsystemCollectionBase& Collection) override {}
 	
-	void SendFeedback(const uint32 Index, const FVector& FeedbackPosition);
+	const TArray<FVector>& GetVelocities() const { return Velocities; }
 
 	/**
 	 * @brief Update the simulation state of the vehicles.

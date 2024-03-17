@@ -21,6 +21,8 @@ public:
 
 	virtual void Tick(float DeltaSeconds) override;
 
+	void OnActivated(const FTransform& Transform, const FVector& Velocity);
+	
 	void SetDesiredTransform(const FTransform& Transform);
 	
 private:

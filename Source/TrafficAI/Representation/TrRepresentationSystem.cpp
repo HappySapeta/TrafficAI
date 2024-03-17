@@ -83,7 +83,7 @@ void UTrRepresentationSystem::SpawnSingleVehicle(const FTrafficAISpawnRequest& S
 			}
 		}
 		SET_ACTOR_ENABLED(NewActor, false);
-
+		LODStates.Push(None);
 		VehicleTransforms.Push(SpawnRequest.Transform);
 	}
 }
@@ -97,7 +97,7 @@ void UTrRepresentationSystem::UpdateLODs()
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(UTrRepresentationSystem::UpdateLODLambda)
 
-	TArray<uint32> FeedbackQueue;
+	const TArray<FVector>& Velocities = SimulationSystem->GetVelocities();
 	SimulationSystem->GetVehicleTransforms(VehicleTransforms, MeshPositionOffset);
 	
 	FVector FocusLocation(0.0f);
@@ -111,11 +111,22 @@ void UTrRepresentationSystem::UpdateLODs()
 		const float Distance = FVector::Distance(FocusLocation, VehicleTransforms[EntityIndex].GetLocation());
 		const bool bIsActorRelevant = ActorRelevancyRange.Contains(Distance);
 		SET_ACTOR_ENABLED(Actors[EntityIndex], bIsActorRelevant);
-
+		
 		if(bIsActorRelevant)
 		{
-			Actors[EntityIndex]->SetDesiredTransform(VehicleTransforms[EntityIndex]);
-			FeedbackQueue.Push(EntityIndex);
+			if(LODStates[EntityIndex] == EVehicleLOD::StaticMesh)
+			{
+				LODStates[EntityIndex] = EVehicleLOD::Actor;
+				Actors[EntityIndex]->OnActivated(VehicleTransforms[EntityIndex], Velocities[EntityIndex]);
+			}
+			else
+			{
+				Actors[EntityIndex]->SetDesiredTransform(VehicleTransforms[EntityIndex]);
+			}
+		}
+		else
+		{
+			LODStates[EntityIndex] = EVehicleLOD::StaticMesh;
 		}
 	}
 	
@@ -132,11 +143,6 @@ void UTrRepresentationSystem::UpdateLODs()
 		}
 		
 		ISMCManager->GetISMC(KVP.Key)->BatchUpdateInstancesTransforms(0, Transforms, true, true, true);
-	}
-
-	for(const uint32 Index : FeedbackQueue)
-	{
-		SimulationSystem->SendFeedback(Index, Actors[Index]->GetActorLocation());
 	}
 }
 
