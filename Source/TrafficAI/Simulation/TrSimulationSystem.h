@@ -61,8 +61,12 @@ public:
 		const TArray<FTrVehiclePathTransform>& TrafficVehicleStarts
 	);
 
+	void DetachVehicle(const uint32 Index);
+	
 	// No implementation required here.
 	void Initialize(FSubsystemCollectionBase& Collection) override {}
+
+	void OverrideTransform(const uint32 Index, const FTransform& Transform);
 	
 	const TArray<FVector>& GetVelocities() const { return Velocities; }
 
@@ -213,6 +217,7 @@ protected:
 	TArray<FVector> Goals;
 	TArray<FTrVehiclePathTransform> PathTransforms;
 	TArray<int> LeadingVehicleIndices;
+	TSet<uint32> DetachedVehicles;
 
 	// todo : Use bit flags instead of bools when more than one state is available.
 	TArray<bool> PathFollowingStates;

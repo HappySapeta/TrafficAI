@@ -83,9 +83,16 @@ void UTrRepresentationSystem::SpawnSingleVehicle(const FTrafficAISpawnRequest& S
 			}
 		}
 		SET_ACTOR_ENABLED(NewActor, false);
+		NewActor->OnPossessed.AddUObject(this, &UTrRepresentationSystem::OnVehiclePossessed, NumEntities - 1);
 		LODStates.Push(None);
 		VehicleTransforms.Push(SpawnRequest.Transform);
 	}
+}
+
+void UTrRepresentationSystem::OnVehiclePossessed(const uint32 Index)
+{
+	SimulationSystem->DetachVehicle(Index);
+	DetachedVehicles.Add(Index);
 }
 
 const TArray<FTransform>& UTrRepresentationSystem::GetInitialTransforms() const
@@ -108,6 +115,12 @@ void UTrRepresentationSystem::UpdateLODs()
 
 	for (uint32 EntityIndex = 0; EntityIndex < NumEntities; ++EntityIndex) 
 	{
+		if(DetachedVehicles.Contains(EntityIndex))
+		{
+			SimulationSystem->OverrideTransform(EntityIndex, Actors[EntityIndex]->GetTransform());
+			continue;
+		}
+		
 		const float Distance = FVector::Distance(FocusLocation, VehicleTransforms[EntityIndex].GetLocation());
 		const bool bIsActorRelevant = ActorRelevancyRange.Contains(Distance);
 		SET_ACTOR_ENABLED(Actors[EntityIndex], bIsActorRelevant);

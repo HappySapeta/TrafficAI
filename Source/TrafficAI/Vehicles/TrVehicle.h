@@ -25,6 +25,12 @@ public:
 	
 	void SetDesiredTransform(const FTransform& Transform);
 	
+	virtual void PossessedBy(AController* NewController) override;
+
+public:
+
+	FSimpleMulticastDelegate OnPossessed;
+
 private:
 
 	UPROPERTY(EditAnywhere, Category = "Throttle PID Controller")

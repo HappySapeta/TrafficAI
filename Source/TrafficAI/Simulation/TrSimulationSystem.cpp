@@ -104,6 +104,18 @@ void UTrSimulationSystem::Initialize
 	GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::White, FString::Printf(TEXT("Simulating %d vehicles"), NumEntities));
 }
 
+void UTrSimulationSystem::DetachVehicle(const uint32 Index)
+{
+	GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Black, FString::Printf(TEXT("Detaching vehicle %d"), Index));
+	DetachedVehicles.Add(Index);
+}
+
+void UTrSimulationSystem::OverrideTransform(const uint32 Index, const FTransform& Transform)
+{
+	Positions[Index] = Transform.GetLocation();
+	Headings[Index] = Transform.GetRotation().GetForwardVector();
+}
+
 void UTrSimulationSystem::GetVehicleTransforms(TArray<FTransform>& OutTransforms, const FVector& PositionOffset)
 {
 	if(OutTransforms.Num() < NumEntities)
@@ -192,6 +204,11 @@ void UTrSimulationSystem::UpdateKinematics()
 	
 	for (int Index = 0; Index < NumEntities; ++Index)
 	{
+		if(DetachedVehicles.Contains(Index))
+		{
+			continue;
+		}
+		
 		int LeadingVehicleIndex = LeadingVehicleIndices[Index];
 
 		FVector& CurrentPosition = Positions[Index];
@@ -234,6 +251,11 @@ void UTrSimulationSystem::UpdateOrientations()
 	
 	for (int Index = 0; Index < NumEntities; ++Index)
 	{
+		if(DetachedVehicles.Contains(Index))
+		{
+			continue;
+		}
+		
 		FVector& CurrentHeading = Headings[Index];
 		FVector& CurrentPosition = Positions[Index];
 		FVector& CurrentVelocity = Velocities[Index];

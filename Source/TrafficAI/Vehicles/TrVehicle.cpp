@@ -3,7 +3,6 @@
 #include "TrVehicle.h"
 
 #include "ChaosVehicleMovementComponent.h"
-#include "TrafficAI/Simulation/TrSimulationSystem.h"
 
 void ATrVehicle::BeginPlay()
 {
@@ -44,4 +43,10 @@ void ATrVehicle::OnActivated(const FTransform& Transform, const FVector& Velocit
 void ATrVehicle::SetDesiredTransform(const FTransform& Transform)
 {
 	DesiredTransform = Transform;
+}
+
+void ATrVehicle::PossessedBy(AController* NewController)
+{
+	OnPossessed.Broadcast();
+	Super::PossessedBy(NewController);
 }

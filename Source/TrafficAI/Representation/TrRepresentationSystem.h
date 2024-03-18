@@ -90,7 +90,8 @@ public:
 	// Push a request to spawn an Entity. The request is not guaranteed to be processed immediately.
 	UFUNCTION(BlueprintCallable)
 	void SpawnSingleVehicle(const FTrafficAISpawnRequest& SpawnRequest);
-	
+	void OnVehiclePossessed(uint32 Index);
+
 	// Returns a const reference to an array of Vehicle Start Transforms.
 	const TArray<FTrVehiclePathTransform>& GetVehicleStarts() const { return VehicleStarts; }
 
@@ -141,8 +142,9 @@ private:
 	TArray<ATrVehicle*> Actors;
 	
 	TMap<UStaticMesh*, TArray<uint32>> MeshIDs;
-
 	TArray<EVehicleLOD> LODStates;
+
+	TSet<uint32> DetachedVehicles;
 	
 	FVector MeshPositionOffset;
 	TArray<FTransform> VehicleTransforms;
