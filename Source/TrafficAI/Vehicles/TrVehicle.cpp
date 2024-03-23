@@ -3,6 +3,7 @@
 #include "TrVehicle.h"
 
 #include "ChaosVehicleMovementComponent.h"
+#include "GameFramework/PlayerController.h"
 
 void ATrVehicle::BeginPlay()
 {
@@ -13,24 +14,26 @@ void ATrVehicle::BeginPlay()
 
 void ATrVehicle::Tick(float DeltaSeconds)
 {
-	USkeletalMeshComponent* Root = GetMesh();
-	UChaosVehicleMovementComponent* VehicleMovement = GetVehicleMovementComponent();
-
-	const FVector VecToTarget = DesiredTransform.GetLocation() - Root->GetComponentLocation();
-	const float LocationError = VecToTarget.Length();
-
-	const float PIDThrust = ThrottleController.Evaluate(LocationError, DeltaSeconds);
-	Root->AddForce(PIDThrust * VecToTarget.GetSafeNormal(), NAME_None, true);
-
-	const FVector& DesiredHeading = DesiredTransform.GetRotation().GetForwardVector();
-	const FVector& CurrentHeading = GetActorForwardVector();
-
-	const FVector& TurningAxis = FVector::UpVector;
-	const float HeadingError = FMath::Acos(DesiredHeading.Dot(CurrentHeading)) * -1 * FMath::Sign((DesiredHeading.Cross(CurrentHeading).Dot(TurningAxis)));
-	const float PIDSteering = SteeringController.Evaluate(HeadingError, DeltaSeconds);
-	VehicleMovement->SetSteeringInput(PIDSteering);
-	
 	Super::Tick(DeltaSeconds);
+	if(!bPossessedByPlayer)
+	{
+		USkeletalMeshComponent* Root = GetMesh();
+		UChaosVehicleMovementComponent* VehicleMovement = GetVehicleMovementComponent();
+
+		const FVector VecToTarget = DesiredTransform.GetLocation() - Root->GetComponentLocation();
+		const float LocationError = VecToTarget.Length();
+
+		const float PIDThrust = ThrottleController.Evaluate(LocationError, DeltaSeconds);
+		Root->AddForce(PIDThrust * VecToTarget.GetSafeNormal(), NAME_None, true);
+
+		const FVector& DesiredHeading = DesiredTransform.GetRotation().GetForwardVector();
+		const FVector& CurrentHeading = GetActorForwardVector();
+
+		const FVector& TurningAxis = FVector::UpVector;
+		const float HeadingError = FMath::Acos(DesiredHeading.Dot(CurrentHeading)) * -1 * FMath::Sign((DesiredHeading.Cross(CurrentHeading).Dot(TurningAxis)));
+		const float PIDSteering = SteeringController.Evaluate(HeadingError, DeltaSeconds);
+		VehicleMovement->SetSteeringInput(PIDSteering);
+	}
 }
 
 void ATrVehicle::OnActivated(const FTransform& Transform, const FVector& Velocity)
@@ -48,5 +51,6 @@ void ATrVehicle::SetDesiredTransform(const FTransform& Transform)
 void ATrVehicle::PossessedBy(AController* NewController)
 {
 	OnPossessed.Broadcast();
+	bPossessedByPlayer = Cast<APlayerController>(NewController) != nullptr;  
 	Super::PossessedBy(NewController);
 }
