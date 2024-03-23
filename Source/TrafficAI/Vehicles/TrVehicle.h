@@ -53,7 +53,6 @@ private:
 	
 private:
 
-	bool bPossessedByPlayer = false;
 	FTransform DesiredTransform;
 	FRpPIDController<float> ThrottleController{0.0f};
 	FRpPIDController<float> SteeringController{0.0f};

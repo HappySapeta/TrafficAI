@@ -15,7 +15,7 @@ void ATrVehicle::BeginPlay()
 void ATrVehicle::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
-	if(!bPossessedByPlayer)
+	if(!IsPlayerControlled())
 	{
 		USkeletalMeshComponent* Root = GetMesh();
 		UChaosVehicleMovementComponent* VehicleMovement = GetVehicleMovementComponent();
@@ -51,6 +51,5 @@ void ATrVehicle::SetDesiredTransform(const FTransform& Transform)
 void ATrVehicle::PossessedBy(AController* NewController)
 {
 	OnPossessed.Broadcast();
-	bPossessedByPlayer = Cast<APlayerController>(NewController) != nullptr;  
 	Super::PossessedBy(NewController);
 }
