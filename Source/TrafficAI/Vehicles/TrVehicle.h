@@ -3,31 +3,58 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "WheeledVehiclePawn.h"
+#include "PIDController/FRpPIDController.h"
 #include "TrVehicle.generated.h"
 
 /**
  *
  */
 UCLASS()
-class TRAFFICAI_API ATrVehicle : public APawn
+class TRAFFICAI_API ATrVehicle : public AWheeledVehiclePawn
 {
 	GENERATED_BODY()
 
 public:
 	
-	// Sets default values for this pawn's properties
-	ATrVehicle();
+	virtual void BeginPlay() override;
 
-	UFUNCTION(BlueprintCallable)
-	UPrimitiveComponent* GetRoot() const { return VehicleRoot; }
-	
-protected:
+	virtual void Tick(float DeltaSeconds) override;
 
-	// The skeletal mesh component representing the vehicle.
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Vehicle")
-	TObjectPtr<USkeletalMeshComponent> VehicleRoot;
+	void OnActivated(const FTransform& Transform, const FVector& Velocity);
 	
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Vehicle")
-	TObjectPtr<class UTrVehicleMovementComponent> VehicleMovementComponent;
+	void SetDesiredTransform(const FTransform& Transform);
+	
+	virtual void PossessedBy(AController* NewController) override;
+
+public:
+
+	FSimpleMulticastDelegate OnPossessed;
+
+private:
+
+	UPROPERTY(EditAnywhere, Category = "Throttle PID Controller")
+	float ThrottleKp = 1.0f;
+
+	UPROPERTY(EditAnywhere, Category = "Throttle PID Controller")
+	float ThrottleKi = 0.0f;
+
+	UPROPERTY(EditAnywhere, Category = "Throttle PID Controller")
+	float ThrottleKd = 1.0f;
+
+	UPROPERTY(EditAnywhere, Category = "Steering PID Controller")
+	float SteeringKp = 1.0f;
+
+	UPROPERTY(EditAnywhere, Category = "Steering PID Controller")
+	float SteeringKi = 0.0f;
+
+	UPROPERTY(EditAnywhere, Category = "Steering PID Controller")
+	float SteeringKd = 1.0f;
+	
+private:
+
+	FTransform DesiredTransform;
+	FRpPIDController<float> ThrottleController{0.0f};
+	FRpPIDController<float> SteeringController{0.0f};
 	
 };

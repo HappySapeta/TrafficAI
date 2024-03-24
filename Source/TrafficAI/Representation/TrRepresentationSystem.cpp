@@ -55,7 +55,7 @@ void UTrRepresentationSystem::SpawnSingleVehicle(const FTrafficAISpawnRequest& S
 		check(ISMCManager);
 	}
 	
-	if(Entities.Num() >= MaxInstances)
+	if(NumEntities >= FMath::Max<uint32>(MaxInstances, 0))
 	{
 		return;
 	}
@@ -64,17 +64,18 @@ void UTrRepresentationSystem::SpawnSingleVehicle(const FTrafficAISpawnRequest& S
 #if UE_EDITOR
 	SpawnParameters.bHideFromSceneOutliner = true;
 #endif
-	if (AActor* NewActor = GetWorld()->SpawnActor(SpawnRequest.LOD1_Actor, &SpawnRequest.Transform, SpawnParameters))
+	if (ATrVehicle* NewActor = Cast<ATrVehicle>(GetWorld()->SpawnActor(SpawnRequest.LOD1_Actor, &SpawnRequest.Transform, SpawnParameters)))
 	{
+		Actors.Push(NewActor);
 		UStaticMesh* Mesh = SpawnRequest.LOD2_Mesh;
-		const int32 ISMIndex = ISMCManager->AddInstance(Mesh, nullptr, SpawnRequest.Transform);
-		Entities.Add({Mesh, ISMIndex, NewActor});
+		ISMCManager->AddInstance(Mesh, nullptr, SpawnRequest.Transform);
+		++NumEntities;
 		if(Mesh)
 		{
-			const uint32 EntityIndex = Entities.Num() - 1;
+			const uint32 EntityIndex = NumEntities - 1;
 			if(MeshIDs.Contains(Mesh))
 			{
-				MeshIDs[Mesh].Add(EntityIndex);
+				MeshIDs[Mesh].Add(NumEntities - 1);
 			}
 			else
 			{
@@ -82,47 +83,66 @@ void UTrRepresentationSystem::SpawnSingleVehicle(const FTrafficAISpawnRequest& S
 			}
 		}
 		SET_ACTOR_ENABLED(NewActor, false);
+		NewActor->OnPossessed.AddUObject(this, &UTrRepresentationSystem::OnVehiclePossessed, NumEntities - 1);
+		LODStates.Push(None);
+		VehicleTransforms.Push(SpawnRequest.Transform);
 	}
+}
+
+void UTrRepresentationSystem::OnVehiclePossessed(const uint32 Index)
+{
+	SimulationSystem->DetachVehicle(Index);
+	DetachedVehicles.Add(Index);
+}
+
+const TArray<FTransform>& UTrRepresentationSystem::GetInitialTransforms() const
+{
+	return VehicleTransforms;
 }
 
 void UTrRepresentationSystem::UpdateLODs()
 {
 	TRACE_CPUPROFILER_EVENT_SCOPE(UTrRepresentationSystem::UpdateLODLambda)
 
-	static int EntityIndex = 0;
-	if (EntityIndex >= Entities.Num())
-	{
-		EntityIndex = 0;
-	}
-
+	const TArray<FVector>& Velocities = SimulationSystem->GetVelocities();
+	SimulationSystem->GetVehicleTransforms(VehicleTransforms, MeshPositionOffset);
+	
 	FVector FocusLocation(0.0f);
 	if(APawn* Pawn = GetWorld()->GetFirstPlayerController()->GetPawn())
 	{
 		FocusLocation = Pawn->GetActorLocation();	
 	}
 
-	int CurrentBatchSize = 0;
-	while (EntityIndex < Entities.Num() && CurrentBatchSize < ProcessingBatchSize)
+	for (uint32 EntityIndex = 0; EntityIndex < NumEntities; ++EntityIndex) 
 	{
-		const FTrVehicleRepresentation& Entity = Entities.operator[](EntityIndex);
-		const float Distance = FVector::Distance(FocusLocation, Entity.Dummy->GetActorLocation());
-
-		// Toggle Actors.
+		if(DetachedVehicles.Contains(EntityIndex))
+		{
+			SimulationSystem->OverrideTransform(EntityIndex, Actors[EntityIndex]->GetTransform());
+			continue;
+		}
+		
+		const float Distance = FVector::Distance(FocusLocation, VehicleTransforms[EntityIndex].GetLocation());
 		const bool bIsActorRelevant = ActorRelevancyRange.Contains(Distance);
-		SET_ACTOR_ENABLED(Entity.Dummy, bIsActorRelevant);
-
-		// Toggle ISMCs.
-		const bool bIsMeshRelevant = !bIsActorRelevant && StaticMeshRelevancyRange.Contains(Distance);
-		const FVector& NewScale = bIsMeshRelevant * FVector::OneVector;
-		FTransform MeshTransform = Entity.Dummy->GetActorTransform();
-		MeshTransform.SetScale3D(NewScale);
-		ISMCManager->GetISMC(Entity.Mesh)->UpdateInstanceTransform(Entity.InstanceIndex, MeshTransform, true, true, false);
-
-		++EntityIndex;
-		++CurrentBatchSize;
+		SET_ACTOR_ENABLED(Actors[EntityIndex], bIsActorRelevant);
+		
+		if(bIsActorRelevant)
+		{
+			if(LODStates[EntityIndex] == EVehicleLOD::StaticMesh)
+			{
+				LODStates[EntityIndex] = EVehicleLOD::Actor;
+				Actors[EntityIndex]->OnActivated(VehicleTransforms[EntityIndex], Velocities[EntityIndex]);
+			}
+			else
+			{
+				Actors[EntityIndex]->SetDesiredTransform(VehicleTransforms[EntityIndex]);
+			}
+		}
+		else
+		{
+			LODStates[EntityIndex] = EVehicleLOD::StaticMesh;
+		}
 	}
-
-	SimulationSystem->GetVehicleTransforms(VehicleTransforms, MeshPositionOffset);
+	
 	for(auto KVP : MeshIDs)
 	{
 		const TArray<uint32>& Indices = KVP.Value;
@@ -130,8 +150,11 @@ void UTrRepresentationSystem::UpdateLODs()
 		for(uint32 Index : Indices)
 		{
 			Transforms.Push(VehicleTransforms[Index]);
+			const float Distance = FVector::Distance(FocusLocation, VehicleTransforms[Index].GetLocation());
+			const bool bIsMeshRelevant = StaticMeshRelevancyRange.Contains(Distance);
+			Transforms.Last().SetScale3D(bIsMeshRelevant * FVector::OneVector);
 		}
-
+		
 		ISMCManager->GetISMC(KVP.Key)->BatchUpdateInstancesTransforms(0, Transforms, true, true, true);
 	}
 }
@@ -152,7 +175,6 @@ bool UTrRepresentationSystem::ShouldCreateSubsystem(UObject* Outer) const
 
 void UTrRepresentationSystem::BeginDestroy()
 {
-	Entities.Reset();
 	Super::BeginDestroy();
 }
 

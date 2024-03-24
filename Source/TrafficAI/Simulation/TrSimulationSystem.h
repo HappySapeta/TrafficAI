@@ -57,12 +57,18 @@ public:
 	(
 		const UTrSimulationConfiguration* SimData,
 		const UTrSpatialGraphComponent* GraphComponent,
-		const TArray<FTrVehicleRepresentation>& TrafficEntities,
+		const TArray<FTransform>& InitialTransforms,
 		const TArray<FTrVehiclePathTransform>& TrafficVehicleStarts
 	);
 
+	void DetachVehicle(const uint32 Index);
+	
 	// No implementation required here.
-	void Initialize(FSubsystemCollectionBase& Collection) override {};
+	void Initialize(FSubsystemCollectionBase& Collection) override {}
+
+	void OverrideTransform(const uint32 Index, const FTransform& Transform);
+	
+	const TArray<FVector>& GetVelocities() const { return Velocities; }
 
 	/**
 	 * @brief Update the simulation state of the vehicles.
@@ -80,7 +86,7 @@ public:
 	 * The positions are relative to the provided position offset.
 	 */
 	void GetVehicleTransforms(TArray<FTransform>& OutTransforms, const FVector& PositionOffset);
-
+	
 	/**
 	 * @brief Begin the destruction sequence for the simulation system.
 	 *
@@ -88,8 +94,6 @@ public:
 	 * and is responsible for clearing any timers set in the simulation system.
 	 */
 	virtual void BeginDestroy() override;
-
-protected:
 
 #pragma region Utility
 	
@@ -101,7 +105,7 @@ protected:
 	 *
 	 * @return The clamped projection point on the path.
 	 */
-	FVector ProjectPointOnPathClamped(const FVector& Point, const FTrPath& Path) const;
+	static FVector ProjectPointOnPathClamped(const FVector& Point, const FTrPath& Path);
 
 	/**
 	 * @brief Find the nearest path to a given entity in the simulation system.
@@ -118,10 +122,12 @@ protected:
 	 * This method takes two vectors, `V1` and `V2`, and calculates the scalar projection of `V1` onto `V2`.
 	 * The scalar projection is defined as the length of the projection of `V1` onto `V2` when `V2` is used as the reference vector.
 	 */
-	float ScalarProjection(const FVector& V1, const FVector& V2) const { return V1.Dot(V2) / V2.Length(); }
+	static float ScalarProjection(const FVector& V1, const FVector& V2) { return V1.Dot(V2) / V2.Length(); }
 	
 #pragma endregion
 
+protected:
+	
 #pragma region Debug
 #if !UE_BUILD_SHIPPING
 	void DrawDebug();
@@ -211,6 +217,7 @@ protected:
 	TArray<FVector> Goals;
 	TArray<FTrVehiclePathTransform> PathTransforms;
 	TArray<int> LeadingVehicleIndices;
+	TSet<uint32> DetachedVehicles;
 
 	// todo : Use bit flags instead of bools when more than one state is available.
 	TArray<bool> PathFollowingStates;

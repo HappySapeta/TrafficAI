@@ -3,7 +3,16 @@
 #pragma once
 #include "CoreMinimal.h"
 #include "TrTypes.h"
+#include "TrafficAI/Vehicles/TrVehicle.h"
 #include "TrRepresentationSystem.generated.h"
+
+UENUM()
+enum EVehicleLOD
+{
+	Actor,
+	StaticMesh,
+	None
+};
 
 // Information required to spawn an Entity.
 USTRUCT(BlueprintType)
@@ -17,7 +26,7 @@ struct TRAFFICAI_API FTrafficAISpawnRequest
 
 	// An Actor that represents an Active vehicle with maximum details.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	TSubclassOf<AActor> LOD1_Actor;
+	TSubclassOf<ATrVehicle> LOD1_Actor;
 
 	// Initial transform when the Entity is spawned.
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
@@ -81,12 +90,12 @@ public:
 	// Push a request to spawn an Entity. The request is not guaranteed to be processed immediately.
 	UFUNCTION(BlueprintCallable)
 	void SpawnSingleVehicle(const FTrafficAISpawnRequest& SpawnRequest);
-
-	// Returns a const reference to an array of Entities.
-	const TArray<FTrVehicleRepresentation>& GetEntities() const { return Entities; }
+	void OnVehiclePossessed(uint32 Index);
 
 	// Returns a const reference to an array of Vehicle Start Transforms.
 	const TArray<FTrVehiclePathTransform>& GetVehicleStarts() const { return VehicleStarts; }
+
+	const TArray<FTransform>& GetInitialTransforms() const;
 	
 	// Reset SharedPtrs to Entities.
 	virtual void BeginDestroy() override;
@@ -101,10 +110,10 @@ public:
 
 protected:
 	
-	TArray<FTrVehicleRepresentation> Entities;
-
 	UPROPERTY()
 	TObjectPtr<class ATrISMCManager> ISMCManager;
+
+	uint32 NumEntities;
 
 private:
 
@@ -129,7 +138,13 @@ private:
 	
 private:
 
+	UPROPERTY()
+	TArray<ATrVehicle*> Actors;
+	
 	TMap<UStaticMesh*, TArray<uint32>> MeshIDs;
+	TArray<EVehicleLOD> LODStates;
+
+	TSet<uint32> DetachedVehicles;
 	
 	FVector MeshPositionOffset;
 	TArray<FTransform> VehicleTransforms;

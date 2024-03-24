@@ -48,11 +48,11 @@ void UTrSimulationSystem::Initialize
 (
 	const UTrSimulationConfiguration* SimData,
 	const UTrSpatialGraphComponent* GraphComponent,
-	const TArray<FTrVehicleRepresentation>& TrafficEntities,
+	const TArray<FTransform>& InitialTransforms,
 	const TArray<FTrVehiclePathTransform>& TrafficVehicleStarts
 )
 {
-	NumEntities = TrafficEntities.Num();
+	NumEntities = InitialTransforms.Num();
 
 	check(SimData)
 	VehicleConfig = SimData->VehicleConfig;
@@ -66,13 +66,12 @@ void UTrSimulationSystem::Initialize
 	check(Nodes.Num() > 0);
 	for (int Index = 0; Index < NumEntities; ++Index)
 	{
-		const AActor* EntityActor = TrafficEntities[Index].Dummy;
-
-		Positions.Push(EntityActor->GetActorLocation());
-		Velocities.Push(EntityActor->GetVelocity());
-		Headings.Push(EntityActor->GetActorForwardVector());
+		Positions.Push(InitialTransforms[Index].GetLocation());
+		Velocities.Push(FVector::Zero());
+		Headings.Push(InitialTransforms[Index].GetRotation().GetForwardVector());
 		LeadingVehicleIndices.Push(-1);
 		PathFollowingStates.Push(false);
+		
 		FVector NearestProjectionPoint;
 		FindNearestPath(Index, NearestProjectionPoint);
 		Goals.Push(NearestProjectionPoint);
@@ -103,6 +102,18 @@ void UTrSimulationSystem::Initialize
 	
 	ImplicitGrid.Initialize(FFloatRange(-SimData->GridConfiguration.Range, SimData->GridConfiguration.Range), SimData->GridConfiguration.Resolution);
 	GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::White, FString::Printf(TEXT("Simulating %d vehicles"), NumEntities));
+}
+
+void UTrSimulationSystem::DetachVehicle(const uint32 Index)
+{
+	GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Black, FString::Printf(TEXT("Detaching vehicle %d"), Index));
+	DetachedVehicles.Add(Index);
+}
+
+void UTrSimulationSystem::OverrideTransform(const uint32 Index, const FTransform& Transform)
+{
+	Positions[Index] = Transform.GetLocation();
+	Headings[Index] = Transform.GetRotation().GetForwardVector();
 }
 
 void UTrSimulationSystem::GetVehicleTransforms(TArray<FTransform>& OutTransforms, const FVector& PositionOffset)
@@ -193,6 +204,11 @@ void UTrSimulationSystem::UpdateKinematics()
 	
 	for (int Index = 0; Index < NumEntities; ++Index)
 	{
+		if(DetachedVehicles.Contains(Index))
+		{
+			continue;
+		}
+		
 		int LeadingVehicleIndex = LeadingVehicleIndices[Index];
 
 		FVector& CurrentPosition = Positions[Index];
@@ -220,7 +236,7 @@ void UTrSimulationSystem::UpdateKinematics()
 
 		float Acceleration = FreeRoadTerm + InteractionTerm;
 		Acceleration = FMath::Clamp(Acceleration, -VehicleConfig.ComfortableBrakingDeceleration * 2.0f, VehicleConfig.MaximumAcceleration);
-
+		
 		FVector& CurrentHeading = Headings[Index];
 		FVector& CurrentVelocity = Velocities[Index];
 
@@ -235,6 +251,11 @@ void UTrSimulationSystem::UpdateOrientations()
 	
 	for (int Index = 0; Index < NumEntities; ++Index)
 	{
+		if(DetachedVehicles.Contains(Index))
+		{
+			continue;
+		}
+		
 		FVector& CurrentHeading = Headings[Index];
 		FVector& CurrentPosition = Positions[Index];
 		FVector& CurrentVelocity = Velocities[Index];
@@ -310,7 +331,7 @@ void UTrSimulationSystem::UpdatePath(const uint32 Index)
 	CurrentPath.EndNodeIndex = NewEndNodeIndex;
 }
 
-FVector UTrSimulationSystem::ProjectPointOnPathClamped(const FVector& Point, const FTrPath& Path) const
+FVector UTrSimulationSystem::ProjectPointOnPathClamped(const FVector& Point, const FTrPath& Path)
 {
 	const FVector PathStart = Path.Start;
 	const FVector PathEnd = Path.End;

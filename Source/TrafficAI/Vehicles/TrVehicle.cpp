@@ -1,15 +1,55 @@
 ﻿// Copyright Anupam Sahu. All Rights Reserved.
 
 #include "TrVehicle.h"
-#include "TrVehicleMovementComponent.h"
 
-// Sets default values
-ATrVehicle::ATrVehicle()
+#include "ChaosVehicleMovementComponent.h"
+#include "GameFramework/PlayerController.h"
+
+void ATrVehicle::BeginPlay()
 {
-	PrimaryActorTick.bCanEverTick = true;
+	ThrottleController.Tune(ThrottleKp, ThrottleKi, ThrottleKd);
+	SteeringController.Tune(SteeringKp, SteeringKi, SteeringKd);
+	Super::BeginPlay();
+}
 
-	VehicleRoot = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("VehicleRoot"));
-	SetRootComponent(VehicleRoot);
+void ATrVehicle::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+	if(!IsPlayerControlled())
+	{
+		USkeletalMeshComponent* Root = GetMesh();
+		UChaosVehicleMovementComponent* VehicleMovement = GetVehicleMovementComponent();
 
-	VehicleMovementComponent = CreateDefaultSubobject<UTrVehicleMovementComponent>(TEXT("ChaosWheelVehicleMovement"));
+		const FVector VecToTarget = DesiredTransform.GetLocation() - Root->GetComponentLocation();
+		const float LocationError = VecToTarget.Length();
+
+		const float PIDThrust = ThrottleController.Evaluate(LocationError, DeltaSeconds);
+		Root->AddForce(PIDThrust * VecToTarget.GetSafeNormal(), NAME_None, true);
+
+		const FVector& DesiredHeading = DesiredTransform.GetRotation().GetForwardVector();
+		const FVector& CurrentHeading = GetActorForwardVector();
+
+		const FVector& TurningAxis = FVector::UpVector;
+		const float HeadingError = FMath::Acos(DesiredHeading.Dot(CurrentHeading)) * -1 * FMath::Sign((DesiredHeading.Cross(CurrentHeading).Dot(TurningAxis)));
+		const float PIDSteering = SteeringController.Evaluate(HeadingError, DeltaSeconds);
+		VehicleMovement->SetSteeringInput(PIDSteering);
+	}
+}
+
+void ATrVehicle::OnActivated(const FTransform& Transform, const FVector& Velocity)
+{
+	SetActorTransform(Transform, false, nullptr, ETeleportType::TeleportPhysics);
+	GetMesh()->SetPhysicsLinearVelocity(Velocity);
+	DesiredTransform = Transform;
+}
+
+void ATrVehicle::SetDesiredTransform(const FTransform& Transform)
+{
+	DesiredTransform = Transform;
+}
+
+void ATrVehicle::PossessedBy(AController* NewController)
+{
+	OnPossessed.Broadcast();
+	Super::PossessedBy(NewController);
 }
