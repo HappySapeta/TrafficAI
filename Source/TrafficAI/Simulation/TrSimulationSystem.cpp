@@ -140,8 +140,10 @@ void UTrSimulationSystem::TickSimulation(const float DeltaSeconds)
 	TRACE_CPUPROFILER_EVENT_SCOPE(UTrSimulationSystem::TickSimulation)
 
 	TickRate = DeltaSeconds;
-	
+
+#ifndef UE_BUILD_SHIPPING
 	DrawDebug();
+#endif
 	ImplicitGrid.Update(Positions);
 	SetGoals();
 	HandleGoals();
