@@ -141,7 +141,7 @@ void UTrSimulationSystem::TickSimulation(const float DeltaSeconds)
 
 	TickRate = DeltaSeconds;
 
-#ifndef UE_BUILD_SHIPPING
+#if !UE_BUILD_SHIPPING
 	DrawDebug();
 #endif
 	ImplicitGrid.Update(Positions);
