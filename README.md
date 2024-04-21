@@ -66,5 +66,8 @@ https://github.com/HappySapeta/TrafficAI/blob/4838ef8ab42984f46d4232ed0d2fb196f9
 * [CAR STEERING](https://kidscancode.org/godot_recipes/4.x/2d/car_steering/index.html)
 * [Simple 2D car steering physics in games](https://engineeringdotnet.blogspot.com/2010/04/simple-2d-car-physics-in-games.html)
 
+### Requirements
+Unreal Engine 5.2+
+
 ### Note
 The paid assets used in the demonstrations are not included in the repository but can be found at [Polygon - City Pack](https://www.unrealengine.com/marketplace/en-US/product/polygon-city-pack).
