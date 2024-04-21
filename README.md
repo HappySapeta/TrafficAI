@@ -7,6 +7,9 @@ Please note, that TrafficAI does not use UE5's Mass Entity Framework.
 The goal was to learn about AI used in games and employ strategies that help simulate on a large scale. 
 Hence, a custom Data-Oriented-Design approach was favored against an existing framework.
 
+# Bird's eye view demo - Simulating 100 vehicles.
+https://github.com/AnupamSahu/TrafficAI/assets/35849508/6ec4b69c-c9f1-41ef-8bfc-9bbf3ec72c49
+
 # Core Systems
 Behind the scenes, the simulation is managed by two core systems - `TrRepresentationSystem` and `TrSimulationSystem`.
 1. `TrSimulationSystem`
@@ -33,9 +36,6 @@ Behind the scenes, the simulation is managed by two core systems - `TrRepresenta
      [UE's Chaos Vehicle System](https://dev.epicgames.com/documentation/en-us/unreal-engine/vehicles-in-unreal-engine?application_version=5.3).
      A PID Controller is used, to determine the magnitude and direction of the force required to anchor the vehicle to the desired position and steer the vehicle's actor to match its orientation, to
      the values received from the simulation system.
-
-# Bird's eye view demo - Simulating 100 vehicles.
-https://github.com/AnupamSahu/TrafficAI/assets/35849508/6ec4b69c-c9f1-41ef-8bfc-9bbf3ec72c49
 
 # Collision Avoidance and Path Following Demo
 https://github.com/AnupamSahu/TrafficAI/assets/35849508/d815abe7-0550-4428-bdb0-4c93fc767014
