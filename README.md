@@ -40,6 +40,7 @@ Behind the scenes, the simulation is managed by two core systems - `TrRepresenta
 ## Collision Avoidance and Path Following Demo
 https://github.com/AnupamSahu/TrafficAI/assets/35849508/d815abe7-0550-4428-bdb0-4c93fc767014
 
+### Collison Avoidance
 In TrafficAI, vehicles don't actively try to avoid obstacles or other vehicles by using specialized maneuvers. Instead, they detect vehicles that are directly in front of them and choose the one that poses the greatest risk of collision. They then apply brakes to prevent an imminent collision. 
 
 Detecting objects in the surroundings can be a challenging task, especially if we want to avoid doing too many comparisons. To solve this problem, a spatial acceleration structure called Implicit Grid was used, which allows us to query nearby vehicles very quickly.
@@ -50,6 +51,10 @@ It is a straightforward procedure that converts a world position into a relative
 and verifies if it falls within the collision boundaries of the vehicle.
 
 This, by far is the most time-consuming operation in the entire simulation update. Any efforts to further optimize the system must be focussed on this region in [UTrSimulationSystem::UpdateCollisionData](https://github.com/HappySapeta/TrafficAI/blob/99e33e7cdaeba1389d6181efb5f138dfe63e7a48/Source/TrafficAI/Simulation/TrSimulationSystem.cpp#L373)
+
+### Path Following
+TrafficAI uses a slightly modified version of Craig Reynolds' Path Following algorithm. It uses the distance between the vehicle's current position and projected position to decide if it's on track or off.
+https://github.com/HappySapeta/TrafficAI/blob/4838ef8ab42984f46d4232ed0d2fb196f9db2f79/Source/TrafficAI/Simulation/TrSimulationSystem.cpp#L174-L187
 
 ## References
 
