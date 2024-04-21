@@ -53,6 +53,9 @@ This, by far is the most time-consuming operation in the entire simulation updat
 
 ## References
 
+* [Kinematic Bicycle Model](https://thomasfermi.github.io/Algorithms-for-Automated-Driving/Control/BicycleModel.html#id1)
+* [Intelligent Driver Model (IDM)](https://www.researchgate.net/publication/1783975_Congested_Traffic_States_in_Empirical_Observations_and_Microscopic_Simulations)
+* [Craig Reynold's](https://www.researchgate.net/publication/2495826_Steering_Behaviors_For_Autonomous_Characters)
 * [5.7 Path Following (Steering) - Nature of Code](https://www.youtube.com/watch?v=rlZYT-uvmGQ)
 * [Proportional–integral–derivative controller](https://en.wikipedia.org/wiki/Proportional%E2%80%93integral%E2%80%93derivative_controller)
 * [CAR STEERING](https://kidscancode.org/godot_recipes/4.x/2d/car_steering/index.html)
