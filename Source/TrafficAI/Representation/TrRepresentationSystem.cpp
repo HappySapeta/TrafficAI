@@ -169,8 +169,9 @@ bool UTrRepresentationSystem::ShouldCreateSubsystem(UObject* Outer) const
 {
 #if WITH_EDITOR
 	return (GEditor && GEditor->IsPlaySessionInProgress());
-#endif
+#else
 	return true;
+#endif
 }
 
 void UTrRepresentationSystem::BeginDestroy()

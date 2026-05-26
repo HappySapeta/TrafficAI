@@ -390,7 +390,7 @@ void UTrSimulationSystem::UpdateCollisionData()
 		float ClosestDistance = TNumericLimits<float>().Max();
 		FTransform CurrentTransform(Headings[Index].ToOrientationRotator(), CurrentPosition);
 		uint8 Count = Results.Num();
-		for(auto Itr = Results.Array.begin(); Count > 0; --Count, ++Itr)
+		for(auto Itr = Results.begin(); Count > 0; --Count, ++Itr)
 		{
 			const FVector& OtherPosition = Positions[*Itr];
 			const FVector OtherLocalVector = CurrentTransform.InverseTransformPosition(OtherPosition);

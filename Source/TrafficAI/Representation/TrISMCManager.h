@@ -6,6 +6,8 @@
 #include "GameFramework/Actor.h"
 #include "TrISMCManager.generated.h"
 
+class UHierarchicalInstancedStaticMeshComponent;
+
 UCLASS(NotPlaceable, Transient, NotBlueprintable)
 class TRAFFICAI_API ATrISMCManager : public AActor
 {
